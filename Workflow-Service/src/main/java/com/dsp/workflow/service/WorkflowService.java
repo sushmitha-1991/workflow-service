@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.camunda.bpm.engine.history.HistoricTaskInstance;
 
+import com.dsp.workflow.dto.PublishRequestDTO;
+import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 
 public interface WorkflowService {
@@ -48,5 +50,13 @@ public interface WorkflowService {
 	 * @return
 	 */
 	List<TaskResponseDTO> getPendingTasksByReceiverUserId(Integer receiverUserId);
+	
+    List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId);
+    
+    boolean isDocumentApprovedForPublishing(String taskId);
+
+    String publishDocument(PublishRequestDTO requestDTO);
+
+
 
 }

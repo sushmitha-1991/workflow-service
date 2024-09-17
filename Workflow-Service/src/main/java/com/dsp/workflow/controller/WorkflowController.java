@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
+import com.dsp.workflow.dto.PublishRequestDTO;
+import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskIdRequestDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.response.GenericResponse;
@@ -93,4 +95,40 @@ public class WorkflowController {
 		List<HistoricTaskInstance> tasks = workflowService.getHistoricTasksByTaskId(requestDTO.getTaskId());
 		return new ResponseEntity<>(tasks, HttpStatus.OK);
 	}
+
+	@GetMapping("/process-instance/{processInstanceId}")
+	public GenericResponse<List<TaskHistoryDTO>> getTasksByProcessInstanceId(
+			@PathVariable("processInstanceId") String processInstanceId) {
+		List<TaskHistoryDTO> taskHistoryList = workflowService.getTasksByProcessInstanceId(processInstanceId);
+
+		if (!taskHistoryList.isEmpty()) {
+			return new GenericResponse<>(true, "Tasks fetched successfully", taskHistoryList, HttpStatus.OK.value());
+		} else {
+			return new GenericResponse<>(false, "No tasks found for the given process instance", null,
+					HttpStatus.NOT_FOUND.value());
+		}
+	}
+	
+	@PostMapping("/publish")
+    public ResponseEntity<GenericResponse<String>> publishTask(@Valid @RequestBody PublishRequestDTO requestDTO) {
+        try {
+            // Check if the document is approved for publishing
+            boolean isApproved = workflowService.isDocumentApprovedForPublishing(requestDTO.getTaskId());
+
+            if (!isApproved) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new GenericResponse<>(false, "Document is not approved for publishing", null, HttpStatus.BAD_REQUEST.value()));
+            }
+
+            // Proceed with publishing and complete the task
+            String result = workflowService.publishDocument(requestDTO);
+
+            return ResponseEntity.ok(new GenericResponse<>(true, "Document published successfully", result, HttpStatus.OK.value()));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new GenericResponse<>(false, "An error occurred while publishing the document", null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+        }
+    }
+
 }

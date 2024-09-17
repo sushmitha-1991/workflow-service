@@ -1,5 +1,6 @@
 package com.dsp.workflow.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.dsp.workflow.dto.PublishRequestDTO;
+import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
@@ -118,6 +121,67 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 
 		return query.list();
+	}
+
+	@Override
+	public List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId) {
+		// Fetch all tasks associated with the given process instance ID
+		List<HistoricTaskInstance> historicTaskInstances = historyService.createHistoricTaskInstanceQuery()
+				.processInstanceId(processInstanceId).orderByHistoricTaskInstanceEndTime().asc() // Order tasks by
+																									// completion time
+				.list();
+
+		// Convert the list of HistoricTaskInstance objects to DTOs
+		return historicTaskInstances.stream().map(this::mapToTaskHistoryDTO).collect(Collectors.toList());
+	}
+
+	private TaskHistoryDTO mapToTaskHistoryDTO(HistoricTaskInstance taskInstance) {
+		return TaskHistoryDTO.builder().taskId(taskInstance.getId()) // This is effectively the history ID
+				.historyId(taskInstance.getId()) // Use the same ID as the history ID
+				.taskName(taskInstance.getName()).assignee(taskInstance.getAssignee())
+				.startTime(taskInstance.getStartTime()).endTime(taskInstance.getEndTime())
+				.durationInMillis(taskInstance.getDurationInMillis()).build();
+	}
+
+	@Override
+	public boolean isDocumentApprovedForPublishing(String taskId) {
+		// Fetch the task by taskId
+		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+
+		// Check if the task is valid
+		if (task == null) {
+			throw new IllegalArgumentException("Task not found for ID: " + taskId);
+		}
+
+		// Retrieve the process variable for 'isApprovedForPublishing'
+		Boolean isApprovedForPublishing = (Boolean) runtimeService.getVariable(task.getProcessInstanceId(),
+				"isApprovedForPublishing");
+
+		// Return true if the document is approved
+		return Boolean.TRUE.equals(isApprovedForPublishing);
+	}
+
+	@Override
+	public String publishDocument(PublishRequestDTO requestDTO) {
+		// Fetch the task
+		Task task = taskService.createTaskQuery().taskId(requestDTO.getTaskId()).singleResult();
+
+		if (task == null) {
+			throw new IllegalArgumentException("Task not found for ID: " + requestDTO.getTaskId());
+		}
+
+		// Create variables to complete the task
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("note", requestDTO.getNote());
+		variables.put("senderRoleId", requestDTO.getSenderRoleId());
+		variables.put("applicationInstanceId", requestDTO.getApplicationInstanceId());
+		variables.put("actionTaken", requestDTO.getActionTaken());
+
+		// Complete the task
+		taskService.complete(requestDTO.getTaskId(), variables);
+
+		// Return confirmation of the task completion (e.g., task id or a message)
+		return "Task with ID: " + requestDTO.getTaskId() + " completed successfully.";
 	}
 
 }
