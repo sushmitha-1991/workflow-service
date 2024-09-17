@@ -1,0 +1,9 @@
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\Application.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\controller\TaskController.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\controller\WorkflowController.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\delegate\ReviewTheDocument.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\delegate\SendToPublishorCreator.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\dto\CompleteTaskRequestDTO.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\response\GenericResponse.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\service\impl\WorkflowServiceImpl.java
+C:\Users\LQ917SL\Documents\Workspace\document-workflow\document-workflow\src\main\java\com\example\workflow\service\WorkflowService.java
