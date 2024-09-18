@@ -8,6 +8,7 @@ import org.camunda.bpm.engine.history.HistoricTaskInstance;
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 
 public interface WorkflowService {
 
@@ -56,6 +57,13 @@ public interface WorkflowService {
     boolean isDocumentApprovedForPublishing(String taskId);
 
     String publishDocument(PublishRequestDTO requestDTO);
+
+	/**
+	 * @param notesheetDTO
+	 * @param processInstanceId
+	 * @param taskId
+	 */
+	void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
 
 
 

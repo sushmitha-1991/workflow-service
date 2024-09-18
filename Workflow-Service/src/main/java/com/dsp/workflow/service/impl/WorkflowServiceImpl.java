@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
@@ -49,6 +50,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	@Override
+	public void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
+		// Convert NotesheetDTO to Notesheet entity
+		Notesheet notesheet = Notesheet.builder().note(notesheetDTO.getNote())
+				.receiverRoleId(notesheetDTO.getReceiverRoleId()).receiverUserId(notesheetDTO.getReceiverUserId())
+				.senderRoleId(notesheetDTO.getSenderRoleId()).historyId(taskId) // Assuming the taskId is used as
+																				// historyId
+				.applicationInstanceId(notesheetDTO.getApplicationInstanceId())
+				.actionTaken(notesheetDTO.getActionTaken()).build();
+		notesheet.setProcessInstanceId(processInstanceId);
+
+		// Save the Notesheet entity to the database
+		notesheetRepository.save(notesheet);
+	}
+
+	@Override
 	public String completeTask(String taskId, Map<String, Object> variables) {
 		// Fetch the task
 		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
@@ -60,7 +76,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
 
 			// Save the Notesheet entity
-			notesheetRepository.save(notesheet);
+			// notesheetRepository.save(notesheet);
 
 			// Fetch the next task ID if available
 			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();

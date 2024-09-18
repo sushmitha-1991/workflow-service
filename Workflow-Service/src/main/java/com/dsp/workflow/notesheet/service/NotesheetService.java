@@ -1,20 +1,19 @@
 package com.dsp.workflow.notesheet.service;
 
-import com.dsp.workflow.notesheet.dto.NotesheetDTO;
-
 import java.util.List;
+
+import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 
 public interface NotesheetService {
 
-    NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO);
+	NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO);
 
-    NotesheetDTO getNotesheetById(Long id);
+	NotesheetDTO getNotesheetById(Long id);
 
-    List<NotesheetDTO> getAllNotesheets();
+	List<NotesheetDTO> getAllNotesheets();
 
-    NotesheetDTO updateNotesheet(Long id, NotesheetDTO notesheetDTO);
+	NotesheetDTO updateNotesheet(Long id, NotesheetDTO notesheetDTO);
 
-    void deleteNotesheet(Long id);
+	void deleteNotesheet(Long id);
 
-    List<NotesheetDTO> getNotesheetHistory(int historyId);
 }
