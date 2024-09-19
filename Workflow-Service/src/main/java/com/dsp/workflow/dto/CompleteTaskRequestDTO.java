@@ -1,5 +1,7 @@
 package com.dsp.workflow.dto;
 
+import java.util.Map;
+
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.util.SendToTypeDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,11 +15,14 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper=false)
+@EqualsAndHashCode(callSuper = false)
 public class CompleteTaskRequestDTO extends NotesheetDTO {
 
 	@NotEmpty
 	String taskId;
+
+	private Map<String, Object> data;
+
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:
 	 * sendToReviewer

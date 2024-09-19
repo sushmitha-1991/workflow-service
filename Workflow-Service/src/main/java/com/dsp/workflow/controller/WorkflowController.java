@@ -41,30 +41,23 @@ public class WorkflowController {
 
 	@PostMapping("/start/{workflowId}")
 	public GenericResponse<Map<String, String>> startWorkflow(@PathVariable("workflowId") String workflowId,
-	                                                          @RequestBody NotesheetDTO notesheetDTO) {
-	    // Start the workflow process
-	    String processInstanceId = workflowService.startProcessInstance(workflowId);
+			@RequestBody NotesheetDTO notesheetDTO) {
+		String processInstanceId = workflowService.startProcessInstance(workflowId);
+		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
+		workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
 
-	    // Get the task ID
-	    String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
+		Map<String, String> responseData = new HashMap<>();
+		responseData.put("processInstanceId", processInstanceId);
+		responseData.put("taskId", taskId);
 
-	    // Save the notesheet information
-	    workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
-
-	    // Prepare the response data
-	    Map<String, String> responseData = new HashMap<>();
-	    responseData.put("processInstanceId", processInstanceId);
-	    responseData.put("taskId", taskId);
-
-	    // Return the response
-	    return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
+		return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
 	}
-
 
 	@PostMapping("/completeTask")
 	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
 
 		String taskId = completeTaskRequestDTO.getTaskId();
+
 		// Create a map of variables to be passed
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("note", completeTaskRequestDTO.getNote());
@@ -74,9 +67,13 @@ public class WorkflowController {
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
-
 		variables.put("sendTo",
 				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
+
+		// Add additionalData if present
+		if (completeTaskRequestDTO.getData() != null && !completeTaskRequestDTO.getData().isEmpty()) {
+			variables.putAll(completeTaskRequestDTO.getData());
+		}
 
 		// Complete the task using the workflow service
 		String newTaskId = workflowService.completeTask(taskId, variables);
