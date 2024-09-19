@@ -26,6 +26,7 @@ import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskIdRequestDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.WorkflowService;
 
@@ -39,20 +40,16 @@ public class WorkflowController {
 	private WorkflowService workflowService;
 
 	@PostMapping("/start/{workflowId}")
-	public GenericResponse<Map<String, String>> startWorkflow(@PathVariable("workflowId") String workflowId) {
-
-		// Start the process instance with the given workflowId
+	public GenericResponse<Map<String, String>> startWorkflow(@PathVariable("workflowId") String workflowId,
+			@RequestBody NotesheetDTO notesheetDTO) {
 		String processInstanceId = workflowService.startProcessInstance(workflowId);
-
-		// Retrieve the task ID associated with the process instance
 		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
+		workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
 
-		// Prepare response data
 		Map<String, String> responseData = new HashMap<>();
 		responseData.put("processInstanceId", processInstanceId);
 		responseData.put("taskId", taskId);
 
-		// Return success response with process instance ID and task ID
 		return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
 	}
 
@@ -60,6 +57,7 @@ public class WorkflowController {
 	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
 
 		String taskId = completeTaskRequestDTO.getTaskId();
+
 		// Create a map of variables to be passed
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("note", completeTaskRequestDTO.getNote());
@@ -69,9 +67,13 @@ public class WorkflowController {
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
-
 		variables.put("sendTo",
 				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
+
+		// Add additionalData if present
+		if (completeTaskRequestDTO.getData() != null && !completeTaskRequestDTO.getData().isEmpty()) {
+			variables.putAll(completeTaskRequestDTO.getData());
+		}
 
 		// Complete the task using the workflow service
 		String newTaskId = workflowService.completeTask(taskId, variables);
@@ -108,27 +110,26 @@ public class WorkflowController {
 					HttpStatus.NOT_FOUND.value());
 		}
 	}
-	
+
 	@PostMapping("/publish")
-    public ResponseEntity<GenericResponse<String>> publishTask(@Valid @RequestBody PublishRequestDTO requestDTO) {
-        try {
-            // Check if the document is approved for publishing
-            boolean isApproved = workflowService.isDocumentApprovedForPublishing(requestDTO.getTaskId());
+	public ResponseEntity<GenericResponse<String>> publishTask(@Valid @RequestBody PublishRequestDTO requestDTO) {
+		try {
+			boolean isApproved = workflowService.isDocumentApprovedForPublishing(requestDTO.getTaskId());
 
-            if (!isApproved) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new GenericResponse<>(false, "Document is not approved for publishing", null, HttpStatus.BAD_REQUEST.value()));
-            }
+			if (!isApproved) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new GenericResponse<>(false,
+						"Document is not approved for publishing", null, HttpStatus.BAD_REQUEST.value()));
+			}
 
-            // Proceed with publishing and complete the task
-            String result = workflowService.publishDocument(requestDTO);
+			String result = workflowService.publishDocument(requestDTO);
 
-            return ResponseEntity.ok(new GenericResponse<>(true, "Document published successfully", result, HttpStatus.OK.value()));
+			return ResponseEntity
+					.ok(new GenericResponse<>(true, "Document published successfully", result, HttpStatus.OK.value()));
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new GenericResponse<>(false, "An error occurred while publishing the document", null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
-        }
-    }
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new GenericResponse<>(false,
+					"An error occurred while publishing the document", null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
+		}
+	}
 
 }

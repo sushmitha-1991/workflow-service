@@ -53,4 +53,7 @@ public class Notesheet extends Auditable {
 	@Column(name = "action_taken", length = 255)
 	private String actionTaken;
 
+	@Column(name = "process_instance_Id", nullable = false)
+	private String processInstanceId;
+
 }

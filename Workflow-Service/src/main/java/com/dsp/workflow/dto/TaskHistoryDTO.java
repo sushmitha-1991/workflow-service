@@ -17,12 +17,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskHistoryDTO {
-    private String taskId;
-    private String historyId;
-    private String taskName;
-    private String assignee;
-    private Date startTime;
-    private Date endTime;
-    private Long durationInMillis;
+	private String taskId;
+	private String historyId;
+	private String taskName;
+	private String assignee;
+	private String startTime;
+	private String endTime;
+	private Long durationInMillis;
 }
-
