@@ -7,8 +7,11 @@ package com.dsp.workflow.notesheet.mapper;
 
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import com.dsp.workflow.notesheet.entity.Notesheet;
 
+@Component
 public class NotesheetMapper {
 
 	/**

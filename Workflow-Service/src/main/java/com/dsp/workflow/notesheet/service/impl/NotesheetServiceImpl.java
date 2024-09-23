@@ -1,4 +1,4 @@
-package com.dsp.workflow.notesheet.service;
+package com.dsp.workflow.notesheet.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
+import com.dsp.workflow.notesheet.service.NotesheetService;
 
 @Service
 public class NotesheetServiceImpl implements NotesheetService {
