@@ -79,7 +79,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
 
 			// Save the Notesheet entity
-			// notesheetRepository.save(notesheet);
+			notesheetRepository.save(notesheet);
 
 			// Fetch the next task ID if available
 			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
