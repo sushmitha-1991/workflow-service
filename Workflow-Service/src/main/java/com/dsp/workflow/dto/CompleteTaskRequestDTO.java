@@ -23,7 +23,7 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 
 	private Map<String, Object> additional_details;
 	
-	private String officeId;
+	private Long officeId;
     private String application_no;
 
 	/**

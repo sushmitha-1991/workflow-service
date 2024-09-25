@@ -23,23 +23,23 @@ public class NotesheetServiceImpl implements NotesheetService {
 		Notesheet notesheet = Notesheet.builder().note(notesheetDTO.getNote())
 				.receiverRoleId(notesheetDTO.getReceiverRoleId()).receiverUserId(notesheetDTO.getReceiverUserId())
 				.senderRoleId(notesheetDTO.getSenderRoleId())
-				.applicationHistoryId(notesheetDTO.getApplicationhistoryId()) // Use the correct name
+				.applicationHistoryId(notesheetDTO.getApplicationhistoryId())
 				.applicationInstanceId(notesheetDTO.getApplicationInstanceId())
-				.actionTaken(notesheetDTO.getActionTaken())
-				// .additionalDetails(notesheetDTO.getAdditionalDetails()) // Map additional
-				// details
+				.actionTaken(notesheetDTO.getActionTaken()).additionalDetails(notesheetDTO.getAdditionalDetails()) // Proper
+																													// mapping
 				.build();
 
 		// Save the entity to the repository
+		System.out.println("Saving Notesheet with additionalDetails: {}" + notesheetDTO.getAdditionalDetails());
+
 		notesheet = notesheetRepository.save(notesheet);
 
 		// Return the saved entity mapped back to the DTO
 		return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
 				.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-				.applicationhistoryId(notesheet.getApplicationHistoryId()) // Correct name
+				.applicationhistoryId(notesheet.getApplicationHistoryId())
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
-				// .additionalDetails(notesheet.getAdditionalDetails()) // Map additional
-				// details back to the DTO
+				.additionalDetails(notesheet.getAdditionalDetails()) // Map back the new field
 				.build();
 	}
 

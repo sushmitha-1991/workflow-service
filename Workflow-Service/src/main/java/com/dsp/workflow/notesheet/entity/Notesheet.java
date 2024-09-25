@@ -31,33 +31,33 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Notesheet extends Auditable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notesheet_seq")
-    @SequenceGenerator(name = "notesheet_seq", sequenceName = "workflow.notesheet_seq", allocationSize = 1)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notesheet_seq")
+	@SequenceGenerator(name = "notesheet_seq", sequenceName = "workflow.notesheet_seq", allocationSize = 1)
+	private Long id;
 
-    @Column(nullable = false)
-    private String note;
+	@Column(nullable = false)
+	private String note;
 
-    @Column(name = "receiver_role_id", nullable = false)
-    private int receiverRoleId;
+	@Column(name = "receiver_role_id", nullable = false)
+	private int receiverRoleId;
 
-    @Column(name = "receiver_user_id", nullable = false)
-    private int receiverUserId;
+	@Column(name = "receiver_user_id", nullable = false)
+	private int receiverUserId;
 
-    @Column(name = "sender_role_id", nullable = false)
-    private int senderRoleId;
+	@Column(name = "sender_role_id", nullable = false)
+	private int senderRoleId;
 
-    @Column(name = "application_history_id", nullable = false)
-    private String applicationHistoryId;  // Correct the naming here
+	@Column(name = "application_history_id", nullable = false)
+	private long applicationHistoryId;
 
-    @Column(name = "application_instance_id", nullable = false)
-    private int applicationInstanceId;
+	@Column(name = "application_instance_id", nullable = false)
+	private long applicationInstanceId;
 
-    @Column(name = "action_taken", length = 255)
-    private String actionTaken;
+	@Column(name = "action_taken", length = 255)
+	private String actionTaken;
 
-    @Convert(converter = MapJsonConverter.class)
-    @Column(name = "additional_details", columnDefinition = "jsonb")
-    private Map<String, Object> additionalDetails;
+	@Convert(converter = MapJsonConverter.class)
+	@Column(name = "additional_details", columnDefinition = "jsonb")
+	private Map<String, Object> additionalDetails; // New field to store JSONB data
 }

@@ -19,9 +19,13 @@ import org.springframework.stereotype.Service;
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.entity.ApplicationAuthority;
+import com.dsp.workflow.entity.ApplicationHistory;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
+import com.dsp.workflow.notesheet.mapper.ApplicationAuthorityMapper;
+import com.dsp.workflow.notesheet.mapper.ApplicationHistoryMapper;
 import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.repository.ApplicationAuthorityRepository;
@@ -79,15 +83,23 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public String completeTask(String taskId, Map<String, Object> variables) {
 		// Fetch the task
 		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+
 		if (task != null) {
 			// Complete the task
 			taskService.complete(taskId, variables);
 
 			// Create a new Notesheet entity using the mapper
 			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+			notesheetRepository.save(notesheet);
 
-			// Save the Notesheet entity
-			// notesheetRepository.save(notesheet);
+			// Create and save ApplicationAuthority entity using the mapper
+			ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
+					notesheet.getApplicationHistoryId());
+			applicationAuthorityRepository.save(applicationAuthority);
+
+			// Create and save ApplicationHistory entity using the mapper
+			ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
+			applicationHistoryRepository.save(applicationHistory);
 
 			// Fetch the next task ID if available
 			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();

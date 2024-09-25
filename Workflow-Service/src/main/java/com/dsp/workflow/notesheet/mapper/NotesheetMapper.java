@@ -25,8 +25,9 @@ public class NotesheetMapper {
 		return Notesheet.builder().note((String) variables.get("note"))
 				.receiverRoleId((Integer) variables.get("receiverRoleId"))
 				.receiverUserId((Integer) variables.get("receiverUserId"))
-				.senderRoleId((Integer) variables.get("senderRoleId")).applicationHistoryId(taskId)
-				.applicationInstanceId((Integer) variables.get("applicationInstanceId"))
+				.senderRoleId((Integer) variables.get("senderRoleId"))
+				//.applicationHistoryId((Long) variables.get("applicationInstanceId"))
+				.applicationInstanceId((Long) variables.get("applicationInstanceId"))
 				.actionTaken((String) variables.get("actionTaken")).build();
 	}
 }

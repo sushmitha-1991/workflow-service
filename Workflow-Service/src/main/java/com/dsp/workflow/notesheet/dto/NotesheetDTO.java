@@ -20,24 +20,24 @@ import lombok.NoArgsConstructor;
 @Builder
 public class NotesheetDTO {
 
-    private String note;
-    private int receiverRoleId;
-    private int receiverUserId;
-    private int senderRoleId;
-    private String applicationhistoryId;
-    private int applicationInstanceId;
-    private String actionTaken;
-    // private Map<String, Object> additionalDetails;
+	private String note;
+	private int receiverRoleId;
+	private int receiverUserId;
+	private int senderRoleId;
+	private long applicationhistoryId;
+	private long applicationInstanceId;
+	private String actionTaken;
+	private Map<String, Object> additionalDetails; // New field to hold JSON data
 
-    // Constructor to create DTO from Entity
-    public NotesheetDTO(Notesheet notesheet) {
-        this.note = notesheet.getNote();
-        this.receiverRoleId = notesheet.getReceiverRoleId();
-        this.receiverUserId = notesheet.getReceiverUserId();
-        this.senderRoleId = notesheet.getSenderRoleId();
-        this.applicationhistoryId = notesheet.getApplicationHistoryId();
-        this.applicationInstanceId = notesheet.getApplicationInstanceId();
-        this.actionTaken = notesheet.getActionTaken();
-        //this.additionalDetails = notesheet.getAdditionalDetails();
-    }
+	// Constructor to create DTO from Entity
+	public NotesheetDTO(Notesheet notesheet) {
+		this.note = notesheet.getNote();
+		this.receiverRoleId = notesheet.getReceiverRoleId();
+		this.receiverUserId = notesheet.getReceiverUserId();
+		this.senderRoleId = notesheet.getSenderRoleId();
+		this.applicationhistoryId = notesheet.getApplicationHistoryId();
+		this.applicationInstanceId = notesheet.getApplicationInstanceId();
+		this.actionTaken = notesheet.getActionTaken();
+		this.additionalDetails = notesheet.getAdditionalDetails(); // Map the new field
+	}
 }

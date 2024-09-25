@@ -73,12 +73,13 @@ public class WorkflowController {
 				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
 		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
 		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
+		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
 
-		// Add additionalData if present
-		if (completeTaskRequestDTO.getAdditional_details() != null
-				&& !completeTaskRequestDTO.getAdditional_details().isEmpty()) {
-			variables.putAll(completeTaskRequestDTO.getAdditional_details());
-		}
+//		// Add additionalData if present
+//		if (completeTaskRequestDTO.getAdditional_details() != null
+//				&& !completeTaskRequestDTO.getAdditional_details().isEmpty()) {
+//			variables.putAll(completeTaskRequestDTO.getAdditional_details());
+//		}
 
 		// Complete the task using the workflow service
 		String newTaskId = workflowService.completeTask(taskId, variables);

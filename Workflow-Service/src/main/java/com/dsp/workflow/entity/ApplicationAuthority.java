@@ -31,21 +31,21 @@ public class ApplicationAuthority extends Auditable {
 	private Long id;
 
 	@Column(name = "application_history_id", nullable = false)
-	private String applicationHistoryId;
+	private Long applicationHistoryId;
 
 	@Column(name = "application_instance_id", nullable = false)
-	private String applicationInstanceId;
+	private Long applicationInstanceId;
 
-	@Column(name = "office_id", nullable = false)
+	@Column(name = "office_id")
 	private Long officeId;
 
-	@Column(name = "role_id", nullable = false)
+	@Column(name = "role_id")
 	private Long roleId;
 
-	@Column(name = "user_id", nullable = false)
+	@Column(name = "user_id")
 	private Long userId;
 
-	@Column(name = "action_status", length = 100, nullable = false)
+	@Column(name = "action_status", length = 100)
 	private String actionStatus;
 
 }

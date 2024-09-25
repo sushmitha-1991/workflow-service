@@ -5,7 +5,12 @@
  */
 package com.dsp.workflow.entity;
 
+import java.util.Map;
+
+import com.dsp.workflow.util.MapJsonConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,8 +35,8 @@ public class ApplicationHistory extends Auditable {
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "application_history_seq")
 	private Long id;
 
-	@Column(name = "application_instance_id", nullable = false)
-	private String applicationInstanceId;
+	@Column(name = "application_instance_id")
+	private Long applicationInstanceId;
 
 	@Column(name = "application_no", length = 100, nullable = false)
 	private String applicationNo;
@@ -45,7 +50,8 @@ public class ApplicationHistory extends Auditable {
 	@Column(name = "task_id", length = 100, nullable = false)
 	private String taskId;
 
-	@Column(name = "additional_details", columnDefinition = "jsonb", nullable = false)
-	private String additionalDetails;
+	@Convert(converter = MapJsonConverter.class)
+	@Column(name = "additional_details", columnDefinition = "jsonb")
+	private Map<String, Object> additionalDetails;
 
 }
