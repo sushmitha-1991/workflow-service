@@ -31,7 +31,7 @@ public class ApplicationHistory extends Auditable {
 	private Long id;
 
 	@Column(name = "application_instance_id", nullable = false)
-	private Long applicationInstanceId;
+	private String applicationInstanceId;
 
 	@Column(name = "application_no", length = 100, nullable = false)
 	private String applicationNo;

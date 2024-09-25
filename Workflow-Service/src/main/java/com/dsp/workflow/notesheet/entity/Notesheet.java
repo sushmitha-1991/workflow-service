@@ -5,9 +5,13 @@
  */
 package com.dsp.workflow.notesheet.entity;
 
+import java.util.Map;
+
 import com.dsp.workflow.entity.Auditable;
+import com.dsp.workflow.util.MapJsonConverter;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,33 +31,33 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Notesheet extends Auditable {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notesheet_seq")
-	@SequenceGenerator(name = "notesheet_seq", sequenceName = "workflow.notesheet_seq", allocationSize = 1)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notesheet_seq")
+    @SequenceGenerator(name = "notesheet_seq", sequenceName = "workflow.notesheet_seq", allocationSize = 1)
+    private Long id;
 
-	@Column(nullable = false)
-	private String note;
+    @Column(nullable = false)
+    private String note;
 
-	@Column(name = "receiver_role_id", nullable = false)
-	private int receiverRoleId;
+    @Column(name = "receiver_role_id", nullable = false)
+    private int receiverRoleId;
 
-	@Column(name = "receiver_user_id", nullable = false)
-	private int receiverUserId;
+    @Column(name = "receiver_user_id", nullable = false)
+    private int receiverUserId;
 
-	@Column(name = "sender_role_id", nullable = false)
-	private int senderRoleId;
+    @Column(name = "sender_role_id", nullable = false)
+    private int senderRoleId;
 
-	@Column(name = "history_id", nullable = false)
-	private String historyId;
+    @Column(name = "application_history_id", nullable = false)
+    private String applicationHistoryId;  // Correct the naming here
 
-	@Column(name = "application_instance_id", nullable = false)
-	private int applicationInstanceId;
+    @Column(name = "application_instance_id", nullable = false)
+    private int applicationInstanceId;
 
-	@Column(name = "action_taken", length = 255)
-	private String actionTaken;
+    @Column(name = "action_taken", length = 255)
+    private String actionTaken;
 
-	@Column(name = "process_instance_Id", nullable = false)
-	private String processInstanceId;
-
+    @Convert(converter = MapJsonConverter.class)
+    @Column(name = "additional_details", columnDefinition = "jsonb")
+    private Map<String, Object> additionalDetails;
 }

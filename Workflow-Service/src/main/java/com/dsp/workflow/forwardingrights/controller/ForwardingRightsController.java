@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dsp.workflow.forwardingrights.dto.ForwardingRightsDTO;
 import com.dsp.workflow.forwardingrights.service.ForwardingRightsService;
 import com.dsp.workflow.response.GenericResponse;
+import com.dsp.workflow.util.Utils;
 
 /**
  * 
@@ -33,6 +34,9 @@ public class ForwardingRightsController {
 
 	@Autowired
 	private ForwardingRightsService forwardingRightsService;
+
+	@Autowired
+	private Utils utils;
 
 	@PostMapping("/create")
 	public ResponseEntity<GenericResponse<ForwardingRightsDTO>> createForwardingRight(
@@ -67,9 +71,17 @@ public class ForwardingRightsController {
 	}
 
 	@GetMapping("/user-details")
-	public ResponseEntity<Map<String, Object>> getUserDetails(@RequestParam(name = "applicationId") Long applicationId,
-			@RequestParam(name = "senderRoleId") Long senderRoleId) {
-		Map<String, Object> userDetails = forwardingRightsService.getUserDetails(applicationId, senderRoleId);
+	public ResponseEntity<List<Map<String, Object>>> getUserDetails(
+			@RequestParam(name = "applicationId") Long applicationId) {
+		// Fetch the sender's role ID using the utility function
+		Long senderRoleId = utils.getRoleIdByUserId();
+		System.out.println("Sender Role ID: " + senderRoleId);
+
+		// Call the service to get the list of user details
+		List<Map<String, Object>> userDetails = (List<Map<String, Object>>) forwardingRightsService
+				.getUserDetails(applicationId, senderRoleId);
+
+		// Return the user details as the response
 		return ResponseEntity.ok(userDetails);
 	}
 

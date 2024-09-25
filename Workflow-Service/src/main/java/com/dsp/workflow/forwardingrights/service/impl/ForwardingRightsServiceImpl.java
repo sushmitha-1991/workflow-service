@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.forwardingrights.service.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,8 +14,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.exception.UserNotFoundException;
 import com.dsp.workflow.forwardingrights.dto.ForwardingRightsDTO;
 import com.dsp.workflow.forwardingrights.entity.ForwardingRights;
 import com.dsp.workflow.forwardingrights.mapper.ForwardingRightsMapper;
@@ -32,9 +34,6 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 
 	@Autowired
 	private ForwardingRightsMapper forwardingRightsMapper;
-	
-	@Autowired
-    private RestTemplate restTemplate;
 
 	@Override
 	public GenericResponse<ForwardingRightsDTO> createForwardingRight(ForwardingRightsDTO dto) {
@@ -86,18 +85,32 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 		return new GenericResponse<>(true, "Forwarding rights deleted successfully", "Deleted successfully",
 				HttpStatus.OK.value());
 	}
-	
 
-    public Map<String, Object> getUserDetails(Long applicationId, Long senderRoleId) {
-        ForwardingRights forwardingRights = repository.findByApplicationIdAndSenderRoleId(applicationId, senderRoleId)
-                .orElseThrow(() -> new RuntimeException("ForwardingRights not found"));
+	/**
+	 * Fetches user details based on applicationId and senderRoleId.
+	 */
+	public List<Map<String, Object>> getUserDetails(Long applicationId, Long senderRoleId) {
+		ForwardingRights forwardingRights = repository.findByApplicationIdAndSenderRoleId(applicationId, senderRoleId)
+				.orElseThrow(() -> new UserNotFoundException("ForwardingRights not found"));
 
-        Integer roleId = forwardingRights.getSenderRoleId(); // Assuming ForwardingRights has a field userId
+		Integer roleId = forwardingRights.getSenderRoleId();
 
-        String url = "http://localhost:8082/user-roles/users-by-role/" + roleId; // URL to fetch user details
-        Map<String, Object> userDetails = restTemplate.getForObject(url, Map.class);
+		List<Object[]> resultList = repository.findUserDetailsByRoleId(roleId);
+		if (resultList.isEmpty()) {
+			throw new UserNotFoundException("No user details found for the given role");
+		}
 
-        return userDetails;
-    }
+		List<Map<String, Object>> usersDetailsList = new ArrayList<>();
+		for (Object[] userResult : resultList) {
+			Map<String, Object> userDetails = new HashMap<>();
+			userDetails.put("firstName", userResult[0]);
+			userDetails.put("middleName", userResult[1]);
+			userDetails.put("lastName", userResult[2]);
+			userDetails.put("email", userResult[3]);
+			userDetails.put("officeId", userResult[4]);
 
+			usersDetailsList.add(userDetails);
+		}
+		return usersDetailsList;
+	}
 }

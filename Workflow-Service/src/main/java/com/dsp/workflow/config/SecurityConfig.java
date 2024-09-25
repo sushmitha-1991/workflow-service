@@ -58,10 +58,11 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests(
-				(authz) -> authz.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.anyRequest().authenticated())
-				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
+		http.authorizeHttpRequests((authz) -> authz
+				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/workflow/**",
+						"/workflow/forwarding-rights/**", "/camunda/**")
+				.permitAll().anyRequest().authenticated()).csrf(AbstractHttpConfigurer::disable)
+				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
 		http.exceptionHandling((ex) -> ex.authenticationEntryPoint(new JwtAuthenticationEntryPoint()))

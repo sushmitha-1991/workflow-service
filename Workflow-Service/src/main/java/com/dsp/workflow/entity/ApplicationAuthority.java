@@ -31,10 +31,10 @@ public class ApplicationAuthority extends Auditable {
 	private Long id;
 
 	@Column(name = "application_history_id", nullable = false)
-	private Long applicationHistoryId;
+	private String applicationHistoryId;
 
 	@Column(name = "application_instance_id", nullable = false)
-	private Long applicationInstanceId;
+	private String applicationInstanceId;
 
 	@Column(name = "office_id", nullable = false)
 	private Long officeId;

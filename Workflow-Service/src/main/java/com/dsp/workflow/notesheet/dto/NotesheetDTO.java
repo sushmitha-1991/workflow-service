@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.notesheet.dto;
 
+import java.util.Map;
+
 import com.dsp.workflow.notesheet.entity.Notesheet;
 
 import lombok.AllArgsConstructor;
@@ -18,22 +20,24 @@ import lombok.NoArgsConstructor;
 @Builder
 public class NotesheetDTO {
 
-	private String note;
-	private int receiverRoleId;
-	private int receiverUserId;
-	private int senderRoleId;
-	private String historyId;
-	private int applicationInstanceId;
-	private String actionTaken;
+    private String note;
+    private int receiverRoleId;
+    private int receiverUserId;
+    private int senderRoleId;
+    private String applicationhistoryId;
+    private int applicationInstanceId;
+    private String actionTaken;
+    // private Map<String, Object> additionalDetails;
 
-	public NotesheetDTO(Notesheet notesheet) {
-		this.note = notesheet.getNote();
-		this.receiverRoleId = notesheet.getReceiverRoleId();
-		this.receiverUserId = notesheet.getReceiverUserId();
-		this.senderRoleId = notesheet.getSenderRoleId();
-		this.historyId = notesheet.getHistoryId();
-		this.applicationInstanceId = notesheet.getApplicationInstanceId();
-		this.actionTaken = notesheet.getActionTaken();
-	}
-
+    // Constructor to create DTO from Entity
+    public NotesheetDTO(Notesheet notesheet) {
+        this.note = notesheet.getNote();
+        this.receiverRoleId = notesheet.getReceiverRoleId();
+        this.receiverUserId = notesheet.getReceiverUserId();
+        this.senderRoleId = notesheet.getSenderRoleId();
+        this.applicationhistoryId = notesheet.getApplicationHistoryId();
+        this.applicationInstanceId = notesheet.getApplicationInstanceId();
+        this.actionTaken = notesheet.getActionTaken();
+        //this.additionalDetails = notesheet.getAdditionalDetails();
+    }
 }
