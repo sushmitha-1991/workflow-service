@@ -108,6 +108,8 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 			userDetails.put("lastName", userResult[2]);
 			userDetails.put("email", userResult[3]);
 			userDetails.put("officeId", userResult[4]);
+			userDetails.put("officeName", userResult[5]);
+			userDetails.put("roleName", userResult[6]);
 
 			usersDetailsList.add(userDetails);
 		}

@@ -79,7 +79,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 //		notesheetRepository.save(notesheet);
 //	}
 
-	@Override
+	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables) {
 		// Fetch the task
 		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
