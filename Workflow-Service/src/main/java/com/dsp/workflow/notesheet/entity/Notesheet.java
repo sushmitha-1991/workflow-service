@@ -40,13 +40,13 @@ public class Notesheet extends Auditable {
 	private String note;
 
 	@Column(name = "receiver_role_id", nullable = false)
-	private int receiverRoleId;
+	private long receiverRoleId;
 
 	@Column(name = "receiver_user_id", nullable = false)
 	private int receiverUserId;
 
 	@Column(name = "sender_role_id", nullable = false)
-	private int senderRoleId;
+	private long senderRoleId;
 
 	@Column(name = "application_history_id", nullable = false)
 	private long applicationHistoryId;
