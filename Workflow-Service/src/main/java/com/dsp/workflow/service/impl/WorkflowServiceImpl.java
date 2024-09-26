@@ -32,6 +32,8 @@ import com.dsp.workflow.repository.ApplicationAuthorityRepository;
 import com.dsp.workflow.repository.ApplicationHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
 
@@ -79,11 +81,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 //		notesheetRepository.save(notesheet);
 //	}
 
-	@Override
+	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables) {
 		// Fetch the task
 		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-
 		if (task != null) {
 			// Complete the task
 			taskService.complete(taskId, variables);
@@ -91,7 +92,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Create a new Notesheet entity using the mapper
 			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
 			notesheetRepository.save(notesheet);
-
 			// Create and save ApplicationAuthority entity using the mapper
 			ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
 					notesheet.getApplicationHistoryId());

@@ -26,6 +26,7 @@ public interface WorkflowService {
 	 * 
 	 * @param taskId    The ID of the task to complete.
 	 * @param variables The variables to pass for task completion.
+	 * @param senderRoleId 
 	 * @return The new task ID, or null if no new task is created.
 	 */
 	String completeTask(String taskId, Map<String, Object> variables);

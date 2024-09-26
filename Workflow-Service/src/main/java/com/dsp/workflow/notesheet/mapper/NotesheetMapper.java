@@ -23,11 +23,21 @@ public class NotesheetMapper {
 	 */
 	public static Notesheet fromVariables(Map<String, Object> variables, String taskId) {
 		return Notesheet.builder().note((String) variables.get("note"))
-				.receiverRoleId((Integer) variables.get("receiverRoleId"))
+				.receiverRoleId(convertToInteger(variables.get("receiverRoleId")))
 				.receiverUserId((Integer) variables.get("receiverUserId"))
-				.senderRoleId((Integer) variables.get("senderRoleId"))
-				//.applicationHistoryId((Long) variables.get("applicationInstanceId"))
+				.senderRoleId(convertToInteger(variables.get("senderRoleId")))
+				// .applicationHistoryId((Long) variables.get("applicationInstanceId"))
 				.applicationInstanceId((Long) variables.get("applicationInstanceId"))
 				.actionTaken((String) variables.get("actionTaken")).build();
+	}
+
+	private static Integer convertToInteger(Object value) {
+		if (value instanceof Integer) {
+			return (Integer) value;
+		} else if (value instanceof Long) {
+			return ((Long) value).intValue(); // Convert Long to Integer
+		} else {
+			throw new IllegalArgumentException("Expected Integer or Long, but got: " + value.getClass());
+		}
 	}
 }

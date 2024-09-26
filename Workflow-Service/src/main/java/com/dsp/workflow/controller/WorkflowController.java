@@ -29,6 +29,7 @@ import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.WorkflowService;
+import com.dsp.workflow.util.Utils;
 
 import jakarta.validation.Valid;
 
@@ -38,6 +39,9 @@ public class WorkflowController {
 
 	@Autowired
 	private WorkflowService workflowService;
+
+	@Autowired
+	private Utils utils;
 
 	/** Start the Workflow Engine **/
 	@PostMapping("/start/{workflowId}")
@@ -65,7 +69,11 @@ public class WorkflowController {
 		variables.put("note", completeTaskRequestDTO.getNote());
 		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
 		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
-		variables.put("senderRoleId", completeTaskRequestDTO.getSenderRoleId());
+
+		// Use the Utils method to fetch the senderRoleId
+		Long senderRoleId = utils.getRoleIdByUserId();
+		variables.put("senderRoleId", senderRoleId); // Set senderRoleId here
+
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
@@ -74,12 +82,6 @@ public class WorkflowController {
 		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
 		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
-
-//		// Add additionalData if present
-//		if (completeTaskRequestDTO.getAdditional_details() != null
-//				&& !completeTaskRequestDTO.getAdditional_details().isEmpty()) {
-//			variables.putAll(completeTaskRequestDTO.getAdditional_details());
-//		}
 
 		// Complete the task using the workflow service
 		String newTaskId = workflowService.completeTask(taskId, variables);

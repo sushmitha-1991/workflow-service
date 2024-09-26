@@ -21,9 +21,9 @@ import lombok.NoArgsConstructor;
 public class NotesheetDTO {
 
 	private String note;
-	private int receiverRoleId;
+	private long receiverRoleId;
 	private int receiverUserId;
-	private int senderRoleId;
+	private long senderRoleId;
 	private long applicationhistoryId;
 	private long applicationInstanceId;
 	private String actionTaken;
