@@ -47,9 +47,12 @@ public class WorkflowController {
 	@PostMapping("/start/{workflowId}")
 	public GenericResponse<Map<String, String>> startWorkflow(@PathVariable("workflowId") String workflowId,
 			@RequestBody NotesheetDTO notesheetDTO) {
+		Long senderRoleId = utils.getRoleIdByUserId();
 		String processInstanceId = workflowService.startProcessInstance(workflowId);
 		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
-		workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
+		// workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
+	    workflowService.insertApplicationInstance(notesheetDTO, processInstanceId, taskId, senderRoleId);
+
 
 		Map<String, String> responseData = new HashMap<>();
 		responseData.put("processInstanceId", processInstanceId);

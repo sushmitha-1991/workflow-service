@@ -66,6 +66,14 @@ public interface WorkflowService {
 	 */
 	void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
 
+	/**
+	 * @param notesheetDTO
+	 * @param processInstanceId
+	 * @param taskId
+	 * @param senderRoleId 
+	 */
+	void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId, Long senderRoleId);
+
 
 
 }

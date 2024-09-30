@@ -1,5 +1,6 @@
 package com.dsp.workflow.service.impl;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,8 @@ import com.dsp.workflow.repository.ApplicationAuthorityRepository;
 import com.dsp.workflow.repository.ApplicationHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -58,13 +61,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Autowired
 	private ApplicationHistoryRepository applicationHistoryRepository;
 
+	private WorkflowMapper workflowMapper = new WorkflowMapper();
+
+	@PersistenceContext
+	private EntityManager entityManager;
+
 	@Override
 	public String startProcessInstance(String workflowId) {
 		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(workflowId);
 		return processInstance.getProcessInstanceId();
 	}
-
-	private WorkflowMapper workflowMapper = new WorkflowMapper();
 
 //	@Override
 //	public void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
@@ -214,6 +220,26 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Transactional
+	public void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId,
+			Long senderRoleId) {
+		String query = "INSERT INTO master.application_instance "
+				+ "(application_id, application_no, current_status, published_document_url, additional_details, "
+				+ "is_active, is_deleted, created_by, updated_by, created_at, updated_at) "
+				+ "VALUES (:applicationId, :applicationNo, :currentStatus, :publishedDocumentUrl, :additionalDetails, "
+				+ ":isActive, :isDeleted, :createdBy, :updatedBy, :createdAt, :updatedAt)";
+
+		// Create and execute the query
+		entityManager.createNativeQuery(query).setParameter("applicationId", notesheetDTO.getApplicationInstanceId())
+				.setParameter("applicationNo", processInstanceId).setParameter("currentStatus", "Started")
+				.setParameter("publishedDocumentUrl", null)
+				.setParameter("additionalDetails", notesheetDTO.getAdditionalDetails()).setParameter("isActive", true)
+				.setParameter("isDeleted", false).setParameter("createdBy", senderRoleId)
+				.setParameter("updatedBy", senderRoleId)
+				.setParameter("createdAt", new Timestamp(System.currentTimeMillis()))
+				.setParameter("updatedAt", new Timestamp(System.currentTimeMillis())).executeUpdate();
 	}
 
 }
