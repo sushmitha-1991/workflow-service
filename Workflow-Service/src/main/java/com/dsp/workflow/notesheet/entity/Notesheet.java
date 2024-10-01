@@ -59,5 +59,5 @@ public class Notesheet extends Auditable {
 
 	@Convert(converter = MapJsonConverter.class)
 	@Column(name = "additional_details", columnDefinition = "jsonb")
-	private Map<String, Object> additionalDetails; // New field to store JSONB data
+	private Map<String, Object> additionalDetails;
 }
