@@ -50,10 +50,11 @@ public class WorkflowController {
 		Long senderRoleId = utils.getRoleIdByUserId();
 		String processInstanceId = workflowService.startProcessInstance(workflowId);
 		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
-		// workflowService.saveNotesheet(notesheetDTO, processInstanceId, taskId);
-	    workflowService.insertApplicationInstance(notesheetDTO, processInstanceId, taskId, senderRoleId);
 
+		// Save the notesheet and application instance details
+		workflowService.insertApplicationInstance(notesheetDTO, processInstanceId, taskId, senderRoleId);
 
+		// Prepare response
 		Map<String, String> responseData = new HashMap<>();
 		responseData.put("processInstanceId", processInstanceId);
 		responseData.put("taskId", taskId);
@@ -69,6 +70,7 @@ public class WorkflowController {
 
 		// Create a map of variables to be passed
 		Map<String, Object> variables = new HashMap<>();
+		variables.put("processInstanceId", completeTaskRequestDTO.getProcessInstanceId());
 		variables.put("note", completeTaskRequestDTO.getNote());
 		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
 		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
@@ -96,17 +98,12 @@ public class WorkflowController {
 		}
 	}
 
+	/*Get Pending task list using Receiver User ID*/
 	@GetMapping("/pending")
 	public ResponseEntity<List<TaskResponseDTO>> getPendingTasks(
 			@RequestParam("receiverUserId") Integer receiverUserId) {
-		List<TaskResponseDTO> pendingTasks = workflowService.getPendingTasksByReceiverUserId(receiverUserId);
+		List<TaskResponseDTO> pendingTasks = workflowService.getTasksByReceiverUserId(receiverUserId);
 		return ResponseEntity.ok(pendingTasks);
-	}
-
-	@PostMapping("/historic-tasks")
-	public ResponseEntity<List<HistoricTaskInstance>> getHistoricTasks(@RequestBody TaskIdRequestDTO requestDTO) {
-		List<HistoricTaskInstance> tasks = workflowService.getHistoricTasksByTaskId(requestDTO.getTaskId());
-		return new ResponseEntity<>(tasks, HttpStatus.OK);
 	}
 
 	@GetMapping("/process-instance/{processInstanceId}")

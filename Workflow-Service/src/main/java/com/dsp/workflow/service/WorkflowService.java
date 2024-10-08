@@ -24,9 +24,9 @@ public interface WorkflowService {
 	/**
 	 * Completes a task with the given task ID and variables.
 	 * 
-	 * @param taskId    The ID of the task to complete.
-	 * @param variables The variables to pass for task completion.
-	 * @param senderRoleId 
+	 * @param taskId       The ID of the task to complete.
+	 * @param variables    The variables to pass for task completion.
+	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
 	String completeTask(String taskId, Map<String, Object> variables);
@@ -40,24 +40,11 @@ public interface WorkflowService {
 	 */
 	String getTaskIdByProcessInstanceId(String processInstanceId);
 
-	/**
-	 * @param taskId
-	 * @return
-	 */
-	List<HistoricTaskInstance> getHistoricTasksByTaskId(String taskId);
+	List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId);
 
+	boolean isDocumentApprovedForPublishing(String taskId);
 
-	/**
-	 * @param receiverUserId
-	 * @return
-	 */
-	List<TaskResponseDTO> getPendingTasksByReceiverUserId(Integer receiverUserId);
-	
-    List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId);
-    
-    boolean isDocumentApprovedForPublishing(String taskId);
-
-    String publishDocument(PublishRequestDTO requestDTO);
+	String publishDocument(PublishRequestDTO requestDTO);
 
 	/**
 	 * @param notesheetDTO
@@ -70,10 +57,15 @@ public interface WorkflowService {
 	 * @param notesheetDTO
 	 * @param processInstanceId
 	 * @param taskId
-	 * @param senderRoleId 
+	 * @param senderRoleId
 	 */
-	void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId, Long senderRoleId);
+	void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId,
+			Long senderRoleId);
 
-
+	/**
+	 * @param receiverUserId
+	 * @return
+	 */
+	List<TaskResponseDTO> getTasksByReceiverUserId(Integer receiverUserId);
 
 }

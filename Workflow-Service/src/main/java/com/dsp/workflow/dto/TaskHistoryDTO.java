@@ -21,5 +21,4 @@ public class TaskHistoryDTO {
 	private String assignee;
 	private String startTime;
 	private String endTime;
-	private Long durationInMillis;
 }

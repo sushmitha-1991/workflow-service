@@ -1,16 +1,10 @@
-/**
- * 
- * @author Mrinal Lakhanpal
- * @version 1.0
- */
 package com.dsp.workflow.delegate;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.springframework.stereotype.Component;
 
-import jakarta.inject.Named;
-
-@Named
+@Component("documentApprovalDelegate") // The name to use in the BPMN diagram's delegate expression
 public class DocumentApprovalDelegate implements JavaDelegate {
 
 	@Override

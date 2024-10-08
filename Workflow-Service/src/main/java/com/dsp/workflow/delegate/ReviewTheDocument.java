@@ -7,29 +7,22 @@ package com.dsp.workflow.delegate;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.springframework.stereotype.Component;
 
-import jakarta.inject.Named;
-
-/**
- * 
- */
-@Named
+@Component("reviewTheDocument") // Use this name in your BPMN diagram
 public class ReviewTheDocument implements JavaDelegate {
 
 	@Override
 	public void execute(DelegateExecution execution) throws Exception {
-		String sendToReviewer = "";
+		String sendToReviewer = (String) execution.getVariable("sendToReviewer");
 		String commentsByReviewer = "";
-		sendToReviewer = (String) execution.getVariable("sendToReviewer");
 
 		if ("Reviewer".equals(sendToReviewer)) {
 			commentsByReviewer = "Document is in Reviewing State";
 		} else if ("Publish".equals(sendToReviewer)) {
 			commentsByReviewer = "Please publish it";
-
 		}
+
 		execution.setVariable("commentsByReviewer", commentsByReviewer);
-
 	}
-
 }

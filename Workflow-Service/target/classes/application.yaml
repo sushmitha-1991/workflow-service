@@ -1,3 +1,7 @@
-camunda.bpm.admin-user:
-  id: demo
-  password: demo
+#camunda:
+#  bpm:
+#    rest:
+#      url: http://10.247.128.24/engine-rest
+#    admin-user:
+#      id: demo
+#      password: demo

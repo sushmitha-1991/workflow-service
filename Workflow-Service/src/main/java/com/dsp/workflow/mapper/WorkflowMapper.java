@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import org.camunda.bpm.engine.history.HistoricTaskInstance;
+import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 
 import com.dsp.workflow.dto.TaskHistoryDTO;
 
@@ -28,6 +29,21 @@ public class WorkflowMapper {
 
 		return TaskHistoryDTO.builder().taskId(taskInstance.getId()).historyId(taskInstance.getId())
 				.taskName(taskInstance.getName()).assignee(taskInstance.getAssignee()).startTime(startTimeIst)
-				.endTime(endTimeIst).durationInMillis(taskInstance.getDurationInMillis()).build();
+				.endTime(endTimeIst).build();
 	}
+
+	// New method for HistoricTaskInstanceDto
+	public TaskHistoryDTO mapToTaskHistoryDTO(HistoricTaskInstanceDto taskInstanceDto) {
+		String startTimeIst = (taskInstanceDto.getStartTime() != null)
+				? taskInstanceDto.getStartTime().toInstant().atZone(indiaZone).format(formatter)
+				: null;
+		String endTimeIst = (taskInstanceDto.getEndTime() != null)
+				? taskInstanceDto.getEndTime().toInstant().atZone(indiaZone).format(formatter)
+				: null;
+
+		return TaskHistoryDTO.builder().taskId(taskInstanceDto.getId()).historyId(taskInstanceDto.getId())
+				.taskName(taskInstanceDto.getName()).assignee(taskInstanceDto.getAssignee()).startTime(startTimeIst)
+				.endTime(endTimeIst).build();
+	}
+
 }

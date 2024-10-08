@@ -1,6 +1,7 @@
 package com.dsp.workflow.service.impl;
 
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,13 +10,19 @@ import java.util.stream.Collectors;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.history.HistoricTaskInstance;
-import org.camunda.bpm.engine.history.HistoricTaskInstanceQuery;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
+import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.camunda.bpm.engine.task.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
@@ -36,12 +43,11 @@ import com.dsp.workflow.service.WorkflowService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import spinjar.com.fasterxml.jackson.core.JsonProcessingException;
+import spinjar.com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
-
-	@Value("${camunda.url}")
-	private String camundaUrl;
 
 	@Autowired
 	private RuntimeService runtimeService;
@@ -66,72 +72,206 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	@Override
-	public String startProcessInstance(String workflowId) {
-		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(workflowId);
-		return processInstance.getProcessInstanceId();
-	}
+	@Value("${camunda.bpm.rest.url}")
+	private String camundaRestUrl;
+
+	@Value("${camunda.bpm.admin-user.id}")
+	private String camundaAdminId;
+
+	@Value("${camunda.bpm.admin-user.password}")
+	private String camundaAdminPassword;
+
+	@Autowired
+	private RestTemplate restTemplate;
 
 //	@Override
-//	public void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
-//		// Convert NotesheetDTO to Notesheet entity
-//		Notesheet notesheet = Notesheet.builder().note(notesheetDTO.getNote())
-//				.receiverRoleId(notesheetDTO.getReceiverRoleId()).receiverUserId(notesheetDTO.getReceiverUserId())
-//				.senderRoleId(notesheetDTO.getSenderRoleId()).historyId(taskId) // Assuming the taskId is used as
-//																				// historyId
-//				.applicationInstanceId(notesheetDTO.getApplicationInstanceId())
-//				.actionTaken(notesheetDTO.getActionTaken()).build();
-//		notesheet.setProcessInstanceId(processInstanceId);
+//	public String startProcessInstance(String workflowId) {
+//		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(workflowId);
+//		return processInstance.getProcessInstanceId();
+//	}
+
+//	@Override
+//	public String getTaskIdByProcessInstanceId(String processInstanceId) {
+//		Task task = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
+//		return (task != null) ? task.getId() : null;
+//	}
+
+	@Override
+	public String startProcessInstance(String workflowId) {
+		String url = camundaRestUrl + "/process-definition/key/" + workflowId + "/start";
+		Map<String, Object> requestBody = new HashMap<>();
+
+		// Specify the type of response expected
+		ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url, HttpMethod.POST,
+				new HttpEntity<>(requestBody), new ParameterizedTypeReference<Map<String, Object>>() {
+				});
+
+		Map<String, Object> responseBody = response.getBody();
+		return responseBody != null ? responseBody.get("id").toString() : null;
+	}
+
+	@Override
+	public String getTaskIdByProcessInstanceId(String processInstanceId) {
+		String url = camundaRestUrl + "/task?processInstanceId=" + processInstanceId;
+		ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(url, HttpMethod.GET, null,
+				new ParameterizedTypeReference<List<Map<String, Object>>>() {
+				});
+		List<Map<String, Object>> tasks = response.getBody();
+		return (tasks != null && !tasks.isEmpty()) ? tasks.get(0).get("id").toString() : null;
+	}
+
+//	@Transactional
+//	public String completeTask(String taskId, Map<String, Object> variables) {
+//		// Fetch the task
+//		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+//		if (task != null) {
+//			// Complete the task
+//			taskService.complete(taskId, variables);
 //
-//		// Save the Notesheet entity to the database
-//		notesheetRepository.save(notesheet);
+//			// Create a new Notesheet entity using the mapper
+//			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+//			notesheetRepository.save(notesheet);
+//			// Create and save ApplicationAuthority entity using the mapper
+//			ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
+//					notesheet.getApplicationHistoryId());
+//			applicationAuthorityRepository.save(applicationAuthority);
+//
+//			// Create and save ApplicationHistory entity using the mapper
+//			ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
+//			applicationHistoryRepository.save(applicationHistory);
+//
+//			// Fetch the next task ID if available
+//			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
+//			String nextTaskId = (nextTask != null) ? nextTask.getId() : null;
+//
+//			return nextTaskId;
+//		} else {
+//			return null;
+//		}
 //	}
 
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables) {
-		// Fetch the task
-		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-		if (task != null) {
-			// Complete the task
-			taskService.complete(taskId, variables);
+		try {
+			// Construct the complete task API URL
+			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 
-			// Create a new Notesheet entity using the mapper
-			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
-			notesheetRepository.save(notesheet);
-			// Create and save ApplicationAuthority entity using the mapper
-			ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
-					notesheet.getApplicationHistoryId());
-			applicationAuthorityRepository.save(applicationAuthority);
+			// Create headers for basic authentication
+			HttpHeaders headers = new HttpHeaders();
+			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
+			headers.setContentType(MediaType.APPLICATION_JSON);
 
-			// Create and save ApplicationHistory entity using the mapper
-			ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
-			applicationHistoryRepository.save(applicationHistory);
+			// Convert variables to a format expected by Camunda REST API
+			Map<String, Object> requestBody = new HashMap<>();
+			requestBody.put("variables", formatVariablesForCamunda(variables));
 
-			// Fetch the next task ID if available
-			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
-			String nextTaskId = (nextTask != null) ? nextTask.getId() : null;
+			// Create an HttpEntity with headers and body
+			HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-			return nextTaskId;
-		} else {
-			return null;
+			// Execute the REST API call to complete the task
+			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+			// Check if the task was successfully completed
+			if (response.getStatusCode().is2xxSuccessful()) {
+				// Create and save Notesheet entity
+				Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+				notesheetRepository.save(notesheet);
+
+				// Create and save ApplicationAuthority entity
+				ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
+						notesheet.getApplicationHistoryId());
+				applicationAuthorityRepository.save(applicationAuthority);
+
+				// Create and save ApplicationHistory entity
+				ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
+				applicationHistoryRepository.save(applicationHistory);
+
+				// Obtain the process instance ID from the variables
+				String processInstanceId = (String) variables.get("processInstanceId");
+				if (processInstanceId == null) {
+					throw new RuntimeException("Process instance ID is required but not provided.");
+				}
+
+				// Fetch the next task ID using the process instance ID
+				String nextTaskId = fetchNextTaskId(processInstanceId);
+				return nextTaskId; // Return the next task ID instead of the current task ID
+			} else {
+				throw new RuntimeException("Failed to complete task with Camunda API");
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
 
-	public List<TaskResponseDTO> getPendingTasksByReceiverUserId(Integer receiverUserId) {
-		// Query Camunda for all tasks
-		List<Task> tasks = taskService.createTaskQuery().list();
+	// New method to fetch the next task ID using the process instance ID
+	private String fetchNextTaskId(String processInstanceId) {
+		// Construct the query URL for tasks by process instance ID
+		String queryUrl = camundaRestUrl + "/task?processInstanceId=" + processInstanceId;
 
-		// Filter tasks by senderRoleId
-		List<TaskResponseDTO> filteredTasks = tasks.stream().filter(task -> {
-			// Get the senderRoleId variable for the current task
-			Integer taskReceiverUserId = (Integer) runtimeService.getVariable(task.getProcessInstanceId(),
-					"receiverUserId");
-			// Return true if the senderRoleId matches
-			return receiverUserId.equals(taskReceiverUserId);
-		}).map(task -> new TaskResponseDTO(task.getId(), task.getName(), task.getAssignee(), task.getCreateTime()))
-				.collect(Collectors.toList());
+		// Execute the REST API call to get tasks
+		ResponseEntity<List<TaskDto>> tasksResponse = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
+				new ParameterizedTypeReference<List<TaskDto>>() {
+				});
 
-		return filteredTasks;
+		List<TaskDto> tasks = tasksResponse.getBody();
+		if (tasks != null && !tasks.isEmpty()) {
+			// Return the ID of the first task in the list, which is considered the next
+			// task
+			return tasks.get(0).getId();
+		}
+		return null;
+	}
+
+	// Helper method to format the variables as Camunda expects
+	private Map<String, Object> formatVariablesForCamunda(Map<String, Object> variables) {
+		Map<String, Object> camundaVariables = new HashMap<>();
+
+		variables.forEach((key, value) -> {
+			if (value instanceof Map) {
+				ObjectMapper objectMapper = new ObjectMapper();
+				try {
+					// Serialize the map to a JSON string
+					String jsonValue = objectMapper.writeValueAsString(value);
+					Map<String, Object> variableMap = new HashMap<>();
+					variableMap.put("value", jsonValue);
+					variableMap.put("type", "Json");
+					camundaVariables.put(key, variableMap);
+				} catch (JsonProcessingException e) {
+					throw new RuntimeException("Error serializing map to JSON: " + key, e);
+				}
+			} else {
+				Map<String, Object> variableMap = new HashMap<>();
+				variableMap.put("value", value);
+				variableMap.put("type", value.getClass().getSimpleName());
+				camundaVariables.put(key, variableMap);
+			}
+		});
+
+		return camundaVariables;
+	}
+
+	// Service Method Implementation
+	public List<TaskResponseDTO> getTasksByReceiverUserId(Integer receiverUserId) {
+		try {
+			String queryUrl = camundaRestUrl + "/task?processVariableName=receiverUserId&processVariableValue="
+					+ receiverUserId;
+			ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
+					new ParameterizedTypeReference<List<TaskDto>>() {
+					});
+
+			// Check for a successful response
+			if (response.getStatusCode().is2xxSuccessful()) {
+				List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() : Collections.emptyList();
+
+				// Map TaskDto to TaskResponseDTO
+				return taskDtos.stream().map(taskDto -> new TaskResponseDTO(taskDto.getId(), taskDto.getName()))
+						.collect(Collectors.toList());
+			} else {
+				throw new RuntimeException("Failed to retrieve tasks: " + response.getStatusCode());
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to retrieve tasks: " + e.getMessage(), e);
+		}
 	}
 
 //	private void logTaskHistory(String taskId, String processInstanceId, Map<String, Object> variables,
@@ -152,27 +292,45 @@ public class WorkflowServiceImpl implements WorkflowService {
 //		taskHistoryRepository.save(taskHistory);
 //	}
 
-	@Override
-	public String getTaskIdByProcessInstanceId(String processInstanceId) {
-		Task task = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
-		return (task != null) ? task.getId() : null;
-	}
-
-	public List<HistoricTaskInstance> getHistoricTasksByTaskId(String taskId) {
-		HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery();
-
-		if (taskId != null) {
-			query.taskId(taskId);
-		}
-
-		return query.list();
-	}
+//	public List<HistoricTaskInstance> getHistoricTasksByTaskId(String taskId) {
+//		HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery();
+//
+//		if (taskId != null) {
+//			query.taskId(taskId);
+//		}
+//
+//		return query.list();
+//	}
 
 	public List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId) {
-		List<HistoricTaskInstance> historicTaskInstances = historyService.createHistoricTaskInstanceQuery()
-				.processInstanceId(processInstanceId).orderByHistoricTaskInstanceEndTime().asc().list();
+		try {
+			// Construct the URL to fetch historic tasks for the specified process instance
+			// ID
+			String url = camundaRestUrl + "/history/task?processInstanceId=" + processInstanceId;
 
-		return historicTaskInstances.stream().map(workflowMapper::mapToTaskHistoryDTO).collect(Collectors.toList());
+			// Create headers for basic authentication
+			HttpHeaders headers = new HttpHeaders();
+			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
+			headers.setContentType(MediaType.APPLICATION_JSON);
+
+			// Create an HttpEntity with headers
+			HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+			// Make the GET request to Camunda's API
+			ResponseEntity<List<HistoricTaskInstanceDto>> response = restTemplate.exchange(url, HttpMethod.GET, entity,
+					new ParameterizedTypeReference<List<HistoricTaskInstanceDto>>() {
+					});
+
+			// Convert the response body to List<TaskHistoryDTO>
+			if (response.getBody() != null) {
+				return response.getBody().stream().map(workflowMapper::mapToTaskHistoryDTO)
+						.collect(Collectors.toList());
+			} else {
+				return Collections.emptyList(); // Return an empty list if no tasks are found
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to retrieve task history: " + e.getMessage(), e);
+		}
 	}
 
 	@Override

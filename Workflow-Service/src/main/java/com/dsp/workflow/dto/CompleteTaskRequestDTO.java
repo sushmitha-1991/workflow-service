@@ -21,10 +21,12 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	@NotEmpty
 	String taskId;
 
+	String processInstanceId;
+
 	private Map<String, Object> additional_details;
-	
+
 	private Long officeId;
-    private String application_no;
+	private String application_no;
 
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:

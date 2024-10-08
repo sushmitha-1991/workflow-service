@@ -63,10 +63,8 @@ public class Utils {
 
 			if (result instanceof Integer) {
 				// Convert Integer to Long
-				System.out.println("########### 1");
 				return ((Integer) result).longValue();
 			} else if (result instanceof Long) {
-				System.out.println("########### 2");
 
 				// If it's already Long, return it directly
 				return (Long) result;
