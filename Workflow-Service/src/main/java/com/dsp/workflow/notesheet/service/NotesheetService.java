@@ -6,7 +6,7 @@ import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 
 public interface NotesheetService {
 
-	NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO);
+	NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO, Long senderRoleId);
 
 	NotesheetDTO getNotesheetById(Long id);
 

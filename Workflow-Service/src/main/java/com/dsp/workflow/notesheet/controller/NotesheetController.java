@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.service.NotesheetService;
 import com.dsp.workflow.response.GenericResponse;
+import com.dsp.workflow.util.Utils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,6 +33,9 @@ public class NotesheetController {
 	@Autowired
 	private NotesheetService notesheetService;
 
+	@Autowired
+	private Utils utils;
+
 	@PostMapping("/create")
 	@Operation(summary = "Create a new notesheet")
 	@ApiResponses(value = { @ApiResponse(responseCode = "201", description = "Notesheet created successfully"),
@@ -39,7 +43,8 @@ public class NotesheetController {
 			@ApiResponse(responseCode = "500", description = "Internal server error") })
 	public ResponseEntity<GenericResponse<NotesheetDTO>> createNotesheet(
 			@Valid @RequestBody NotesheetDTO notesheetDTO) {
-		NotesheetDTO createdNotesheet = notesheetService.createNotesheet(notesheetDTO);
+		Long senderRoleId = utils.getRoleIdByUserId();
+		NotesheetDTO createdNotesheet = notesheetService.createNotesheet(notesheetDTO, senderRoleId);
 		GenericResponse<NotesheetDTO> response = new GenericResponse<>(true, "Notesheet created successfully",
 				createdNotesheet, HttpStatus.CREATED.value());
 		return new ResponseEntity<>(response, HttpStatus.CREATED);

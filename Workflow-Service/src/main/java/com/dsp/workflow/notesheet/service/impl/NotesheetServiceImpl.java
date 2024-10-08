@@ -18,12 +18,11 @@ public class NotesheetServiceImpl implements NotesheetService {
 	private NotesheetRepository notesheetRepository;
 
 	@Override
-	public NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO) {
+	public NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO, Long senderRoleId) {
 		// Build the Notesheet entity from the DTO
 		Notesheet notesheet = Notesheet.builder().note(notesheetDTO.getNote())
 				.receiverRoleId(notesheetDTO.getReceiverRoleId()).receiverUserId(notesheetDTO.getReceiverUserId())
-				.senderRoleId(notesheetDTO.getSenderRoleId())
-				.applicationHistoryId(notesheetDTO.getApplicationhistoryId())
+				.senderRoleId(senderRoleId).applicationHistoryId(notesheetDTO.getApplicationhistoryId())
 				.applicationInstanceId(notesheetDTO.getApplicationInstanceId())
 				.actionTaken(notesheetDTO.getActionTaken()).additionalDetails(notesheetDTO.getAdditionalDetails()) // Proper
 																													// mapping
