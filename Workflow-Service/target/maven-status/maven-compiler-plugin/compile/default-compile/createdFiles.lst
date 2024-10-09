@@ -25,6 +25,7 @@ com\dsp\workflow\dto\UserDetailsDTO.class
 com\dsp\workflow\dto\CompleteTaskRequestDTO.class
 com\dsp\workflow\dto\TaskResponseDTO$TaskResponseDTOBuilder.class
 com\dsp\workflow\config\SecurityConfig.class
+com\dsp\workflow\service\impl\WorkflowServiceImpl$3.class
 com\dsp\workflow\config\JwtAuthenticationEntryPoint.class
 com\dsp\workflow\notesheet\mapper\ApplicationAuthorityMapper.class
 com\dsp\workflow\repository\ApplicationHistoryRepository.class
@@ -40,6 +41,7 @@ com\dsp\workflow\notesheet\repository\NotesheetRepository.class
 com\dsp\workflow\repository\ApplicationAuthorityRepository.class
 com\dsp\workflow\util\Utils.class
 com\dsp\workflow\notesheet\mapper\ApplicationHistoryMapper.class
+com\dsp\workflow\service\impl\WorkflowServiceImpl$4.class
 com\dsp\workflow\entity\ApplicationHistory$ApplicationHistoryBuilder.class
 com\dsp\workflow\notesheet\entity\Notesheet$NotesheetBuilder.class
 com\dsp\workflow\forwardingrights\entity\ForwardingRights$ForwardingRightsBuilder.class
@@ -58,6 +60,7 @@ com\dsp\workflow\forwardingrights\dto\ForwardingRightsDTO$ForwardingRightsDTOBui
 com\dsp\workflow\notesheet\mapper\NotesheetMapper.class
 com\dsp\workflow\entity\ApplicationHistory.class
 com\dsp\workflow\dto\TaskRequestDTO.class
+com\dsp\workflow\service\impl\WorkflowServiceImpl$5.class
 com\dsp\workflow\dto\TaskHistoryDTO.class
 com\dsp\workflow\notesheet\dto\NotesheetDTO$NotesheetDTOBuilder.class
 com\dsp\workflow\forwardingrights\entity\ForwardingRights.class

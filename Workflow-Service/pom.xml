@@ -4,6 +4,12 @@
 
 	<modelVersion>4.0.0</modelVersion>
 
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.2.2</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
 	<groupId>com.dsp.workflow</groupId>
 	<artifactId>Workflow-Service</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
@@ -126,11 +132,6 @@
 			<version>0.11.5</version>
 		</dependency>
 		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-api</artifactId>
-			<version>0.11.5</version>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
@@ -144,8 +145,16 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>3.2.2</version>
+				<configuration>
+					<mainClass>com.dsp.workflow.WorkflowApplication</mainClass>
+					<manifestEntries>
+						<Start-Class>com.dsp.workflow.WorkflowApplication</Start-Class>
+						<Main-Class>org.springframework.boot.loader.WarLauncher</Main-Class>
+					</manifestEntries>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
+
 
 </project>
