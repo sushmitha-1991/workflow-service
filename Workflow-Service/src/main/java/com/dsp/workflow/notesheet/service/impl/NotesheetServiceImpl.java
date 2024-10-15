@@ -59,16 +59,19 @@ public class NotesheetServiceImpl implements NotesheetService {
 	}
 
 	@Override
-	public List<NotesheetDTO> getAllNotesheets() {
-		// Fetch all notesheets, map each to NotesheetDTO
-		return notesheetRepository.findAll().stream().map(notesheet -> NotesheetDTO.builder().note(notesheet.getNote())
+	public List<NotesheetDTO> getAllNotesheets(Long applicationInstanceId) {
+		List<Notesheet> notesheets;
+
+		if (applicationInstanceId != null) {
+			notesheets = notesheetRepository.findByApplicationInstanceId(applicationInstanceId);
+		} else {
+			notesheets = notesheetRepository.findAll();
+		}
+
+		return notesheets.stream().map(notesheet -> NotesheetDTO.builder().note(notesheet.getNote())
 				.receiverRoleId(notesheet.getReceiverRoleId()).receiverUserId(notesheet.getReceiverUserId())
-				.senderRoleId(notesheet.getSenderRoleId()).applicationhistoryId(notesheet.getApplicationHistoryId()) // Correct
-																														// field
-																														// name
+				.senderRoleId(notesheet.getSenderRoleId()).applicationhistoryId(notesheet.getApplicationHistoryId())
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
-				// .additionalDetails(notesheet.getAdditionalDetails()) // Include additional
-				// details if needed
 				.build()).collect(Collectors.toList());
 	}
 

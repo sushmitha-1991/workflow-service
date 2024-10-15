@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -64,14 +65,19 @@ public class NotesheetController {
 
 	@GetMapping("/getAll")
 	@Operation(summary = "Get all notesheets")
-	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
-	public ResponseEntity<GenericResponse<List<NotesheetDTO>>> getAllNotesheets() {
-		List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets();
-		GenericResponse<List<NotesheetDTO>> response = new GenericResponse<>(true, "Notesheets fetched successfully",
-				notesheets, HttpStatus.OK.value());
-		return new ResponseEntity<>(response, HttpStatus.OK);
+	@ApiResponses(value = { 
+	    @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
+	    @ApiResponse(responseCode = "500", description = "Internal server error") 
+	})
+	public ResponseEntity<GenericResponse<List<NotesheetDTO>>> getAllNotesheets(
+	        @RequestParam(name = "applicationInstanceId", required = false) Long applicationInstanceId) {
+
+	    List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets(applicationInstanceId);
+	    GenericResponse<List<NotesheetDTO>> response = new GenericResponse<>(true, "Notesheets fetched successfully",
+	            notesheets, HttpStatus.OK.value());
+	    return new ResponseEntity<>(response, HttpStatus.OK);
 	}
+
 
 	@PutMapping("/update/{id}")
 	@Operation(summary = "Update an existing notesheet")

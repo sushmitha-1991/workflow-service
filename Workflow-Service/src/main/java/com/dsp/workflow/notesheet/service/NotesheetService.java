@@ -10,7 +10,7 @@ public interface NotesheetService {
 
 	NotesheetDTO getNotesheetById(Long id);
 
-	List<NotesheetDTO> getAllNotesheets();
+	List<NotesheetDTO> getAllNotesheets(Long applicationInstanceId);
 
 	NotesheetDTO updateNotesheet(Long id, NotesheetDTO notesheetDTO);
 
