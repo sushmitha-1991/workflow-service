@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +19,6 @@ public interface MyUserRepository extends JpaRepository<BaseUser, Long> {
 	BaseUser findByEmail(String email);
 
 	BaseUser findByPhone(String phone);
+	
+	Optional<BaseUser> findById(Long id);
 }

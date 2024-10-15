@@ -10,6 +10,7 @@ import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.notesheet.service.NotesheetService;
+import com.dsp.workflow.repository.MyUserRepository;
 
 @Service
 public class NotesheetServiceImpl implements NotesheetService {
@@ -17,12 +18,15 @@ public class NotesheetServiceImpl implements NotesheetService {
 	@Autowired
 	private NotesheetRepository notesheetRepository;
 
+	@Autowired
+	private MyUserRepository baseUserRepository;
+
 	@Override
 	public NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO, Long senderRoleId) {
 		// Build the Notesheet entity from the DTO
 		Notesheet notesheet = Notesheet.builder().note(notesheetDTO.getNote())
 				.receiverRoleId(notesheetDTO.getReceiverRoleId()).receiverUserId(notesheetDTO.getReceiverUserId())
-				.senderRoleId(senderRoleId).applicationHistoryId(notesheetDTO.getApplicationhistoryId())
+				.senderRoleId(senderRoleId).applicationHistoryId(notesheetDTO.getApplicationHistoryId())
 				.applicationInstanceId(notesheetDTO.getApplicationInstanceId())
 				.actionTaken(notesheetDTO.getActionTaken()).additionalDetails(notesheetDTO.getAdditionalDetails()) // Proper
 																													// mapping
@@ -36,7 +40,7 @@ public class NotesheetServiceImpl implements NotesheetService {
 		// Return the saved entity mapped back to the DTO
 		return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
 				.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-				.applicationhistoryId(notesheet.getApplicationHistoryId())
+				.applicationHistoryId(notesheet.getApplicationHistoryId())
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
 				.additionalDetails(notesheet.getAdditionalDetails()) // Map back the new field
 				.build();
@@ -51,7 +55,7 @@ public class NotesheetServiceImpl implements NotesheetService {
 		// Return a NotesheetDTO built from the Notesheet entity
 		return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
 				.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-				.applicationhistoryId(notesheet.getApplicationHistoryId()) // Use the correct field name
+				.applicationHistoryId(notesheet.getApplicationHistoryId()) // Use the correct field name
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
 				// .additionalDetails(notesheet.getAdditionalDetails()) // Include additional
 				// details if needed
@@ -68,11 +72,25 @@ public class NotesheetServiceImpl implements NotesheetService {
 			notesheets = notesheetRepository.findAll();
 		}
 
-		return notesheets.stream().map(notesheet -> NotesheetDTO.builder().note(notesheet.getNote())
-				.receiverRoleId(notesheet.getReceiverRoleId()).receiverUserId(notesheet.getReceiverUserId())
-				.senderRoleId(notesheet.getSenderRoleId()).applicationhistoryId(notesheet.getApplicationHistoryId())
-				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
-				.build()).collect(Collectors.toList());
+		return notesheets.stream().map(notesheet -> {
+			// Fetch the user's full name by createdBy ID
+			String createdByName = baseUserRepository.findById(notesheet.getCreatedBy())
+					.map(user -> user.getFirstName() + " " + user.getLastName()).orElse("Unknown");
+
+			// Fetch the role name using the createdBy user ID
+			String roleName = notesheetRepository.findRoleNameByUserId(notesheet.getCreatedBy());
+
+			// Map to NotesheetDTO
+			return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
+					.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
+					.applicationHistoryId(notesheet.getApplicationHistoryId())
+					.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
+					.additionalDetails(notesheet.getAdditionalDetails()).createdByName(createdByName) // Set the
+																										// combined name
+																										// here
+					.roleName(roleName) // Set the role name here
+					.createdAt(notesheet.getCreatedAt()).build();
+		}).collect(Collectors.toList());
 	}
 
 	@Override
@@ -86,7 +104,7 @@ public class NotesheetServiceImpl implements NotesheetService {
 		notesheet.setReceiverRoleId(notesheetDTO.getReceiverRoleId());
 		notesheet.setReceiverUserId(notesheetDTO.getReceiverUserId());
 		notesheet.setSenderRoleId(notesheetDTO.getSenderRoleId());
-		notesheet.setApplicationHistoryId(notesheetDTO.getApplicationhistoryId()); // Correct field name
+		notesheet.setApplicationHistoryId(notesheetDTO.getApplicationHistoryId()); // Correct field name
 		notesheet.setApplicationInstanceId(notesheetDTO.getApplicationInstanceId());
 		notesheet.setActionTaken(notesheetDTO.getActionTaken());
 
@@ -96,7 +114,7 @@ public class NotesheetServiceImpl implements NotesheetService {
 		// Return the updated entity as a DTO
 		return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
 				.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-				.applicationhistoryId(notesheet.getApplicationHistoryId()) // Correct field name
+				.applicationHistoryId(notesheet.getApplicationHistoryId()) // Correct field name
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
 				// .additionalDetails(notesheet.getAdditionalDetails()) // Include additional
 				// details if needed
