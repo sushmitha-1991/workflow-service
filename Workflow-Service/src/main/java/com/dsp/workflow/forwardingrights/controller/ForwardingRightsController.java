@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -71,18 +72,13 @@ public class ForwardingRightsController {
 	}
 
 	@GetMapping("/user-details")
-	public ResponseEntity<List<Map<String, Object>>> getUserDetails(
+	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getUserDetails(
 			@RequestParam(name = "applicationId") Long applicationId) {
-		// Fetch the sender's role ID using the utility function
 		Long senderRoleId = utils.getRoleIdByUserId();
-		System.out.println("Sender Role ID: " + senderRoleId);
-
-		// Call the service to get the list of user details
-		List<Map<String, Object>> userDetails = (List<Map<String, Object>>) forwardingRightsService
-				.getUserDetails(applicationId, senderRoleId);
-
-		// Return the user details as the response
-		return ResponseEntity.ok(userDetails);
+		List<Map<String, Object>> userDetails = forwardingRightsService.getUserDetails(applicationId, senderRoleId);
+		GenericResponse<List<Map<String, Object>>> response = new GenericResponse<>(true,
+				"User details fetched successfully", userDetails, HttpStatus.OK.value());
+		return ResponseEntity.ok(response);
 	}
 
 }

@@ -251,7 +251,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	// Service Method Implementation
-	public List<TaskResponseDTO> getTasksByReceiverUserId(Integer receiverUserId) {
+	public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
 		try {
 			String queryUrl = camundaRestUrl + "/task?processVariableName=receiverUserId&processVariableValue="
 					+ receiverUserId;

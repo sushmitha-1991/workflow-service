@@ -66,6 +66,6 @@ public interface WorkflowService {
 	 * @param receiverUserId
 	 * @return
 	 */
-	List<TaskResponseDTO> getTasksByReceiverUserId(Integer receiverUserId);
+	List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId);
 
 }

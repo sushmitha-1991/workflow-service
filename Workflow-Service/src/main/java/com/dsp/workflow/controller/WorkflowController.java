@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.bpm.engine.history.HistoricTaskInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,19 +21,22 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
-import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
-import com.dsp.workflow.dto.TaskIdRequestDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/workflow")
+@Tag(name = "Workflow APIs", description = "APIs related to Camunda Workflow Engine management")
 public class WorkflowController {
 
 	@Autowired
@@ -43,7 +45,10 @@ public class WorkflowController {
 	@Autowired
 	private Utils utils;
 
-	/** Start the Workflow Engine **/
+	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid request data"),
+			@ApiResponse(responseCode = "500", description = "Failed to start workflow due to internal error") })
 	@PostMapping("/start/{workflowId}")
 	public GenericResponse<Map<String, String>> startWorkflow(@PathVariable("workflowId") String workflowId,
 			@RequestBody NotesheetDTO notesheetDTO) {
@@ -51,10 +56,9 @@ public class WorkflowController {
 		String processInstanceId = workflowService.startProcessInstance(workflowId);
 		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
 
-		// Save the notesheet and application instance details
-		workflowService.insertApplicationInstance(notesheetDTO, processInstanceId, taskId, senderRoleId);
+		// workflowService.insertApplicationInstance(notesheetDTO, processInstanceId,
+		// taskId, senderRoleId);
 
-		// Prepare response
 		Map<String, String> responseData = new HashMap<>();
 		responseData.put("processInstanceId", processInstanceId);
 		responseData.put("taskId", taskId);
@@ -62,23 +66,19 @@ public class WorkflowController {
 		return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
 	}
 
-	/** Complete the assigned tasks **/
+	@Operation(summary = "Complete Assigned Task", description = "Completes a specific task in the workflow with the provided task details.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task completed successfully"),
+			@ApiResponse(responseCode = "400", description = "Failed to complete task due to invalid data"),
+			@ApiResponse(responseCode = "500", description = "Error completing task") })
 	@PostMapping("/completeTask")
 	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
-
 		String taskId = completeTaskRequestDTO.getTaskId();
-
-		// Create a map of variables to be passed
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("processInstanceId", completeTaskRequestDTO.getProcessInstanceId());
 		variables.put("note", completeTaskRequestDTO.getNote());
 		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
 		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
-
-		// Use the Utils method to fetch the senderRoleId
-		Long senderRoleId = utils.getRoleIdByUserId();
-		variables.put("senderRoleId", senderRoleId); // Set senderRoleId here
-
+		variables.put("senderRoleId", utils.getRoleIdByUserId());
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
@@ -88,7 +88,6 @@ public class WorkflowController {
 		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
 
-		// Complete the task using the workflow service
 		String newTaskId = workflowService.completeTask(taskId, variables);
 
 		if (newTaskId != null) {
@@ -98,14 +97,19 @@ public class WorkflowController {
 		}
 	}
 
-	/*Get Pending task list using Receiver User ID*/
+	@Operation(summary = "Get Pending Tasks", description = "Retrieves a list of pending tasks for a given receiver user ID.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Pending tasks retrieved successfully"),
+			@ApiResponse(responseCode = "404", description = "No pending tasks found") })
 	@GetMapping("/pending")
-	public ResponseEntity<List<TaskResponseDTO>> getPendingTasks(
-			@RequestParam("receiverUserId") Integer receiverUserId) {
+	public ResponseEntity<List<TaskResponseDTO>> getPendingTasks() {
+		Long receiverUserId = utils.getUserIdFromAuthentication();
 		List<TaskResponseDTO> pendingTasks = workflowService.getTasksByReceiverUserId(receiverUserId);
 		return ResponseEntity.ok(pendingTasks);
 	}
 
+	@Operation(summary = "Get Task History by Process Instance ID", description = "Fetches all task history associated with a given process instance ID.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Tasks fetched successfully"),
+			@ApiResponse(responseCode = "404", description = "No tasks found for the given process instance") })
 	@GetMapping("/process-instance/{processInstanceId}")
 	public GenericResponse<List<TaskHistoryDTO>> getTasksByProcessInstanceId(
 			@PathVariable("processInstanceId") String processInstanceId) {
@@ -116,23 +120,6 @@ public class WorkflowController {
 		} else {
 			return new GenericResponse<>(false, "No tasks found for the given process instance", null,
 					HttpStatus.NOT_FOUND.value());
-		}
-	}
-
-	@PostMapping("/publish")
-	public ResponseEntity<GenericResponse<String>> publishTask(@Valid @RequestBody PublishRequestDTO requestDTO) {
-		try {
-			boolean isApproved = workflowService.isDocumentApprovedForPublishing(requestDTO.getTaskId());
-			if (!isApproved) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new GenericResponse<>(false,
-						"Document is not approved for publishing", null, HttpStatus.BAD_REQUEST.value()));
-			}
-			String result = workflowService.publishDocument(requestDTO);
-			return ResponseEntity
-					.ok(new GenericResponse<>(true, "Document published successfully", result, HttpStatus.OK.value()));
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new GenericResponse<>(false,
-					"An error occurred while publishing the document", null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
 		}
 	}
 

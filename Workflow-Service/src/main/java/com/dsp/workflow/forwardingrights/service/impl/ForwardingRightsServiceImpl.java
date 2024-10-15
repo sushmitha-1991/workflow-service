@@ -90,29 +90,34 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 	 * Fetches user details based on applicationId and senderRoleId.
 	 */
 	public List<Map<String, Object>> getUserDetails(Long applicationId, Long senderRoleId) {
-		ForwardingRights forwardingRights = repository.findByApplicationIdAndSenderRoleId(applicationId, senderRoleId)
-				.orElseThrow(() -> new UserNotFoundException("ForwardingRights not found"));
-
-		Integer roleId = forwardingRights.getSenderRoleId();
-
-		List<Object[]> resultList = repository.findUserDetailsByRoleId(roleId);
-		if (resultList.isEmpty()) {
-			throw new UserNotFoundException("No user details found for the given role");
+		List<ForwardingRights> forwardingRightsList = repository.findByApplicationIdAndSenderRoleId(applicationId,
+				senderRoleId);
+		if (forwardingRightsList.isEmpty()) {
+			throw new UserNotFoundException("ForwardingRights not found");
 		}
 
+		// Process each ForwardingRights record
 		List<Map<String, Object>> usersDetailsList = new ArrayList<>();
-		for (Object[] userResult : resultList) {
-			Map<String, Object> userDetails = new HashMap<>();
-			userDetails.put("firstName", userResult[0]);
-			userDetails.put("middleName", userResult[1]);
-			userDetails.put("lastName", userResult[2]);
-			userDetails.put("email", userResult[3]);
-			userDetails.put("officeId", userResult[4]);
-			userDetails.put("officeName", userResult[5]);
-			userDetails.put("roleName", userResult[6]);
+		for (ForwardingRights forwardingRights : forwardingRightsList) {
+			Integer roleId = forwardingRights.getReceiverRoleId();
+			List<Object[]> resultList = repository.findUserDetailsByRoleId(roleId);
+			if (resultList.isEmpty()) {
+				throw new UserNotFoundException("No user details found for the given role");
+			}
 
-			usersDetailsList.add(userDetails);
+			for (Object[] userResult : resultList) {
+				Map<String, Object> userDetails = new HashMap<>();
+				userDetails.put("firstName", userResult[0]);
+				userDetails.put("middleName", userResult[1]);
+				userDetails.put("lastName", userResult[2]);
+				userDetails.put("email", userResult[3]);
+				userDetails.put("officeId", userResult[4]);
+				userDetails.put("office_name", userResult[5]);
+				userDetails.put("roleName", userResult[6]);
+				usersDetailsList.add(userDetails);
+			}
 		}
 		return usersDetailsList;
 	}
+
 }
