@@ -107,13 +107,15 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 
 			for (Object[] userResult : resultList) {
 				Map<String, Object> userDetails = new HashMap<>();
-				userDetails.put("firstName", userResult[0]);
-				userDetails.put("middleName", userResult[1]);
-				userDetails.put("lastName", userResult[2]);
-				userDetails.put("email", userResult[3]);
-				userDetails.put("officeId", userResult[4]);
-				userDetails.put("office_name", userResult[5]);
-				userDetails.put("roleName", userResult[6]);
+				userDetails.put("userId", userResult[0]);
+				userDetails.put("firstName", userResult[1]);
+				userDetails.put("middleName", userResult[2]);
+				userDetails.put("lastName", userResult[3]);
+				userDetails.put("email", userResult[4]);
+				userDetails.put("officeId", userResult[5]);
+				userDetails.put("office_name", userResult[6]);
+				userDetails.put("roleId", userResult[7]);
+				userDetails.put("roleName", userResult[8]);
 				usersDetailsList.add(userDetails);
 			}
 		}

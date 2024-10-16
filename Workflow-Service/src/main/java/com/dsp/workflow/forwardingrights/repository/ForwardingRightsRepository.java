@@ -29,7 +29,7 @@ public interface ForwardingRightsRepository extends JpaRepository<ForwardingRigh
 	 * @return List of user details (firstName, middleName, lastName, email,
 	 *         officeId)
 	 */
-	@Query(value = "SELECT u.first_name, u.middle_name, u.last_name, u.email, ur.office_id, of.office_name, ar.role_name "
+	@Query(value = "SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, ur.office_id, of.office_name, ar.id, ar.role_name "
 			+ "FROM authentication.base_user u " 
 			+ "JOIN authentication.user_roles ur ON u.id = ur.user_id "
 			+ "LEFT JOIN authentication.roles ar ON ur.role_id = ar.id " 
