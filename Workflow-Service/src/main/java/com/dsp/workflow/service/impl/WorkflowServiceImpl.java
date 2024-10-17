@@ -542,7 +542,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Update fields
 			applicationInstance.setProcessInstanceId(processInstanceId);
 			applicationInstance.setTaskId(taskId);
-			applicationInstance.setCurrentStatus("Initiated"); // Hardcoding to "Initiated"
+			applicationInstance.setCurrentStatus("In Progress"); // Hardcoding to "Initiated"
 
 			// Save the updated instance
 			applicationInstanceRepository.save(applicationInstance);
