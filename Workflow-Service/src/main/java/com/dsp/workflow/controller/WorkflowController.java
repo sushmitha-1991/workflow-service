@@ -99,11 +99,17 @@ public class WorkflowController {
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Pending tasks retrieved successfully"),
 			@ApiResponse(responseCode = "404", description = "No pending tasks found") })
 	@GetMapping("/pending")
-	public ResponseEntity<List<TaskResponseDTO>> getPendingTasks() {
+	public ResponseEntity<GenericResponse<List<TaskResponseDTO>>> getPendingTasks() {
 		Long receiverUserId = utils.getUserIdFromAuthentication();
 		System.out.println("### receiverUserId - " + receiverUserId);
+
 		List<TaskResponseDTO> pendingTasks = workflowService.getTasksByReceiverUserId(receiverUserId);
-		return ResponseEntity.ok(pendingTasks);
+
+		// Constructing the response using GenericResponse
+		GenericResponse<List<TaskResponseDTO>> response = new GenericResponse<>(true,
+				"Pending tasks retrieved successfully", pendingTasks, HttpStatus.OK.value());
+
+		return ResponseEntity.ok(response);
 	}
 
 	@Operation(summary = "Get Task History by Process Instance ID", description = "Fetches all task history associated with a given process instance ID.")
