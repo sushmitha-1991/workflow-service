@@ -325,6 +325,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
 					new ParameterizedTypeReference<List<TaskDto>>() {
 					});
+
 			System.out.println("##### response - " + response);
 
 			if (response.getStatusCode().is2xxSuccessful()) {
@@ -358,6 +359,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							System.out.println("#### receiverUserId - " + receiverUserId);
 							System.out.println("#### applicationInstanceId - " + applicationInstanceId);
 
+							// Fetch processInstanceId
+							String processInstanceId = taskDto.getProcessInstanceId(); // Assuming TaskDto has this
+																						// property
+							System.out.println("#### processInstanceId - " + processInstanceId);
+
 							// Step 4: Fetch task details from the repository
 							List<Object[]> taskDetails = taskRepository
 									.findTasksWithDetailsByReceiverUserIdAndApplicationInstanceId(receiverUserId,
@@ -372,8 +378,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 										.documentName((String) details[1]).date((Date) details[2])
 										.status((String) details[3]).pendingAt((String) details[4])
 										.lsNo((String) details[5]).ssNo((String) details[6]).taskId(taskDto.getId())
-										.taskName(taskDto.getName()).applicationInstanceId(applicationInstanceId)
-										.build();
+										.taskName(taskDto.getName()).processInstanceId(processInstanceId) // Add
+																											// processInstanceId
+										.applicationInstanceId(applicationInstanceId).build();
 								System.out.println("### taskResponseDTO - " + taskResponseDTO);
 								filteredTasks.add(taskResponseDTO);
 							} else {

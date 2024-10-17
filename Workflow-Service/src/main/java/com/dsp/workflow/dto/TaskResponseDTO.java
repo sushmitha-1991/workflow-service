@@ -23,4 +23,5 @@ public class TaskResponseDTO {
 	private String taskId; // Added to store the task ID
 	private String taskName; // Added to store the task name
 	private Long applicationInstanceId; // Keep this for additional details
+	private String processInstanceId;
 }
