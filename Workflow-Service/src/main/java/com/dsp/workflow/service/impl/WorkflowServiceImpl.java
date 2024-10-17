@@ -377,9 +377,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 								TaskResponseDTO taskResponseDTO = TaskResponseDTO.builder().refNo((String) details[0])
 										.documentName((String) details[1]).date((Date) details[2])
 										.status((String) details[3]).pendingAt((String) details[4])
-										.lsNo((String) details[5]).ssNo((String) details[6]).taskId(taskDto.getId())
-										.taskName(taskDto.getName()).processInstanceId(processInstanceId) // Add
-																											// processInstanceId
+										.lsNo((String) details[5]).ssNo((String) details[6]).summonId((Long) details[7])
+										.taskId(taskDto.getId()).taskName(taskDto.getName())
+										.processInstanceId(processInstanceId) // Add
+																				// processInstanceId
 										.applicationInstanceId(applicationInstanceId).build();
 								System.out.println("### taskResponseDTO - " + taskResponseDTO);
 								filteredTasks.add(taskResponseDTO);

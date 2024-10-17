@@ -18,7 +18,8 @@ public interface TaskRepository extends JpaRepository<ApplicationInstance, Long>
 						       ai.current_status AS status,
 						    CONCAT(u.first_name, ' ', u.last_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt,
 						       '18' AS LSNo,
-						       'III' AS SSNo
+						       'III' AS SSNo,
+						       ai.ref_id AS summonId
 						FROM master.application_instance ai
 						JOIN master.applications app ON ai.application_id = app.id
 						JOIN authentication.base_user u ON u.id = :receiverUserId

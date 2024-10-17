@@ -20,6 +20,7 @@ public class TaskResponseDTO {
 	private String pendingAt; // First_name + Last_name from base_user
 	private String lsNo;
 	private String ssNo;
+	private Long summonId;
 	private String taskId; // Added to store the task ID
 	private String taskName; // Added to store the task name
 	private Long applicationInstanceId; // Keep this for additional details
