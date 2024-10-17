@@ -12,14 +12,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.dsp.workflow.response.GenericResponse;
 
 /**
  * 
  */
+@RestControllerAdvice
 public class GlobalExceptionHandler {
-	
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<GenericResponse<String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
 		Map<String, String> errors = new HashMap<>();
@@ -29,14 +31,14 @@ public class GlobalExceptionHandler {
 				HttpStatus.BAD_REQUEST.value());
 		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 	}
-	
+
 	@ExceptionHandler(UserNotFoundException.class)
 	public ResponseEntity<GenericResponse<String>> handleUserNotFoundException(UserNotFoundException ex) {
 		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null,
 				HttpStatus.NOT_FOUND.value());
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
-	
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<GenericResponse<String>> handleIllegalArgumentException(IllegalArgumentException ex) {
 		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null,

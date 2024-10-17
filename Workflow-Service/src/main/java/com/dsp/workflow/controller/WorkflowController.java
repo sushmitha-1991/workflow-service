@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
@@ -56,8 +55,7 @@ public class WorkflowController {
 		String processInstanceId = workflowService.startProcessInstance(workflowId);
 		String taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
 
-		// workflowService.insertApplicationInstance(notesheetDTO, processInstanceId,
-		// taskId, senderRoleId);
+		workflowService.updateApplicationInstance(notesheetDTO, processInstanceId, taskId);
 
 		Map<String, String> responseData = new HashMap<>();
 		responseData.put("processInstanceId", processInstanceId);
@@ -103,6 +101,7 @@ public class WorkflowController {
 	@GetMapping("/pending")
 	public ResponseEntity<List<TaskResponseDTO>> getPendingTasks() {
 		Long receiverUserId = utils.getUserIdFromAuthentication();
+		System.out.println("### receiverUserId - " + receiverUserId);
 		List<TaskResponseDTO> pendingTasks = workflowService.getTasksByReceiverUserId(receiverUserId);
 		return ResponseEntity.ok(pendingTasks);
 	}

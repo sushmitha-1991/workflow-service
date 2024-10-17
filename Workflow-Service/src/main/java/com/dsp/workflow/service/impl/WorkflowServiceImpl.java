@@ -1,13 +1,15 @@
 package com.dsp.workflow.service.impl;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
@@ -22,13 +24,17 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.dto.TaskVariableDto;
 import com.dsp.workflow.entity.ApplicationAuthority;
 import com.dsp.workflow.entity.ApplicationHistory;
+import com.dsp.workflow.entity.ApplicationInstance;
+import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
@@ -38,6 +44,8 @@ import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.repository.ApplicationAuthorityRepository;
 import com.dsp.workflow.repository.ApplicationHistoryRepository;
+import com.dsp.workflow.repository.ApplicationInstanceRepository;
+import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.service.WorkflowService;
 
 import jakarta.persistence.EntityManager;
@@ -59,13 +67,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private NotesheetRepository notesheetRepository;
 
 	@Autowired
-	private HistoryService historyService;
-
-	@Autowired
 	private ApplicationAuthorityRepository applicationAuthorityRepository;
 
 	@Autowired
+	private ApplicationInstanceRepository applicationInstanceRepository;
+
+	@Autowired
 	private ApplicationHistoryRepository applicationHistoryRepository;
+
+	@Autowired
+	private TaskRepository taskRepository;
 
 	private WorkflowMapper workflowMapper = new WorkflowMapper();
 
@@ -250,27 +261,147 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return camundaVariables;
 	}
 
-	// Service Method Implementation
+//	public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
+//		try {
+//			// Step 1: Retrieve tasks filtered by receiverUserId
+//			String queryUrl = camundaRestUrl + "/task?processVariableName=receiverUserId&processVariableValue="
+//					+ receiverUserId;
+//			ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
+//					new ParameterizedTypeReference<List<TaskDto>>() {
+//					});
+//
+//			// Check if tasks were successfully retrieved
+//			if (response.getStatusCode().is2xxSuccessful()) {
+//				List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() : Collections.emptyList();
+//
+//				// Step 2: Filter tasks to include only those where receiverUserId matches
+//				List<TaskResponseDTO> filteredTasks = taskDtos.stream().filter(taskDto -> {
+//					// Retrieve the actual receiverUserId variable for the task
+//					String variableUrl = camundaRestUrl + "/task/" + taskDto.getId() + "/variables/receiverUserId";
+//					ResponseEntity<TaskVariableDto> variableResponse = restTemplate.getForEntity(variableUrl,
+//							TaskVariableDto.class);
+//
+//					// Verify that receiverUserId matches
+//					return variableResponse.getStatusCode().is2xxSuccessful() && variableResponse.getBody() != null
+//							&& receiverUserId.equals(variableResponse.getBody().getValue());
+//				}).map(taskDto -> {
+//					// Step 3: Fetch applicationInstanceId variable if receiverUserId matches
+//					String appInstanceUrl = camundaRestUrl + "/task/" + taskDto.getId()
+//							+ "/variables/applicationInstanceId";
+//					ResponseEntity<TaskVariableDto> appInstanceResponse = restTemplate.getForEntity(appInstanceUrl,
+//							TaskVariableDto.class);
+//
+//					Long applicationInstanceId = null;
+//					if (appInstanceResponse.getStatusCode().is2xxSuccessful()
+//							&& appInstanceResponse.getBody() != null) {
+//						applicationInstanceId = appInstanceResponse.getBody().getValue();
+//					}
+//
+//					return new TaskResponseDTO(taskDto.getId(), taskDto.getName(), applicationInstanceId);
+//				}).collect(Collectors.toList());
+//
+//				// Step 4: Check if any tasks were found; if not, throw a custom exception
+//				if (filteredTasks.isEmpty()) {
+//					throw new ResourceNotFoundException(
+//							"No pending tasks found for the provided receiverUserId: " + receiverUserId);
+//				}
+//
+//				return filteredTasks;
+//			} else {
+//				throw new ResourceNotFoundException("Failed to retrieve tasks: " + response.getStatusCode());
+//			}
+//		} catch (ResourceNotFoundException e) {
+//			throw e; // Preserve custom exception for resource not found
+//		} catch (Exception e) {
+//			throw new RuntimeException("An unexpected error occurred while retrieving tasks: " + e.getMessage(), e);
+//		}
+//	}
+
 	public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
 		try {
+			// Step 1: Retrieve tasks filtered by receiverUserId
 			String queryUrl = camundaRestUrl + "/task?processVariableName=receiverUserId&processVariableValue="
 					+ receiverUserId;
 			ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
 					new ParameterizedTypeReference<List<TaskDto>>() {
 					});
+			System.out.println("##### response - " + response);
 
-			// Check for a successful response
 			if (response.getStatusCode().is2xxSuccessful()) {
 				List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() : Collections.emptyList();
+				List<TaskResponseDTO> filteredTasks = new ArrayList<>();
 
-				// Map TaskDto to TaskResponseDTO
-				return taskDtos.stream().map(taskDto -> new TaskResponseDTO(taskDto.getId(), taskDto.getName()))
-						.collect(Collectors.toList());
+				for (TaskDto taskDto : taskDtos) {
+					String variableUrl = camundaRestUrl + "/task/" + taskDto.getId() + "/variables/receiverUserId";
+					ResponseEntity<TaskVariableDto> variableResponse;
+
+					try {
+						// Attempt to fetch receiverUserId
+						variableResponse = restTemplate.getForEntity(variableUrl, TaskVariableDto.class);
+						System.out.println("#### variableResponse - " + variableResponse);
+
+						if (variableResponse.getStatusCode().is2xxSuccessful() && variableResponse.getBody() != null
+								&& receiverUserId.equals(variableResponse.getBody().getValue())) {
+
+							// Step 3: Fetch applicationInstanceId variable
+							String appInstanceUrl = camundaRestUrl + "/task/" + taskDto.getId()
+									+ "/variables/applicationInstanceId";
+							ResponseEntity<TaskVariableDto> appInstanceResponse = restTemplate
+									.getForEntity(appInstanceUrl, TaskVariableDto.class);
+							System.out.println("#### appInstanceResponse - " + appInstanceResponse);
+
+							Long applicationInstanceId = null;
+							if (appInstanceResponse.getStatusCode().is2xxSuccessful()
+									&& appInstanceResponse.getBody() != null) {
+								applicationInstanceId = appInstanceResponse.getBody().getValue();
+							}
+							System.out.println("#### receiverUserId - " + receiverUserId);
+							System.out.println("#### applicationInstanceId - " + applicationInstanceId);
+
+							// Step 4: Fetch task details from the repository
+							List<Object[]> taskDetails = taskRepository
+									.findTasksWithDetailsByReceiverUserIdAndApplicationInstanceId(receiverUserId,
+											applicationInstanceId);
+							System.out.println("### taskDetails - " + taskDetails);
+
+							if (!taskDetails.isEmpty()) {
+								Object[] details = taskDetails.get(0);
+								System.out.println("### details - " + details);
+
+								TaskResponseDTO taskResponseDTO = TaskResponseDTO.builder().refNo((String) details[0])
+										.documentName((String) details[1]).date((Date) details[2])
+										.status((String) details[3]).pendingAt((String) details[4])
+										.lsNo((String) details[5]).ssNo((String) details[6]).taskId(taskDto.getId())
+										.taskName(taskDto.getName()).applicationInstanceId(applicationInstanceId)
+										.build();
+								System.out.println("### taskResponseDTO - " + taskResponseDTO);
+								filteredTasks.add(taskResponseDTO);
+							} else {
+								throw new ResourceNotFoundException("No task details found for receiverUserId: "
+										+ receiverUserId + " and applicationInstanceId: " + applicationInstanceId);
+							}
+						}
+					} catch (HttpClientErrorException.NotFound ex) {
+						// Handle the case where receiverUserId is missing for this task
+						System.out.println(
+								"#### Skipping task with id " + taskDto.getId() + " as receiverUserId does not exist.");
+						continue; // Skip to the next task
+					}
+				}
+
+				if (filteredTasks.isEmpty()) {
+					throw new ResourceNotFoundException(
+							"No pending tasks found for the provided receiverUserId: " + receiverUserId);
+				}
+
+				return filteredTasks;
 			} else {
-				throw new RuntimeException("Failed to retrieve tasks: " + response.getStatusCode());
+				throw new ResourceNotFoundException("Failed to retrieve tasks: " + response.getStatusCode());
 			}
+		} catch (ResourceNotFoundException e) {
+			throw e; // Preserve custom exception for resource not found
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to retrieve tasks: " + e.getMessage(), e);
+			throw new RuntimeException("An unexpected error occurred while retrieving tasks: " + e.getMessage(), e);
 		}
 	}
 
@@ -398,6 +529,27 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.setParameter("updatedBy", senderRoleId)
 				.setParameter("createdAt", new Timestamp(System.currentTimeMillis()))
 				.setParameter("updatedAt", new Timestamp(System.currentTimeMillis())).executeUpdate();
+	}
+
+	public void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
+		// Retrieve the application instance by ID
+		Optional<ApplicationInstance> optionalInstance = applicationInstanceRepository
+				.findById(notesheetDTO.getApplicationInstanceId());
+
+		if (optionalInstance.isPresent()) {
+			ApplicationInstance applicationInstance = optionalInstance.get();
+
+			// Update fields
+			applicationInstance.setProcessInstanceId(processInstanceId);
+			applicationInstance.setTaskId(taskId);
+			applicationInstance.setCurrentStatus("Initiated"); // Hardcoding to "Initiated"
+
+			// Save the updated instance
+			applicationInstanceRepository.save(applicationInstance);
+		} else {
+			throw new ResourceNotFoundException(
+					"ApplicationInstance with ID " + notesheetDTO.getApplicationInstanceId() + " not found.");
+		}
 	}
 
 }

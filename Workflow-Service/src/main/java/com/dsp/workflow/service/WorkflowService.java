@@ -68,4 +68,10 @@ public interface WorkflowService {
 	 */
 	List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId);
 
+	/**
+	 * @param processInstanceId
+	 * @param taskId
+	 */
+	void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
+
 }
