@@ -42,6 +42,32 @@ public class Utils {
 	}
 
 	/**
+	 * Fetches the user ID of the currently authenticated user
+	 * 
+	 * @return userId
+	 */
+	public String getUserFullNameFromAuthentication() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()) {
+			throw new IllegalStateException("No authenticated user found");
+		}
+
+		String username = authentication.getName();
+		BaseUser baseUser = myUserRepository.findByUsername(username);
+		if (baseUser == null) {
+			throw new UsernameNotFoundException("Authenticated user not found in the database");
+		}
+
+		// Concatenate firstName, middleName, and lastName
+		String firstName = baseUser.getFirstName();
+		String middleName = baseUser.getMiddleName() != null ? baseUser.getMiddleName() : ""; // Handle null middleName
+		String lastName = baseUser.getLastName();
+
+		// Construct full name by trimming any extra spaces
+		return String.join(" ", firstName, middleName, lastName).trim();
+	}
+
+	/**
 	 * Fetches the role ID of the authenticated user by joining user_roles and users
 	 * table
 	 * 

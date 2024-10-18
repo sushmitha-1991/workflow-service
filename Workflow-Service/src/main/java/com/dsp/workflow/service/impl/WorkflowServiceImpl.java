@@ -1,6 +1,7 @@
 package com.dsp.workflow.service.impl;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -31,22 +32,19 @@ import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
-import com.dsp.workflow.entity.ApplicationAuthority;
-import com.dsp.workflow.entity.ApplicationHistory;
 import com.dsp.workflow.entity.ApplicationInstance;
+import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
-import com.dsp.workflow.notesheet.entity.Notesheet;
-import com.dsp.workflow.notesheet.mapper.ApplicationAuthorityMapper;
-import com.dsp.workflow.notesheet.mapper.ApplicationHistoryMapper;
-import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.repository.ApplicationAuthorityRepository;
 import com.dsp.workflow.repository.ApplicationHistoryRepository;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.TaskRepository;
+import com.dsp.workflow.repository.WorkflowHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
+import com.dsp.workflow.util.Utils;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -76,7 +74,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private ApplicationHistoryRepository applicationHistoryRepository;
 
 	@Autowired
+	private WorkflowHistoryRepository workflowHistoryRepository;
+
+	@Autowired
 	private TaskRepository taskRepository;
+
+	@Autowired
+	private Utils utils;
 
 	private WorkflowMapper workflowMapper = new WorkflowMapper();
 
@@ -164,10 +168,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables) {
 		try {
-			// Construct the complete task API URL
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
-
-			// Create headers for basic authentication
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -182,25 +183,59 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Execute the REST API call to complete the task
 			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
+			String userName = utils.getUserFullNameFromAuthentication();
+			Long senderUserId = ((Number) variables.get("senderUserId")).longValue();
+			Long receiverUserId = ((Number) variables.get("receiverUserId")).longValue();
+			Long applicationInstanceId = ((Number) variables.get("applicationInstanceId")).longValue();
+			String processInstanceId = (String) variables.get("processInstanceId");
+			String application_no = (String) variables.get("application_no");
+			String actionTaken = (String) variables.get("actionTaken");
+			String note = (String) variables.get("note");
+			String statusKey = application_no + "." + actionTaken + ".PRESTATUS";
+			String initalStatusKey = application_no + "." + actionTaken + ".POSTSTATUS";
+			String receiverUserName = (String) variables.get("receiverUserName");
+			String status = (String) variables.get("status");
+
+			LocalDateTime actionTakenOn = LocalDateTime.now(); // Assuming the action is taken now
 			// Check if the task was successfully completed
 			if (response.getStatusCode().is2xxSuccessful()) {
-				// Create and save Notesheet entity
-				Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
-				notesheetRepository.save(notesheet);
+				// Check if the stepType is "INIT"
+				String stepType = (String) variables.get("stepType");
+				if ("INIT".equals(stepType)) {
+					// Insert 2 entries into the workflow_history table
 
-				// Create and save ApplicationAuthority entity
-				ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
-						notesheet.getApplicationHistoryId());
-				applicationAuthorityRepository.save(applicationAuthority);
+					// First entry with status = "submitted"
+					WorkflowHistory firstEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
+							.subModuleId(application_no) // Set if applicable
+							.applicationInstanceId(applicationInstanceId).actionTakenBy(senderUserId)
+							.actionTakenByName(userName)
+							// statusKey - appno+acc+prestatus
+							.actionTaken(actionTaken).actionTakenOn(LocalDateTime.now()).status(status)
+							.statusKey(statusKey).pendingWith(senderUserId).pendingWithName(userName)
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(statusKey).note(note).build();
+					workflowHistoryRepository.save(firstEntry); // Assuming you have a repository
 
-				// Create and save ApplicationHistory entity
-				ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
-				applicationHistoryRepository.save(applicationHistory);
+					// Second entry, if needed, for the next task or status
+					WorkflowHistory secondEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
+							.subModuleId(application_no).applicationInstanceId(applicationInstanceId).actionTaken(null)
+							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
+							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note).build();
+					workflowHistoryRepository.save(secondEntry);
+				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
+					// Run update query if stepType is INTER or FINAL
+					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
+							senderUserId, userName, actionTakenOn, status, statusKey);
 
-				// Obtain the process instance ID from the variables
-				String processInstanceId = (String) variables.get("processInstanceId");
-				if (processInstanceId == null) {
-					throw new RuntimeException("Process instance ID is required but not provided.");
+					if ("INTER".equals(stepType)) {
+						WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
+								.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
+								.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
+								.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+								.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
+								.build();
+						workflowHistoryRepository.save(entry);
+					}
 				}
 
 				// Fetch the next task ID using the process instance ID
@@ -326,8 +361,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 					new ParameterizedTypeReference<List<TaskDto>>() {
 					});
 
-			System.out.println("##### response - " + response);
-
 			if (response.getStatusCode().is2xxSuccessful()) {
 				List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() : Collections.emptyList();
 				List<TaskResponseDTO> filteredTasks = new ArrayList<>();
@@ -339,7 +372,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 					try {
 						// Attempt to fetch receiverUserId
 						variableResponse = restTemplate.getForEntity(variableUrl, TaskVariableDto.class);
-						System.out.println("#### variableResponse - " + variableResponse);
 
 						if (variableResponse.getStatusCode().is2xxSuccessful() && variableResponse.getBody() != null
 								&& receiverUserId.equals(variableResponse.getBody().getValue())) {
@@ -349,40 +381,32 @@ public class WorkflowServiceImpl implements WorkflowService {
 									+ "/variables/applicationInstanceId";
 							ResponseEntity<TaskVariableDto> appInstanceResponse = restTemplate
 									.getForEntity(appInstanceUrl, TaskVariableDto.class);
-							System.out.println("#### appInstanceResponse - " + appInstanceResponse);
 
 							Long applicationInstanceId = null;
 							if (appInstanceResponse.getStatusCode().is2xxSuccessful()
 									&& appInstanceResponse.getBody() != null) {
 								applicationInstanceId = appInstanceResponse.getBody().getValue();
 							}
-							System.out.println("#### receiverUserId - " + receiverUserId);
-							System.out.println("#### applicationInstanceId - " + applicationInstanceId);
 
-							// Fetch processInstanceId
-							String processInstanceId = taskDto.getProcessInstanceId(); // Assuming TaskDto has this
-																						// property
-							System.out.println("#### processInstanceId - " + processInstanceId);
+							String processInstanceId = taskDto.getProcessInstanceId();
 
 							// Step 4: Fetch task details from the repository
 							List<Object[]> taskDetails = taskRepository
 									.findTasksWithDetailsByReceiverUserIdAndApplicationInstanceId(receiverUserId,
 											applicationInstanceId);
-							System.out.println("### taskDetails - " + taskDetails);
 
 							if (!taskDetails.isEmpty()) {
 								Object[] details = taskDetails.get(0);
-								System.out.println("### details - " + details);
 
-								TaskResponseDTO taskResponseDTO = TaskResponseDTO.builder().refNo((String) details[0])
-										.documentName((String) details[1]).date((Date) details[2])
-										.status((String) details[3]).pendingAt((String) details[4])
-										.lsNo((String) details[5]).ssNo((String) details[6]).summonId((Long) details[7])
-										.taskId(taskDto.getId()).taskName(taskDto.getName())
-										.processInstanceId(processInstanceId) // Add
-																				// processInstanceId
+								TaskResponseDTO taskResponseDTO = TaskResponseDTO.builder()
+										.application_no((String) details[0]).documentName((String) details[1])
+										.date((Date) details[2]).status((String) details[3])
+										.pendingAt((String) details[4]).lsNo((String) details[5])
+										.ssNo((String) details[6]).ref_id((Long) details[7])
+										.application_id((Long) details[8]).taskId(taskDto.getId())
+										.taskName(taskDto.getName()).processInstanceId(processInstanceId) // Add
+																											// processInstanceId
 										.applicationInstanceId(applicationInstanceId).build();
-								System.out.println("### taskResponseDTO - " + taskResponseDTO);
 								filteredTasks.add(taskResponseDTO);
 							} else {
 								throw new ResourceNotFoundException("No task details found for receiverUserId: "
@@ -391,8 +415,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					} catch (HttpClientErrorException.NotFound ex) {
 						// Handle the case where receiverUserId is missing for this task
-						System.out.println(
-								"#### Skipping task with id " + taskDto.getId() + " as receiverUserId does not exist.");
 						continue; // Skip to the next task
 					}
 				}

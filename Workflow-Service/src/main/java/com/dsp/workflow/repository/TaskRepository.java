@@ -12,14 +12,15 @@ import com.dsp.workflow.entity.ApplicationInstance;
 public interface TaskRepository extends JpaRepository<ApplicationInstance, Long> {
 
 	@Query(value = """
-						SELECT ai.application_no AS refNo,
+						SELECT ai.application_no AS application_no,
 						       app.name AS documentName,
 						       ai.created_at AS date,
 						       ai.current_status AS status,
 						    CONCAT(u.first_name, ' ', u.last_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt,
 						       '18' AS LSNo,
 						       'III' AS SSNo,
-						       ai.ref_id AS summonId
+						       ai.ref_id AS ref_id,
+						       ai.application_id AS application_id
 						FROM master.application_instance ai
 						JOIN master.applications app ON ai.application_id = app.id
 						JOIN authentication.base_user u ON u.id = :receiverUserId

@@ -25,6 +25,7 @@ public class NotesheetDTO {
 	private String note;
 	private long receiverRoleId;
 	private int receiverUserId;
+	private String receiverUserName;
 	private long senderRoleId;
 	private long applicationHistoryId;
 	private long applicationInstanceId;

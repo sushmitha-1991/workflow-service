@@ -76,7 +76,9 @@ public class WorkflowController {
 		variables.put("note", completeTaskRequestDTO.getNote());
 		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
 		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
+		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
 		variables.put("senderRoleId", utils.getRoleIdByUserId());
+		variables.put("senderUserId", utils.getUserIdFromAuthentication());
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
@@ -85,6 +87,9 @@ public class WorkflowController {
 		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
 		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
+		variables.put("stepType", completeTaskRequestDTO.getStepType());
+		variables.put("status", completeTaskRequestDTO.getStatus());
+
 
 		String newTaskId = workflowService.completeTask(taskId, variables);
 

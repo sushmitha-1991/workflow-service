@@ -27,6 +27,8 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 
 	private Long officeId;
 	private String application_no;
+	private String stepType;
+	private String status;
 
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:
