@@ -38,6 +38,8 @@ import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
+import com.dsp.workflow.notesheet.entity.Notesheet;
+import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.repository.ApplicationAuthorityRepository;
 import com.dsp.workflow.repository.ApplicationHistoryRepository;
@@ -205,6 +207,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 				if ("INIT".equals(stepType)) {
 					// Insert 2 entries into the workflow_history table
 
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+					notesheetRepository.save(notesheet);
+
 					// First entry with status = "submitted"
 					WorkflowHistory firstEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 							.subModuleId(application_no) // Set if applicable
@@ -224,6 +229,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note).build();
 					workflowHistoryRepository.save(secondEntry);
 				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+					notesheetRepository.save(notesheet);
 					// Run update query if stepType is INTER or FINAL
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey);
