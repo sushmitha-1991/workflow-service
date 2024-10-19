@@ -6,8 +6,10 @@
 package com.dsp.workflow.notesheet.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
+import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -37,6 +39,8 @@ public class NotesheetDTO {
 
 	@JsonIgnore // Exclude createdBy from JSON serialization
 	private Long createdBy;
+    private List<ProcessStepwiseDocumentsDTO> documents;  // Add this field for associated documents
+
 
 	// Constructor to create DTO from Entity
 	public NotesheetDTO(Notesheet notesheet) {

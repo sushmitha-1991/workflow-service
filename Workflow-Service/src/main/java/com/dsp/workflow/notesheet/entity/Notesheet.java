@@ -5,17 +5,22 @@
  */
 package com.dsp.workflow.notesheet.entity;
 
+import java.util.List;
 import java.util.Map;
 
 import com.dsp.workflow.entity.Auditable;
+import com.dsp.workflow.entity.NoteStepwiseDocuments;
 import com.dsp.workflow.util.MapJsonConverter;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -60,4 +65,9 @@ public class Notesheet extends Auditable {
 	@Convert(converter = MapJsonConverter.class)
 	@Column(name = "additional_details", columnDefinition = "jsonb")
 	private Map<String, Object> additionalDetails;
+
+	@OneToMany(mappedBy = "notesheet", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	private List<NoteStepwiseDocuments> documents;
+
+
 }

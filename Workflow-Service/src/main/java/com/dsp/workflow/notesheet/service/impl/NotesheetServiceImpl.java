@@ -6,11 +6,16 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
+import com.dsp.workflow.entity.NoteStepwiseDocuments;
+import com.dsp.workflow.mapper.NotesheetStepwiseDocumentsMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.notesheet.service.NotesheetService;
 import com.dsp.workflow.repository.MyUserRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class NotesheetServiceImpl implements NotesheetService {
@@ -20,6 +25,9 @@ public class NotesheetServiceImpl implements NotesheetService {
 
 	@Autowired
 	private MyUserRepository baseUserRepository;
+
+	@Autowired
+	private NotesheetStepwiseDocumentsMapper documentsMapper;
 
 	@Override
 	public NotesheetDTO createNotesheet(NotesheetDTO notesheetDTO, Long senderRoleId) {
@@ -47,18 +55,24 @@ public class NotesheetServiceImpl implements NotesheetService {
 	}
 
 	@Override
+	@Transactional
 	public NotesheetDTO getNotesheetById(Long id) {
-		// Fetch the notesheet by ID, throw an exception if not found
 		Notesheet notesheet = notesheetRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Notesheet not found with the given ID"));
 
-		// Return a NotesheetDTO built from the Notesheet entity
+		// Fetch associated documents
+		List<NoteStepwiseDocuments> associatedDocuments = notesheet.getDocuments();
+
+		// Map associated documents to DTOs
+		List<ProcessStepwiseDocumentsDTO> documentDTOs = associatedDocuments.stream().map(documentsMapper::toDTO)
+				.collect(Collectors.toList());
+
+		// Build and return the NotesheetDTO including the associated documents
 		return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
 				.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-				.applicationHistoryId(notesheet.getApplicationHistoryId()) // Use the correct field name
+				.applicationHistoryId(notesheet.getApplicationHistoryId())
 				.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
-				// .additionalDetails(notesheet.getAdditionalDetails()) // Include additional
-				// details if needed
+				.documents(documentDTOs) // Set associated documents here
 				.build();
 	}
 
