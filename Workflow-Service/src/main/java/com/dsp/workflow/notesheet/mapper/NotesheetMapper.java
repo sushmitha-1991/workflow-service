@@ -1,14 +1,13 @@
-/**
- * 
- * @author Mrinal Lakhanpal
- * @version 1.0
- */
 package com.dsp.workflow.notesheet.mapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
+import com.dsp.workflow.entity.NoteStepwiseDocuments;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 
 @Component
@@ -16,21 +15,46 @@ public class NotesheetMapper {
 
 	/**
 	 * Maps the variables from a Map to a Notesheet entity using the builder
-	 * pattern.
+	 * pattern, including associated documents.
 	 * 
-	 * @param variables A Map containing the variables to be mapped.
+	 * @param variables    A Map containing the variables to be mapped.
+	 * @param taskId       The task ID related to the workflow.
+	 * @param documentList
 	 * @return A Notesheet entity.
 	 */
-	public static Notesheet fromVariables(Map<String, Object> variables, String taskId) {
-		return Notesheet.builder().note((String) variables.get("note"))
+	public static Notesheet fromVariables(Map<String, Object> variables, String taskId,
+			List<ProcessStepwiseDocumentsDTO> documentList) {
+		// Build the Notesheet entity from the variables
+		Notesheet notesheet = Notesheet.builder().note((String) variables.get("note"))
 				.receiverRoleId(convertToInteger(variables.get("receiverRoleId")))
 				.receiverUserId((Integer) variables.get("receiverUserId"))
 				.senderRoleId(convertToInteger(variables.get("senderRoleId")))
-				// .applicationHistoryId((Long) variables.get("applicationInstanceId"))
 				.applicationInstanceId((Long) variables.get("applicationInstanceId"))
 				.actionTaken((String) variables.get("actionTaken")).build();
+
+		// Initialize the list to hold NoteStepwiseDocuments entities
+		List<NoteStepwiseDocuments> noteStepwiseDocumentsList = new ArrayList<>();
+
+		// Process the documentList (from ProcessStepwiseDocumentsDTO)
+		if (documentList != null) {
+			for (ProcessStepwiseDocumentsDTO processDocument : documentList) {
+				// Create a new NoteStepwiseDocuments entity for each DTO in the list
+				NoteStepwiseDocuments document = NoteStepwiseDocuments.builder()
+						.documentName(processDocument.getDocumentName()).documentUuid(processDocument.getDocumentUuid())
+						.uploadedBy(processDocument.getUploadedBy()).notesheet(notesheet) // Associate with the
+																							// Notesheet
+						.build();
+				noteStepwiseDocumentsList.add(document);
+			}
+		}
+
+		// Set the associated documents in the Notesheet entity
+		notesheet.setDocuments(noteStepwiseDocumentsList);
+
+		return notesheet;
 	}
 
+	// Helper method to convert Object to Integer
 	private static Integer convertToInteger(Object value) {
 		if (value instanceof Integer) {
 			return (Integer) value;

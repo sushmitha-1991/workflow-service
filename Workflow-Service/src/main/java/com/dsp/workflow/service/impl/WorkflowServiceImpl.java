@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
@@ -169,7 +170,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 //	}
 
 	@Transactional
-	public String completeTask(String taskId, Map<String, Object> variables) {
+	public String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> documentList) {
 		try {
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
@@ -207,7 +208,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				if ("INIT".equals(stepType)) {
 					// Insert 2 entries into the workflow_history table
 
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
 
 					// First entry with status = "submitted"
@@ -229,7 +230,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note).build();
 					workflowHistoryRepository.save(secondEntry);
 				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
 					// Run update query if stepType is INTER or FINAL
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
@@ -276,13 +277,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return null;
 	}
 
-	// Helper method to format the variables as Camunda expects
 	private Map<String, Object> formatVariablesForCamunda(Map<String, Object> variables) {
 		Map<String, Object> camundaVariables = new HashMap<>();
+		ObjectMapper objectMapper = new ObjectMapper(); // Reuse ObjectMapper
 
 		variables.forEach((key, value) -> {
 			if (value instanceof Map) {
-				ObjectMapper objectMapper = new ObjectMapper();
 				try {
 					// Serialize the map to a JSON string
 					String jsonValue = objectMapper.writeValueAsString(value);
@@ -293,7 +293,30 @@ public class WorkflowServiceImpl implements WorkflowService {
 				} catch (JsonProcessingException e) {
 					throw new RuntimeException("Error serializing map to JSON: " + key, e);
 				}
+			} else if (value instanceof List) {
+				try {
+					// Handle list of DTOs or any other list
+					String jsonValue = objectMapper.writeValueAsString(value);
+					Map<String, Object> variableMap = new HashMap<>();
+					variableMap.put("value", jsonValue);
+					variableMap.put("type", "Json");
+					camundaVariables.put(key, variableMap);
+				} catch (JsonProcessingException e) {
+					throw new RuntimeException("Error serializing list to JSON: " + key, e);
+				}
+			} else if (value instanceof ProcessStepwiseDocumentsDTO) {
+				try {
+					// Serialize the DTO to a JSON string
+					String jsonValue = objectMapper.writeValueAsString(value);
+					Map<String, Object> variableMap = new HashMap<>();
+					variableMap.put("value", jsonValue);
+					variableMap.put("type", "Json");
+					camundaVariables.put(key, variableMap);
+				} catch (JsonProcessingException e) {
+					throw new RuntimeException("Error serializing DTO to JSON: " + key, e);
+				}
 			} else {
+				// Handle other data types (e.g., String, Integer, Long, etc.)
 				Map<String, Object> variableMap = new HashMap<>();
 				variableMap.put("value", value);
 				variableMap.put("type", value.getClass().getSimpleName());

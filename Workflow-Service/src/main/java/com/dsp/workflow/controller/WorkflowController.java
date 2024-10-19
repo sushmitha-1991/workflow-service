@@ -91,8 +91,9 @@ public class WorkflowController {
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
 		variables.put("stepType", completeTaskRequestDTO.getStepType());
 		variables.put("status", completeTaskRequestDTO.getStatus());
+		//variables.put("document", completeTaskRequestDTO.getDocument());
 
-		String newTaskId = workflowService.completeTask(taskId, variables);
+		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument());
 
 		if (newTaskId != null) {
 			return new GenericResponse<>(true, "Task completed successfully", newTaskId, HttpStatus.OK.value());

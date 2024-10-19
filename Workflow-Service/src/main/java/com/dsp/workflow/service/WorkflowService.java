@@ -3,6 +3,7 @@ package com.dsp.workflow.service;
 import java.util.List;
 import java.util.Map;
 
+import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
@@ -25,10 +26,11 @@ public interface WorkflowService {
 	 * 
 	 * @param taskId       The ID of the task to complete.
 	 * @param variables    The variables to pass for task completion.
+	 * @param list 
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
-	String completeTask(String taskId, Map<String, Object> variables);
+	String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list);
 
 	/**
 	 * Retrieves a task ID by process instance ID.

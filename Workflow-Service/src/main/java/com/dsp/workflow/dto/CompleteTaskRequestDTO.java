@@ -1,5 +1,6 @@
 package com.dsp.workflow.dto;
 
+import java.util.List;
 import java.util.Map;
 
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -29,6 +30,7 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	private String application_no;
 	private String stepType;
 	private String status;
+	private List<ProcessStepwiseDocumentsDTO> document;
 
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:
