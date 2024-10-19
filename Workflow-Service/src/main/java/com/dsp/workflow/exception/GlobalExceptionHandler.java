@@ -60,4 +60,10 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 	}
 
+	@ExceptionHandler(TaskNotFoundException.class)
+	public ResponseEntity<GenericResponse<String>> handleTaskNotFoundException(TaskNotFoundException ex) {
+		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null, HttpStatus.OK.value());
+		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+
 }

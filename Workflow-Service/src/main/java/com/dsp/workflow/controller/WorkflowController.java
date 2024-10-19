@@ -17,11 +17,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.WorkflowService;
@@ -90,7 +92,6 @@ public class WorkflowController {
 		variables.put("stepType", completeTaskRequestDTO.getStepType());
 		variables.put("status", completeTaskRequestDTO.getStatus());
 
-
 		String newTaskId = workflowService.completeTask(taskId, variables);
 
 		if (newTaskId != null) {
@@ -131,6 +132,35 @@ public class WorkflowController {
 			return new GenericResponse<>(false, "No tasks found for the given process instance", null,
 					HttpStatus.NOT_FOUND.value());
 		}
+	}
+
+	@GetMapping("/bySubmodule")
+	public ResponseEntity<GenericResponse<WorkflowHistory>> getWorkflowHistory(@RequestParam String subModuleId) {
+		Long userId = utils.getUserIdFromAuthentication();
+		WorkflowHistory history = workflowService.getMostRecentWorkflowHistoryBySubModuleIdAndActionTakenBy(subModuleId,
+				userId);
+
+		if (history == null) {
+			GenericResponse<WorkflowHistory> response = new GenericResponse<>(false, "No records found", null, 200);
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		}
+
+		GenericResponse<WorkflowHistory> response = new GenericResponse<>(true, "Record found", history, 200);
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/byApplicationInstance")
+	public ResponseEntity<GenericResponse<List<WorkflowHistory>>> getWorkflowHistoryByApplicationInstanceId(
+			@RequestParam Long applicationInstanceId) {
+		List<WorkflowHistory> histories = workflowService
+				.getWorkflowHistoryByApplicationInstanceId(applicationInstanceId);
+		if (histories.isEmpty()) {
+			GenericResponse<List<WorkflowHistory>> response = new GenericResponse<>(false, "No records found",
+					histories, 200);
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		}
+		GenericResponse<List<WorkflowHistory>> response = new GenericResponse<>(true, "Records found", histories, 200);
+		return ResponseEntity.ok(response);
 	}
 
 }

@@ -6,6 +6,7 @@
 package com.dsp.workflow.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -35,5 +36,21 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
 			@Param("status") String status, @Param("statusKey") String statusKey);
+	
+	List<WorkflowHistory> findBySubModuleIdAndActionTakenBy(String subModuleId, Long UserId);
+
+	/**
+	 * @param subModuleId
+	 * @param userId
+	 * @return
+	 */
+	WorkflowHistory findTopBySubModuleIdAndActionTakenByOrderByCreatedAtDesc(String subModuleId, Long userId);
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
+
 
 }

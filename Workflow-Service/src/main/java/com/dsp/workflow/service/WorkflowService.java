@@ -3,11 +3,10 @@ package com.dsp.workflow.service;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.bpm.engine.history.HistoricTaskInstance;
-
 import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 
 public interface WorkflowService {
@@ -73,5 +72,25 @@ public interface WorkflowService {
 	 * @param taskId
 	 */
 	void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
+
+	/**
+	 * @param subModuleId
+	 * @param actionTakenBy
+	 * @return
+	 */
+	List<WorkflowHistory> getWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId, Long actionTakenBy);
+
+	/**
+	 * @param subModuleId
+	 * @param userId
+	 * @return
+	 */
+	WorkflowHistory getMostRecentWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId, Long userId);
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId);
 
 }

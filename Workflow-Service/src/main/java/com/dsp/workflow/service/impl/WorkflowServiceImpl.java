@@ -35,6 +35,7 @@ import com.dsp.workflow.dto.TaskVariableDto;
 import com.dsp.workflow.entity.ApplicationInstance;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.ResourceNotFoundException;
+import com.dsp.workflow.exception.TaskNotFoundException;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
@@ -409,7 +410,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 										.applicationInstanceId(applicationInstanceId).build();
 								filteredTasks.add(taskResponseDTO);
 							} else {
-								throw new ResourceNotFoundException("No task details found for receiverUserId: "
+								throw new TaskNotFoundException("No task details found for receiverUserId: "
 										+ receiverUserId + " and applicationInstanceId: " + applicationInstanceId);
 							}
 						}
@@ -580,6 +581,23 @@ public class WorkflowServiceImpl implements WorkflowService {
 			throw new ResourceNotFoundException(
 					"ApplicationInstance with ID " + notesheetDTO.getApplicationInstanceId() + " not found.");
 		}
+	}
+
+	@Override
+	public WorkflowHistory getMostRecentWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId, Long userId) {
+		return workflowHistoryRepository.findTopBySubModuleIdAndActionTakenByOrderByCreatedAtDesc(subModuleId, userId);
+	}
+
+	@Override
+	public List<WorkflowHistory> getWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId,
+			Long actionTakenBy) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId) {
+		return workflowHistoryRepository.findByApplicationInstanceId(applicationInstanceId);
 	}
 
 }
