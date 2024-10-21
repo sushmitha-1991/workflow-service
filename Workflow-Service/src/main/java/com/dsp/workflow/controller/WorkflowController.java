@@ -164,4 +164,65 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
+	@Operation(summary = "Start or Complete Task", description = "Handles the initiation or completion of a task based on the stepType.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task processed successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid request data"),
+			@ApiResponse(responseCode = "500", description = "Internal error processing task") })
+	@PostMapping("/processTask")
+	public GenericResponse<String> processTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
+		String processInstanceId;
+		String taskId;
+		// StepType logic
+		if ("INIT".equals(completeTaskRequestDTO.getStepType())) {
+			// Start workflow and fetch processInstanceId and taskId
+			processInstanceId = workflowService.startProcessInstance(completeTaskRequestDTO.getWorkflowId());
+			taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
+
+			// Update notesheet or application instance after starting the workflow
+			workflowService.updateApplicationInstance(completeTaskRequestDTO.getApplicationInstanceId(),
+					processInstanceId, taskId);
+		} else if ("INTER".equals(completeTaskRequestDTO.getStepType())
+				|| "FINAL".equals(completeTaskRequestDTO.getStepType())) {
+			// Fetch processInstanceId and taskId from the request body for INTER and FINAL
+			// steps
+			System.out.println("now in inter ####");
+			processInstanceId = completeTaskRequestDTO.getProcessInstanceId();
+			System.out.println("### processInstanceId -" + processInstanceId);
+			taskId = completeTaskRequestDTO.getTaskId();
+			System.out.println("### taskId - " + taskId);
+		} else {
+			return new GenericResponse<>(false, "Invalid stepType provided", null, HttpStatus.BAD_REQUEST.value());
+		}
+
+		// Proceed with completing the task regardless of the stepType
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("processInstanceId", processInstanceId);
+		variables.put("note", completeTaskRequestDTO.getNote());
+		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
+		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
+		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
+		variables.put("senderRoleId", utils.getRoleIdByUserId());
+		variables.put("senderUserId", utils.getUserIdFromAuthentication());
+		variables.put("historyId", taskId);
+		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
+		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
+		variables.put("sendTo",
+				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
+		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
+		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
+		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
+		variables.put("stepType", completeTaskRequestDTO.getStepType());
+		variables.put("status", completeTaskRequestDTO.getStatus());
+
+		// Complete the task with provided variables and document list
+		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument());
+
+		// Return success or failure based on the completion of the task
+		if (newTaskId != null) {
+			return new GenericResponse<>(true, "Task processed successfully", newTaskId, HttpStatus.OK.value());
+		} else {
+			return new GenericResponse<>(false, "Failed to process task", taskId, HttpStatus.BAD_REQUEST.value());
+		}
+	}
+
 }

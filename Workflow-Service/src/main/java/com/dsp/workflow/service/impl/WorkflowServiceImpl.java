@@ -1,6 +1,5 @@
 package com.dsp.workflow.service.impl;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -408,11 +407,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 								Object[] details = taskDetails.get(0);
 
 								TaskResponseDTO taskResponseDTO = TaskResponseDTO.builder()
-										.application_no((String) details[0]).documentName((String) details[1])
+										.applicationNo((String) details[0]).documentName((String) details[1])
 										.date((Date) details[2]).status((String) details[3])
 										.pendingAt((String) details[4]).lsNo((String) details[5])
-										.ssNo((String) details[6]).ref_id((Long) details[7])
-										.application_id((Long) details[8]).taskId(taskDto.getId())
+										.ssNo((String) details[6]).refId((Long) details[7])
+										.applicationId((Long) details[8]).taskId(taskDto.getId())
 										.taskName(taskDto.getName()).processInstanceId(processInstanceId) // Add
 																											// processInstanceId
 										.applicationInstanceId(applicationInstanceId).build();
@@ -550,24 +549,40 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	}
 
-	@Transactional
-	public void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId,
-			Long senderRoleId) {
-		String query = "INSERT INTO master.application_instance "
-				+ "(application_id, application_no, current_status, published_document_url, additional_details, "
-				+ "is_active, is_deleted, created_by, updated_by, created_at, updated_at) "
-				+ "VALUES (:applicationId, :applicationNo, :currentStatus, :publishedDocumentUrl, :additionalDetails, "
-				+ ":isActive, :isDeleted, :createdBy, :updatedBy, :createdAt, :updatedAt)";
+	public void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId) {
+		// Retrieve the application instance by ID
+		Optional<ApplicationInstance> optionalInstance = applicationInstanceRepository.findById(applicationInstanceId);
 
-		// Create and execute the query
-		entityManager.createNativeQuery(query).setParameter("applicationId", notesheetDTO.getApplicationInstanceId())
-				.setParameter("applicationNo", processInstanceId).setParameter("currentStatus", "Started")
-				.setParameter("publishedDocumentUrl", null)
-				.setParameter("additionalDetails", notesheetDTO.getAdditionalDetails()).setParameter("isActive", true)
-				.setParameter("isDeleted", false).setParameter("createdBy", senderRoleId)
-				.setParameter("updatedBy", senderRoleId)
-				.setParameter("createdAt", new Timestamp(System.currentTimeMillis()))
-				.setParameter("updatedAt", new Timestamp(System.currentTimeMillis())).executeUpdate();
+		if (optionalInstance.isPresent()) {
+			ApplicationInstance applicationInstance = optionalInstance.get();
+			System.err.println("### in application instance");
+			// Update fields
+			applicationInstance.setProcessInstanceId(processInstanceId);
+			applicationInstance.setTaskId(taskId);
+			applicationInstance.setCurrentStatus("In Progress"); // Hardcoding to "Initiated"
+
+			// Save the updated instance
+			applicationInstanceRepository.save(applicationInstance);
+		} else {
+			throw new ResourceNotFoundException("ApplicationInstance with ID " + applicationInstanceId + " not found.");
+		}
+	}
+
+	@Override
+	public WorkflowHistory getMostRecentWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId, Long userId) {
+		return workflowHistoryRepository.findTopBySubModuleIdAndActionTakenByOrderByCreatedAtDesc(subModuleId, userId);
+	}
+
+	@Override
+	public List<WorkflowHistory> getWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId,
+			Long actionTakenBy) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId) {
+		return workflowHistoryRepository.findByApplicationInstanceId(applicationInstanceId);
 	}
 
 	public void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
@@ -589,23 +604,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 			throw new ResourceNotFoundException(
 					"ApplicationInstance with ID " + notesheetDTO.getApplicationInstanceId() + " not found.");
 		}
-	}
-
-	@Override
-	public WorkflowHistory getMostRecentWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId, Long userId) {
-		return workflowHistoryRepository.findTopBySubModuleIdAndActionTakenByOrderByCreatedAtDesc(subModuleId, userId);
-	}
-
-	@Override
-	public List<WorkflowHistory> getWorkflowHistoryBySubModuleIdAndActionTakenBy(String subModuleId,
-			Long actionTakenBy) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId) {
-		return workflowHistoryRepository.findByApplicationInstanceId(applicationInstanceId);
 	}
 
 }

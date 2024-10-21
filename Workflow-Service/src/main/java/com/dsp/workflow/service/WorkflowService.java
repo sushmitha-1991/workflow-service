@@ -26,7 +26,7 @@ public interface WorkflowService {
 	 * 
 	 * @param taskId       The ID of the task to complete.
 	 * @param variables    The variables to pass for task completion.
-	 * @param list 
+	 * @param list
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
@@ -55,15 +55,6 @@ public interface WorkflowService {
 	void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
 
 	/**
-	 * @param notesheetDTO
-	 * @param processInstanceId
-	 * @param taskId
-	 * @param senderRoleId
-	 */
-	void insertApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId,
-			Long senderRoleId);
-
-	/**
 	 * @param receiverUserId
 	 * @return
 	 */
@@ -73,7 +64,7 @@ public interface WorkflowService {
 	 * @param processInstanceId
 	 * @param taskId
 	 */
-	void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
+	void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId);
 
 	/**
 	 * @param subModuleId
@@ -94,5 +85,12 @@ public interface WorkflowService {
 	 * @return
 	 */
 	List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId);
+
+	/**
+	 * @param notesheetDTO
+	 * @param processInstanceId
+	 * @param taskId
+	 */
+	void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
 
 }

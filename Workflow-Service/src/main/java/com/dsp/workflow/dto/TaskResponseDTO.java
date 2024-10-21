@@ -13,15 +13,15 @@ import lombok.Data;
 @Data
 @Builder
 public class TaskResponseDTO {
-	private String application_no; // application_no from application_instance
+	private String applicationNo; // application_no from application_instance
 	private String documentName; // name from master.application
 	private Date date; // created_at from application_instance
 	private String status; // current_status from application_instance
 	private String pendingAt; // First_name + Last_name from base_user
 	private String lsNo;
 	private String ssNo;
-	private Long ref_id;
-	private Long application_id;
+	private Long refId;
+	private Long applicationId;
 	private String taskId; // Added to store the task ID
 	private String taskName; // Added to store the task name
 	private Long applicationInstanceId; // Keep this for additional details
