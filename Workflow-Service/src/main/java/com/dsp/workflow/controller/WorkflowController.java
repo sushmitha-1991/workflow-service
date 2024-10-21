@@ -91,7 +91,7 @@ public class WorkflowController {
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
 		variables.put("stepType", completeTaskRequestDTO.getStepType());
 		variables.put("status", completeTaskRequestDTO.getStatus());
-		//variables.put("document", completeTaskRequestDTO.getDocument());
+		// variables.put("document", completeTaskRequestDTO.getDocument());
 
 		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument());
 
@@ -150,7 +150,7 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/byApplicationInstance")
+	@GetMapping("/historyByApplicationInstance")
 	public ResponseEntity<GenericResponse<List<WorkflowHistory>>> getWorkflowHistoryByApplicationInstanceId(
 			@RequestParam Long applicationInstanceId) {
 		List<WorkflowHistory> histories = workflowService

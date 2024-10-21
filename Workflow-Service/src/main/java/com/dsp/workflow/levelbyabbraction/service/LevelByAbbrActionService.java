@@ -19,8 +19,8 @@ public interface LevelByAbbrActionService {
 	/**
 	 * @param level
 	 * @param applicationId
-	 * @param roleId
+	 * @param roleIds
 	 * @return
 	 */
-	List<LevelByAbbrActionDTO> getLevelByAbbrActionsByCriteria(String level, Long applicationId, Integer[] roleId);
+	List<LevelByAbbrActionDTO> getLevelByAbbrActionsByCriteria(String level, Long applicationId, List<Long> roleIds);
 }

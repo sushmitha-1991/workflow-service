@@ -1,4 +1,4 @@
-package com.dsp.workflow.levelbyabbraction.service;
+package com.dsp.workflow.levelbyabbraction.service.impl;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.dsp.workflow.levelbyabbraction.dto.LevelByAbbrActionDTO;
 import com.dsp.workflow.levelbyabbraction.entity.LevelByAbbrAction;
 import com.dsp.workflow.levelbyabbraction.repository.LevelByAbbrActionRepository;
+import com.dsp.workflow.levelbyabbraction.service.LevelByAbbrActionService;
 
 @Service
 public class LevelByAbbrActionServiceImpl implements LevelByAbbrActionService {
@@ -81,7 +82,7 @@ public class LevelByAbbrActionServiceImpl implements LevelByAbbrActionService {
 
 	@Override
 	public List<LevelByAbbrActionDTO> getLevelByAbbrActionsByCriteria(String level, Long applicationId,
-			Integer[] roleIds) {
+			List<Long> roleIds) {
 		List<LevelByAbbrAction> actions = levelByAbbrActionRepository.findByLevelAndApplicationIdAndRoleIdIn(level,
 				applicationId, roleIds);
 		return actions.stream().map(this::mapToDto).collect(Collectors.toList());

@@ -1,5 +1,8 @@
 package com.dsp.workflow.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -99,6 +102,47 @@ public class Utils {
 			}
 		} catch (Exception e) {
 			throw new IllegalStateException("No active role found for the user with ID: " + userId, e);
+		}
+	}
+
+	/**
+	 * Fetches the role IDs of the authenticated user by joining user_roles and
+	 * users table.
+	 * 
+	 * @return List<Long> - a list of role IDs
+	 */
+	public List<Long> getRoleIdsByUserId() {
+		Long userId = getUserIdFromAuthentication(); // Get the authenticated user's ID
+
+		String nativeQuery = "SELECT ur.role_id FROM authentication.user_roles ur "
+				+ "JOIN authentication.base_user u ON ur.user_id = u.id "
+				+ "WHERE u.id = :userId AND ur.is_active = true AND ur.is_deleted = false";
+
+		Query query = entityManager.createNativeQuery(nativeQuery);
+		query.setParameter("userId", userId);
+
+		try {
+			// Fetch the result list (which may contain multiple roles)
+			List<Object> resultList = query.getResultList();
+
+			// Convert the list of Object into a list of Longs
+			List<Long> roleIds = new ArrayList<>();
+			for (Object result : resultList) {
+				if (result instanceof Integer) {
+					// Convert Integer to Long
+					roleIds.add(((Integer) result).longValue());
+				} else if (result instanceof Long) {
+					// Add Long values directly
+					roleIds.add((Long) result);
+				} else {
+					throw new IllegalStateException("Unexpected data type for role_id: " + result.getClass());
+				}
+			}
+
+			return roleIds;
+
+		} catch (Exception e) {
+			throw new IllegalStateException("No active roles found for the user with ID: " + userId, e);
 		}
 	}
 

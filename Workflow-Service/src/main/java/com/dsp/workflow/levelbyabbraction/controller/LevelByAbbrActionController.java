@@ -18,6 +18,7 @@ import com.dsp.workflow.levelbyabbraction.dto.LevelByAbbrActionDTO;
 import com.dsp.workflow.levelbyabbraction.dto.LevelByAbbrActionSearchDTO;
 import com.dsp.workflow.levelbyabbraction.service.LevelByAbbrActionService;
 import com.dsp.workflow.response.GenericResponse;
+import com.dsp.workflow.util.Utils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,6 +31,9 @@ public class LevelByAbbrActionController {
 
 	@Autowired
 	private LevelByAbbrActionService levelByAbbrActionService;
+	
+	@Autowired
+	private Utils utils;
 
 	@PostMapping("/create")
 	@Operation(summary = "Create a new LevelByAbbrAction entry")
@@ -77,9 +81,9 @@ public class LevelByAbbrActionController {
 			@ApiResponse(responseCode = "500", description = "Internal server error") })
 	public ResponseEntity<GenericResponse<List<LevelByAbbrActionDTO>>> searchLevelByAbbrActions(
 			@RequestBody LevelByAbbrActionSearchDTO searchDTO) {
-
-		List<LevelByAbbrActionDTO> levelByAbbrActions = levelByAbbrActionService.getLevelByAbbrActionsByCriteria(
-				searchDTO.getLevel(), searchDTO.getApplicationId(), searchDTO.getRoleId());
+		List<Long> roleIds = utils.getRoleIdsByUserId(); // Assuming userService has this method
+		List<LevelByAbbrActionDTO> levelByAbbrActions = levelByAbbrActionService
+				.getLevelByAbbrActionsByCriteria(searchDTO.getLevel(), searchDTO.getApplicationId(), roleIds);
 		String message = searchDTO.getApplicationId() + ".LevelByAbbrActions";
 		GenericResponse<List<LevelByAbbrActionDTO>> response = new GenericResponse<>(true, message, levelByAbbrActions,
 				HttpStatus.OK.value());
