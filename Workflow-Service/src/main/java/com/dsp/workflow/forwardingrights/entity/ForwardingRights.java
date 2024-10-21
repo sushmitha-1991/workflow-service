@@ -46,4 +46,7 @@ public class ForwardingRights extends Auditable {
 	@Column(name = "level", nullable = false, length = 10)
 	private String level;
 
+	@Column(name = "action_id")
+	private Long actionId;
+
 }

@@ -27,9 +27,10 @@ public interface ForwardingRightsService {
 
 	/**
 	 * @param applicationId
+	 * @param senderRoleIds 
 	 * @param senderRoleId
 	 * @return
 	 */
-	List<Map<String, Object>> getUserDetails(Long applicationId, Long senderRoleId);
+	List<Map<String, Object>> getUserDetails(Long applicationId, List<Long> senderRoleIds, Long senderRoleId);
 
 }

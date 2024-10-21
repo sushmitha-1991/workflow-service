@@ -31,7 +31,7 @@ public class ApplicationInstance extends Auditable {
 	private Long id;
 
 	@Column(name = "application_id", nullable = false)
-	private String applicationId;
+	private Long applicationId;
 
 	@Column(name = "applicationNo", nullable = false, length = 255)
 	private String applicationNo;

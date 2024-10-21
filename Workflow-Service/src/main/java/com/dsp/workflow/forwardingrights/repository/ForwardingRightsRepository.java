@@ -1,8 +1,3 @@
-/**
- * 
- * @author Mrinal Lakhanpal
- * @version 1.0
- */
 package com.dsp.workflow.forwardingrights.repository;
 
 import java.util.List;
@@ -14,27 +9,20 @@ import org.springframework.stereotype.Repository;
 
 import com.dsp.workflow.forwardingrights.entity.ForwardingRights;
 
-/**
- * 
- */
 @Repository
 public interface ForwardingRightsRepository extends JpaRepository<ForwardingRights, Long> {
-	List<ForwardingRights> findByApplicationIdAndSenderRoleId(Long applicationId, Long senderRoleId);
 
-	/**
-	 * Native query to fetch user details based on the role_id from user_roles and
-	 * users tables.
-	 * 
-	 * @param roleId the roleId to filter users
-	 * @return List of user details (firstName, middleName, lastName, email,
-	 *         officeId)
-	 */
-	@Query(value = "SELECT u.id, u.first_name, u.middle_name, u.last_name, u.email, ur.office_id, of.office_name, ar.id, ar.role_name "
-			+ "FROM authentication.base_user u " 
-			+ "JOIN authentication.user_roles ur ON u.id = ur.user_id "
-			+ "LEFT JOIN authentication.roles ar ON ur.role_id = ar.id " 
-			+ "LEFT JOIN master.offices of ON ur.office_id = of.id "
-			+ "WHERE ur.role_id = :roleId", nativeQuery = true)
-	List<Object[]> findUserDetailsByRoleId(@Param("roleId") Integer roleId);
-
+	// Optimized query to fetch both forwarding rights and user details in a single
+	// query
+	@Query(value = "SELECT u.id AS userId, u.first_name AS firstName, u.middle_name AS middleName, "
+			+ "u.last_name AS lastName, u.email AS email, ur.office_id AS officeId, of.office_name AS officeName, "
+			+ "ar.id AS roleId, ar.abbr AS roleName, ar.description AS description "
+			+ "FROM workflow.forwarding_rights fr "
+			+ "JOIN authentication.user_roles ur ON fr.receiver_role_id = ur.role_id "
+			+ "JOIN authentication.base_user u ON ur.user_id = u.id "
+			+ "LEFT JOIN authentication.roles ar ON ur.role_id = ar.id "
+			+ "LEFT JOIN master.offices of ON ur.office_id = of.id " + "WHERE fr.application_id = :applicationId "
+			+ "AND fr.sender_role_id IN :senderRoleIds " + "AND fr.action_id = :actionId", nativeQuery = true)
+	List<Object[]> findUserDetailsWithForwardingRights(@Param("applicationId") Long applicationId,
+			@Param("senderRoleIds") List<Long> senderRoleIds, @Param("actionId") Long actionId);
 }

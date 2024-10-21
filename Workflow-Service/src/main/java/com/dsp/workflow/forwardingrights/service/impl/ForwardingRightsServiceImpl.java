@@ -87,37 +87,32 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 	}
 
 	/**
-	 * Fetches user details based on applicationId and senderRoleId.
+	 * Fetches user details based on applicationId, senderRoleIds, and actionId.
 	 */
-	public List<Map<String, Object>> getUserDetails(Long applicationId, Long senderRoleId) {
-		List<ForwardingRights> forwardingRightsList = repository.findByApplicationIdAndSenderRoleId(applicationId,
-				senderRoleId);
-		if (forwardingRightsList.isEmpty()) {
-			throw new UserNotFoundException("ForwardingRights not found");
+	public List<Map<String, Object>> getUserDetails(Long applicationId, List<Long> senderRoleIds, Long actionId) {
+		// Query the repository for user details along with forwarding rights
+		List<Object[]> resultList = repository.findUserDetailsWithForwardingRights(applicationId, senderRoleIds,
+				actionId);
+
+		if (resultList.isEmpty()) {
+			throw new UserNotFoundException("No user details found for the given criteria");
 		}
 
-		// Process each ForwardingRights record
+		// Process the result list into a list of user details maps
 		List<Map<String, Object>> usersDetailsList = new ArrayList<>();
-		for (ForwardingRights forwardingRights : forwardingRightsList) {
-			Integer roleId = forwardingRights.getReceiverRoleId();
-			List<Object[]> resultList = repository.findUserDetailsByRoleId(roleId);
-			if (resultList.isEmpty()) {
-				throw new UserNotFoundException("No user details found for the given role");
-			}
-
-			for (Object[] userResult : resultList) {
-				Map<String, Object> userDetails = new HashMap<>();
-				userDetails.put("userId", userResult[0]);
-				userDetails.put("firstName", userResult[1]);
-				userDetails.put("middleName", userResult[2]);
-				userDetails.put("lastName", userResult[3]);
-				userDetails.put("email", userResult[4]);
-				userDetails.put("officeId", userResult[5]);
-				userDetails.put("office_name", userResult[6]);
-				userDetails.put("roleId", userResult[7]);
-				userDetails.put("roleName", userResult[8]);
-				usersDetailsList.add(userDetails);
-			}
+		for (Object[] userResult : resultList) {
+			Map<String, Object> userDetails = new HashMap<>();
+			userDetails.put("userId", userResult[0]);
+			userDetails.put("firstName", userResult[1]);
+			userDetails.put("middleName", userResult[2]);
+			userDetails.put("lastName", userResult[3]);
+			userDetails.put("email", userResult[4]);
+			userDetails.put("officeId", userResult[5]);
+			userDetails.put("officeName", userResult[6]);
+			userDetails.put("roleId", userResult[7]);
+			userDetails.put("roleName", userResult[8]);
+			userDetails.put("description", userResult[9]);
+			usersDetailsList.add(userDetails);
 		}
 		return usersDetailsList;
 	}
