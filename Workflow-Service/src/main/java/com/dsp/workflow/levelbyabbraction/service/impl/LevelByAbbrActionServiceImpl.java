@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.dsp.workflow.entity.ApplicationForms;
 import com.dsp.workflow.levelbyabbraction.dto.LevelByAbbrActionDTO;
 import com.dsp.workflow.levelbyabbraction.entity.LevelByAbbrAction;
 import com.dsp.workflow.levelbyabbraction.repository.LevelByAbbrActionRepository;
@@ -89,11 +90,19 @@ public class LevelByAbbrActionServiceImpl implements LevelByAbbrActionService {
 	}
 
 	private LevelByAbbrActionDTO mapToDto(LevelByAbbrAction levelByAbbrAction) {
+		ApplicationForms applicationForm = levelByAbbrAction.getApplicationForm();
+
 		return LevelByAbbrActionDTO.builder().id(levelByAbbrAction.getId()).roleId(levelByAbbrAction.getRoleId())
 				.level(levelByAbbrAction.getLevel()).actionKey(levelByAbbrAction.getActionKey())
 				.abbr(levelByAbbrAction.getAbbr()).stepType(levelByAbbrAction.getStepType())
 				.status(levelByAbbrAction.getStatus()).statusKey(levelByAbbrAction.getStatusKey())
-				.applicationId(levelByAbbrAction.getApplicationId()).build();
+				.applicationId(levelByAbbrAction.getApplicationId()).workflowId(levelByAbbrAction.getWorkflowId())
+				.sendTo(levelByAbbrAction.getSendTo())
+
+				// Map ApplicationForms fields
+				.formId(applicationForm.getId()).formName(applicationForm.getName())
+				.formUrl(applicationForm.getFormUrl()).reportUrl(applicationForm.getReportUrl())
+				.formAbbr(applicationForm.getAbbr()).build();
 	}
 
 }

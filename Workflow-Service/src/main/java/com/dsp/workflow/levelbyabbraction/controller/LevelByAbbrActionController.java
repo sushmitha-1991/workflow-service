@@ -74,7 +74,7 @@ public class LevelByAbbrActionController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@GetMapping("/search")
+	@GetMapping("/getActionsbyApplicationID")
 	@Operation(summary = "Search LevelByAbbrActions by level, applicationId, and roleIds")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "200", description = "LevelByAbbrActions retrieved successfully"),
