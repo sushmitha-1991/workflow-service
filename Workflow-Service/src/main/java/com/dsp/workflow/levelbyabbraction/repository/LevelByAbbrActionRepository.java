@@ -23,8 +23,14 @@ public interface LevelByAbbrActionRepository extends JpaRepository<LevelByAbbrAc
 //	List<LevelByAbbrAction> findByLevelAndApplicationIdAndRoleIds(String level, Long applicationId,
 //			List<Integer> roleIds);
 
-	@Query("SELECT l FROM LevelByAbbrAction l WHERE l.level = :level AND l.applicationId = :applicationId AND l.roleId IN :roleIds AND l.status = 'Active'")
+//	@Query("SELECT l FROM LevelByAbbrAction l WHERE l.level = :level AND l.applicationId = :applicationId AND l.roleId IN :roleIds AND l.status = 'Active'")
+//	List<LevelByAbbrAction> findByLevelAndApplicationIdAndRoleIdIn(@Param("level") String level,
+//			@Param("applicationId") Long applicationId, @Param("roleIds") List<Long> roleIds);
+	
+	@Query("SELECT l FROM LevelByAbbrAction l WHERE l.level = :level AND l.applicationId = :applicationId AND l.roleId IN :roleIds AND l.isActive = true AND l.isDeleted = false")
 	List<LevelByAbbrAction> findByLevelAndApplicationIdAndRoleIdIn(@Param("level") String level,
-			@Param("applicationId") Long applicationId, @Param("roleIds") List<Long> roleIds);
+	                                                               @Param("applicationId") Long applicationId, 
+	                                                               @Param("roleIds") List<Long> roleIds);
+
 
 }
