@@ -34,6 +34,7 @@ import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
 import com.dsp.workflow.entity.ApplicationInstance;
 import com.dsp.workflow.entity.WorkflowHistory;
+import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
 import com.dsp.workflow.mapper.WorkflowMapper;
@@ -119,13 +120,24 @@ public class WorkflowServiceImpl implements WorkflowService {
 		String url = camundaRestUrl + "/process-definition/key/" + workflowId + "/start";
 		Map<String, Object> requestBody = new HashMap<>();
 
-		// Specify the type of response expected
-		ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url, HttpMethod.POST,
-				new HttpEntity<>(requestBody), new ParameterizedTypeReference<Map<String, Object>>() {
-				});
+		try {
+			// Specify the type of response expected
+			ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url, HttpMethod.POST,
+					new HttpEntity<>(requestBody), new ParameterizedTypeReference<Map<String, Object>>() {
+					});
 
-		Map<String, Object> responseBody = response.getBody();
-		return responseBody != null ? responseBody.get("id").toString() : null;
+			Map<String, Object> responseBody = response.getBody();
+			return responseBody != null ? responseBody.get("id").toString() : null;
+
+		} catch (HttpClientErrorException.NotFound e) {
+			// Handle 404 Not Found
+			String errorMessage = "No matching process definition found for workflow ID: " + workflowId;
+			throw new CamundaException(errorMessage, e);
+
+		} catch (HttpClientErrorException e) {
+			String errorMessage = "Error while starting process instance: " + e.getResponseBodyAsString();
+			throw new CamundaException(errorMessage, e);
+		}
 	}
 
 	@Override
@@ -206,8 +218,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				// Check if the stepType is "INIT"
 				String stepType = (String) variables.get("stepType");
 				if ("INIT".equals(stepType)) {
-					// Insert 2 entries into the workflow_history table
 
+					// Entry in Notesheet Table
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
 
@@ -229,14 +241,20 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note).build();
 					workflowHistoryRepository.save(secondEntry);
+
 				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
+					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
-					// Run update query if stepType is INTER or FINAL
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey);
 
+					// Run update query if stepType is INTER or FINAL
 					if ("INTER".equals(stepType)) {
+
+						updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+
 						WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 								.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
 								.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
@@ -254,7 +272,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Error completing task with external Camunda API: " + e.getMessage(), e);
+			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
 
@@ -549,18 +567,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	}
 
-	public void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId) {
+	public void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId,
+			String status) {
 		// Retrieve the application instance by ID
 		Optional<ApplicationInstance> optionalInstance = applicationInstanceRepository.findById(applicationInstanceId);
 
 		if (optionalInstance.isPresent()) {
 			ApplicationInstance applicationInstance = optionalInstance.get();
-			System.err.println("### in application instance");
-			// Update fields
 			applicationInstance.setProcessInstanceId(processInstanceId);
 			applicationInstance.setTaskId(taskId);
-			applicationInstance.setCurrentStatus("In Progress"); // Hardcoding to "Initiated"
-
+			applicationInstance.setCurrentStatus(status);
 			// Save the updated instance
 			applicationInstanceRepository.save(applicationInstance);
 		} else {

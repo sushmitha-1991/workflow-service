@@ -177,19 +177,14 @@ public class WorkflowController {
 			// Start workflow and fetch processInstanceId and taskId
 			processInstanceId = workflowService.startProcessInstance(completeTaskRequestDTO.getWorkflowId());
 			taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
-
 			// Update notesheet or application instance after starting the workflow
 			workflowService.updateApplicationInstance(completeTaskRequestDTO.getApplicationInstanceId(),
-					processInstanceId, taskId);
+					processInstanceId, taskId, completeTaskRequestDTO.getStatus());
+
 		} else if ("INTER".equals(completeTaskRequestDTO.getStepType())
 				|| "FINAL".equals(completeTaskRequestDTO.getStepType())) {
-			// Fetch processInstanceId and taskId from the request body for INTER and FINAL
-			// steps
-			System.out.println("now in inter ####");
 			processInstanceId = completeTaskRequestDTO.getProcessInstanceId();
-			System.out.println("### processInstanceId -" + processInstanceId);
 			taskId = completeTaskRequestDTO.getTaskId();
-			System.out.println("### taskId - " + taskId);
 		} else {
 			return new GenericResponse<>(false, "Invalid stepType provided", null, HttpStatus.BAD_REQUEST.value());
 		}

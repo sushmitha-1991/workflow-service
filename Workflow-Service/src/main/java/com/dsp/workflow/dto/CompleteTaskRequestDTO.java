@@ -20,11 +20,11 @@ import lombok.NoArgsConstructor;
 public class CompleteTaskRequestDTO extends NotesheetDTO {
 
 	@NotEmpty
-	String workflowId;
+	private String workflowId;
 
-	String taskId;
+	private String taskId;
 
-	String processInstanceId;
+	private String processInstanceId;
 
 	private Map<String, Object> additional_details;
 

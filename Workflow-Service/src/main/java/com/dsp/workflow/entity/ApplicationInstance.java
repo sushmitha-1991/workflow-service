@@ -51,6 +51,9 @@ public class ApplicationInstance extends Auditable {
 	@Column(name = "task_id", length = 255)
 	private String taskId;
 
+	@Column(name = "is_published")
+	private Boolean isPublished;
+
 //	 @Type(type = "jsonb")
 //	    @Column(name = "additional_Details", columnDefinition = "jsonb")
 //	    private String additionalDetails;

@@ -63,8 +63,10 @@ public interface WorkflowService {
 	/**
 	 * @param processInstanceId
 	 * @param taskId
+	 * @param string
+	 * @param b
 	 */
-	void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId);
+	void updateApplicationInstance(long applicationInstanceId, String processInstanceId, String taskId, String string);
 
 	/**
 	 * @param subModuleId

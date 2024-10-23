@@ -66,4 +66,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
+	@ExceptionHandler(CamundaException.class)
+	public ResponseEntity<GenericResponse<String>> handleCamundaException(CamundaException ex) {
+		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null,
+				HttpStatus.INTERNAL_SERVER_ERROR.value());
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+	}
+
 }
