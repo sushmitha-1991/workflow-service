@@ -42,7 +42,7 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	private SendToType sendTo;
 
 	public enum SendToType {
-		REVIEWER("Reviewer"), PUBLISH("Publish"), APPROVER("Approver"), CREATOR("Creator");
+		REVIEWER("Reviewer"), APPROVER("Approver"), CREATOR("Creator"), FORWARD("Forward");
 
 		private final String label;
 
