@@ -43,6 +43,9 @@ public class NoteStepwiseDocuments extends Auditable {
 
 	@Column(name = "uploaded_by", nullable = true)
 	private String uploadedBy;
+	
+	@Column(name = "version", nullable = true)
+	private String version;
 
 	// Many-to-One relationship with Notesheet
 	@ManyToOne(fetch = FetchType.LAZY)

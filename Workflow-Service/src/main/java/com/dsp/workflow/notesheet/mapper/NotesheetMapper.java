@@ -41,8 +41,8 @@ public class NotesheetMapper {
 				// Create a new NoteStepwiseDocuments entity for each DTO in the list
 				NoteStepwiseDocuments document = NoteStepwiseDocuments.builder()
 						.documentName(processDocument.getDocumentName()).documentUuid(processDocument.getDocumentUuid())
-						.uploadedBy(processDocument.getUploadedBy()).notesheet(notesheet) // Associate with the
-																							// Notesheet
+						.notesheet(notesheet) // Associate with the
+												// Notesheet
 						.build();
 				noteStepwiseDocumentsList.add(document);
 			}

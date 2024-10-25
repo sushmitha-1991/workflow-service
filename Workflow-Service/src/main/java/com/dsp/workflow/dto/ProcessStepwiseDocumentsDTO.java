@@ -14,7 +14,5 @@ public class ProcessStepwiseDocumentsDTO {
 	private Long id;
 	private String documentName;
 	private String documentUuid;
-	private String uploadedBy;
-	private Long noteSheetId; // Representing the relation to WorkflowHistory
 
 }
