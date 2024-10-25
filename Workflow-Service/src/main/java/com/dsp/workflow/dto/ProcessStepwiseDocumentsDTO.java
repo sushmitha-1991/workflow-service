@@ -14,5 +14,6 @@ public class ProcessStepwiseDocumentsDTO {
 	private Long id;
 	private String documentName;
 	private String documentUuid;
+	private String version;
 
 }
