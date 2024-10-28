@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.dsp.workflow.response.GenericResponse;
@@ -60,6 +61,7 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 	}
 
+	@ResponseStatus(HttpStatus.OK)
 	@ExceptionHandler(TaskNotFoundException.class)
 	public ResponseEntity<GenericResponse<String>> handleTaskNotFoundException(TaskNotFoundException ex) {
 		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null, HttpStatus.OK.value());

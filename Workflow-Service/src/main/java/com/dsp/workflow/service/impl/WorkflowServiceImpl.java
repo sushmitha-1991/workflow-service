@@ -446,7 +446,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				}
 
 				if (filteredTasks.isEmpty()) {
-					throw new ResourceNotFoundException(
+					throw new TaskNotFoundException(
 							"No pending tasks found for the provided receiverUserId: " + receiverUserId);
 				}
 
@@ -454,7 +454,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			} else {
 				throw new ResourceNotFoundException("Failed to retrieve tasks: " + response.getStatusCode());
 			}
-		} catch (ResourceNotFoundException e) {
+		} catch (TaskNotFoundException e) {
 			throw e; // Preserve custom exception for resource not found
 		} catch (Exception e) {
 			throw new RuntimeException("An unexpected error occurred while retrieving tasks: " + e.getMessage(), e);
