@@ -94,13 +94,18 @@ public class NotesheetServiceImpl implements NotesheetService {
 			// Fetch the role name using the createdBy user ID
 			String roleName = notesheetRepository.findRoleNameByUserId(notesheet.getCreatedBy());
 
+			// Map NoteStepwiseDocuments to ProcessStepwiseDocumentsDTO
+			List<ProcessStepwiseDocumentsDTO> documents = notesheet.getDocuments().stream()
+					.map(ProcessStepwiseDocumentsDTO::new).collect(Collectors.toList());
+
 			// Map to NotesheetDTO
-			return NotesheetDTO.builder().note(notesheet.getNote()).receiverRoleId(notesheet.getReceiverRoleId())
-					.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
-					.applicationHistoryId(notesheet.getApplicationHistoryId())
+			return NotesheetDTO.builder().id(notesheet.getId()).note(notesheet.getNote())
+					.receiverRoleId(notesheet.getReceiverRoleId()).receiverUserId(notesheet.getReceiverUserId())
+					.senderRoleId(notesheet.getSenderRoleId()).applicationHistoryId(notesheet.getApplicationHistoryId())
 					.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
 					.additionalDetails(notesheet.getAdditionalDetails()).createdByName(createdByName).roleName(roleName)
-					.createdAt(notesheet.getCreatedAt()).build();
+					.createdAt(notesheet.getCreatedAt()).documents(documents) // Set associated documents
+					.build();
 		}).collect(Collectors.toList());
 	}
 
@@ -135,10 +140,6 @@ public class NotesheetServiceImpl implements NotesheetService {
 	@Override
 	public void deleteNotesheet(Long id) {
 		notesheetRepository.deleteById(id);
-	}
-
-	public List<NotesheetDTO> getAllNotesheets() {
-		return notesheetRepository.findAll().stream().map(NotesheetDTO::new).collect(Collectors.toList());
 	}
 
 }
