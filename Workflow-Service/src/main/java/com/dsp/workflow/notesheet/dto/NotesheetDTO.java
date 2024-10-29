@@ -38,6 +38,7 @@ public class NotesheetDTO {
     private String createdByName;
     private String roleName;
     private LocalDateTime createdAt;
+    private String referenceNo;
 
     @JsonIgnore
     private Long createdBy;
