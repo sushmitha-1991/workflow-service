@@ -10,8 +10,6 @@ public interface NotesheetService {
 
 	NotesheetDTO getNotesheetById(Long id);
 
-	List<NotesheetDTO> getAllNotesheets();
-
 	NotesheetDTO updateNotesheet(Long id, NotesheetDTO notesheetDTO);
 
 	void deleteNotesheet(Long id);

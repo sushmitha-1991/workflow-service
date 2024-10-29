@@ -63,7 +63,7 @@ public class NotesheetController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@GetMapping("/getall")
+	@GetMapping("/getAll")
 	@Operation(summary = "Get all notesheets")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
 			@ApiResponse(responseCode = "500", description = "Internal server error") })
@@ -74,15 +74,6 @@ public class NotesheetController {
 		GenericResponse<List<NotesheetDTO>> response = new GenericResponse<>(true, "Notesheets fetched successfully",
 				notesheets, HttpStatus.OK.value());
 		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
-
-	@GetMapping("/getAll")
-	@Operation(summary = "Get all notesheets")
-	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
-	public GenericResponse<List<NotesheetDTO>> getAllNotesheets() {
-		List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets();
-		return new GenericResponse<>(true, "Notesheets retrieved successfully", notesheets, HttpStatus.OK.value());
 	}
 
 	@PutMapping("/update/{id}")
