@@ -98,14 +98,18 @@ public class NotesheetServiceImpl implements NotesheetService {
 			List<ProcessStepwiseDocumentsDTO> documents = notesheet.getDocuments().stream()
 					.map(ProcessStepwiseDocumentsDTO::new).collect(Collectors.toList());
 
+			// Fetch referenceNo using applicationInstanceId
+			String referenceNo = notesheetRepository
+					.findNotesheetsWithReferenceNo(notesheet.getApplicationInstanceId());
+
+			System.out.println("### referenceNo - " + referenceNo);
 			// Map to NotesheetDTO
 			return NotesheetDTO.builder().id(notesheet.getId()).note(notesheet.getNote())
 					.receiverRoleId(notesheet.getReceiverRoleId()).receiverUserId(notesheet.getReceiverUserId())
 					.senderRoleId(notesheet.getSenderRoleId()).applicationHistoryId(notesheet.getApplicationHistoryId())
 					.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
 					.additionalDetails(notesheet.getAdditionalDetails()).createdByName(createdByName).roleName(roleName)
-					.createdAt(notesheet.getCreatedAt()).documents(documents) // Set associated documents
-					.build();
+					.createdAt(notesheet.getCreatedAt()).documents(documents).referenceNo(referenceNo).build();
 		}).collect(Collectors.toList());
 	}
 

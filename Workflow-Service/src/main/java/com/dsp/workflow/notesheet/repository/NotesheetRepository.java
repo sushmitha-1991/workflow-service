@@ -32,4 +32,13 @@ public interface NotesheetRepository extends JpaRepository<Notesheet, Long> {
 
 	List<Notesheet> findByApplicationInstanceId(Long applicationInstanceId);
 
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = "SELECT ai.application_no AS referenceNo " + "FROM workflow.notesheet n "
+			+ "LEFT JOIN master.application_instance ai ON n.application_instance_id = ai.id "
+			+ "WHERE n.application_instance_id = :applicationInstanceId LIMIT 1", nativeQuery = true)
+	String findNotesheetsWithReferenceNo(@Param("applicationInstanceId") Long applicationInstanceId);
+
 }

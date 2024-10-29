@@ -21,6 +21,7 @@ public class ProcessStepwiseDocumentsDTO {
 
 	// Constructor to map entity to DTO
 	public ProcessStepwiseDocumentsDTO(NoteStepwiseDocuments document) {
+		this.id = document.getId();
 		this.documentName = document.getDocumentName();
 		this.documentUuid = document.getDocumentUuid();
 		this.uploadedBy = document.getUploadedBy();
