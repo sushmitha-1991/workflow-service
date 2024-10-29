@@ -99,10 +99,7 @@ public class NotesheetServiceImpl implements NotesheetService {
 					.receiverUserId(notesheet.getReceiverUserId()).senderRoleId(notesheet.getSenderRoleId())
 					.applicationHistoryId(notesheet.getApplicationHistoryId())
 					.applicationInstanceId(notesheet.getApplicationInstanceId()).actionTaken(notesheet.getActionTaken())
-					.additionalDetails(notesheet.getAdditionalDetails()).createdByName(createdByName) // Set the
-																										// combined name
-																										// here
-					.roleName(roleName) // Set the role name here
+					.additionalDetails(notesheet.getAdditionalDetails()).createdByName(createdByName).roleName(roleName)
 					.createdAt(notesheet.getCreatedAt()).build();
 		}).collect(Collectors.toList());
 	}
@@ -138,6 +135,10 @@ public class NotesheetServiceImpl implements NotesheetService {
 	@Override
 	public void deleteNotesheet(Long id) {
 		notesheetRepository.deleteById(id);
+	}
+
+	public List<NotesheetDTO> getAllNotesheets() {
+		return notesheetRepository.findAll().stream().map(NotesheetDTO::new).collect(Collectors.toList());
 	}
 
 }

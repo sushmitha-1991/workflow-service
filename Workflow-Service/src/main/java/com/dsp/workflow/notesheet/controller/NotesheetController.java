@@ -63,21 +63,27 @@ public class NotesheetController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@GetMapping("/getAll")
+	@GetMapping("/getall")
 	@Operation(summary = "Get all notesheets")
-	@ApiResponses(value = { 
-	    @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
-	    @ApiResponse(responseCode = "500", description = "Internal server error") 
-	})
+	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
 	public ResponseEntity<GenericResponse<List<NotesheetDTO>>> getAllNotesheets(
-	        @RequestParam(name = "applicationInstanceId", required = false) Long applicationInstanceId) {
+			@RequestParam(name = "applicationInstanceId", required = false) Long applicationInstanceId) {
 
-	    List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets(applicationInstanceId);
-	    GenericResponse<List<NotesheetDTO>> response = new GenericResponse<>(true, "Notesheets fetched successfully",
-	            notesheets, HttpStatus.OK.value());
-	    return new ResponseEntity<>(response, HttpStatus.OK);
+		List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets(applicationInstanceId);
+		GenericResponse<List<NotesheetDTO>> response = new GenericResponse<>(true, "Notesheets fetched successfully",
+				notesheets, HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
+	@GetMapping("/getAll")
+	@Operation(summary = "Get all notesheets")
+	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Notesheets fetched successfully"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	public GenericResponse<List<NotesheetDTO>> getAllNotesheets() {
+		List<NotesheetDTO> notesheets = notesheetService.getAllNotesheets();
+		return new GenericResponse<>(true, "Notesheets retrieved successfully", notesheets, HttpStatus.OK.value());
+	}
 
 	@PutMapping("/update/{id}")
 	@Operation(summary = "Update an existing notesheet")

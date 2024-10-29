@@ -8,6 +8,7 @@ package com.dsp.workflow.notesheet.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
@@ -24,35 +25,43 @@ import lombok.NoArgsConstructor;
 @Builder
 public class NotesheetDTO {
 
-	private String note;
-	private long receiverRoleId;
-	private int receiverUserId;
-	private String receiverUserName;
-	private long senderRoleId;
-	private long applicationHistoryId;
-	private long applicationInstanceId;
-	private String actionTaken;
-	private Map<String, Object> additionalDetails;
-	private String createdByName; // Creator's full name
-	private String roleName; // Role name (abbr + role_name)
-	private LocalDateTime createdAt;
+    private Long id;  // Add this field
+    private String note;
+    private long receiverRoleId;
+    private int receiverUserId;
+    private String receiverUserName;
+    private long senderRoleId;
+    private long applicationHistoryId;
+    private long applicationInstanceId;
+    private String actionTaken;
+    private Map<String, Object> additionalDetails;
+    private String createdByName;
+    private String roleName;
+    private LocalDateTime createdAt;
 
-	@JsonIgnore // Exclude createdBy from JSON serialization
-	private Long createdBy;
-    private List<ProcessStepwiseDocumentsDTO> documents;  // Add this field for associated documents
+    @JsonIgnore
+    private Long createdBy;
+    private List<ProcessStepwiseDocumentsDTO> documents;
 
-
-	// Constructor to create DTO from Entity
-	public NotesheetDTO(Notesheet notesheet) {
-		this.note = notesheet.getNote();
-		this.receiverRoleId = notesheet.getReceiverRoleId();
-		this.receiverUserId = notesheet.getReceiverUserId();
-		this.senderRoleId = notesheet.getSenderRoleId();
-		this.applicationHistoryId = notesheet.getApplicationHistoryId();
-		this.applicationInstanceId = notesheet.getApplicationInstanceId();
-		this.actionTaken = notesheet.getActionTaken();
-		this.additionalDetails = notesheet.getAdditionalDetails();
-		this.createdAt = notesheet.getCreatedAt();
-		this.createdBy = notesheet.getCreatedBy(); // Will not be serialized in response
-	}
+    // Constructor to create DTO from Entity
+    public NotesheetDTO(Notesheet notesheet) {
+        this.id = notesheet.getId();  // Set the id
+        this.note = notesheet.getNote();
+        this.receiverRoleId = notesheet.getReceiverRoleId();
+        this.receiverUserId = notesheet.getReceiverUserId();
+        this.senderRoleId = notesheet.getSenderRoleId();
+        this.applicationHistoryId = notesheet.getApplicationHistoryId();
+        this.applicationInstanceId = notesheet.getApplicationInstanceId();
+        this.actionTaken = notesheet.getActionTaken();
+        this.additionalDetails = notesheet.getAdditionalDetails();
+        this.createdAt = notesheet.getCreatedAt();
+        this.createdBy = notesheet.getCreatedBy();
+        
+        // Convert NoteStepwiseDocuments to ProcessStepwiseDocumentsDTO
+        if (notesheet.getDocuments() != null) {
+            this.documents = notesheet.getDocuments().stream()
+                                       .map(ProcessStepwiseDocumentsDTO::new)
+                                       .collect(Collectors.toList());
+        }
+    }
 }
