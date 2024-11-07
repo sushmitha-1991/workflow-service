@@ -164,6 +164,17 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
+	// API for All documents
+	@GetMapping("/allDocumentsTab")
+	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getallDocumentsTab() {
+		Long userId = utils.getUserIdFromAuthentication();
+		List<Map<String, Object>> data = workflowService.getallDocumentsTab(userId);
+		if (data.isEmpty()) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
+	}
+
 	@Operation(summary = "Start or Complete Task", description = "Handles the initiation or completion of a task based on the stepType.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task processed successfully"),
 			@ApiResponse(responseCode = "400", description = "Invalid request data"),

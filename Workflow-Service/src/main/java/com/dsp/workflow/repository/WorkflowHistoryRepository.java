@@ -36,7 +36,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
 			@Param("status") String status, @Param("statusKey") String statusKey);
-	
+
 	List<WorkflowHistory> findBySubModuleIdAndActionTakenBy(String subModuleId, Long UserId);
 
 	/**
@@ -52,5 +52,12 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 */
 	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
 
-
+	@Query(value = "SELECT ai.application_no AS refNo, a.name AS documentName, "
+			+ "wh.action_taken_on AS date, '18' AS LSNo, 'III' AS SSNo, "
+			+ "ai.current_status AS status, wh.action_taken_by_name AS pendingAt "
+			+ "FROM workflow.workflow_history wh "
+			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
+			+ "JOIN master.applications a ON ai.application_id = a.id "
+			+ "WHERE wh.action_taken_by = :userId", nativeQuery = true)
+	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
 }

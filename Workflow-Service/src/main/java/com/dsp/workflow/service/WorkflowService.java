@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
-import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
@@ -42,10 +41,6 @@ public interface WorkflowService {
 	String getTaskIdByProcessInstanceId(String processInstanceId);
 
 	List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId);
-
-	boolean isDocumentApprovedForPublishing(String taskId);
-
-	String publishDocument(PublishRequestDTO requestDTO);
 
 	/**
 	 * @param notesheetDTO
@@ -94,5 +89,11 @@ public interface WorkflowService {
 	 * @param taskId
 	 */
 	void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId);
+
+	/**
+	 * @param userId
+	 * @return
+	 */
+	List<Map<String, Object>> getallDocumentsTab(Long userId);
 
 }

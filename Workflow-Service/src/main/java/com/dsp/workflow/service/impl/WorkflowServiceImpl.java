@@ -14,7 +14,6 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
-import org.camunda.bpm.engine.task.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,7 +27,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
-import com.dsp.workflow.dto.PublishRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
@@ -521,47 +519,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	@Override
-	public boolean isDocumentApprovedForPublishing(String taskId) {
-		// Fetch the task by taskId
-		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-
-		// Check if the task is valid
-		if (task == null) {
-			throw new IllegalArgumentException("Task not found for ID: " + taskId);
-		}
-
-		// Retrieve the process variable for 'isApprovedForPublishing'
-		Boolean isApprovedForPublishing = (Boolean) runtimeService.getVariable(task.getProcessInstanceId(),
-				"isApprovedForPublishing");
-
-		// Return true if the document is approved
-		return Boolean.TRUE.equals(isApprovedForPublishing);
-	}
-
-	@Override
-	public String publishDocument(PublishRequestDTO requestDTO) {
-		// Fetch the task
-		Task task = taskService.createTaskQuery().taskId(requestDTO.getTaskId()).singleResult();
-
-		if (task == null) {
-			throw new IllegalArgumentException("Task not found for ID: " + requestDTO.getTaskId());
-		}
-
-		// Create variables to complete the task
-		Map<String, Object> variables = new HashMap<>();
-		variables.put("note", requestDTO.getNote());
-		variables.put("senderRoleId", requestDTO.getSenderRoleId());
-		variables.put("applicationInstanceId", requestDTO.getApplicationInstanceId());
-		variables.put("actionTaken", requestDTO.getActionTaken());
-
-		// Complete the task
-		taskService.complete(requestDTO.getTaskId(), variables);
-
-		// Return confirmation of the task completion (e.g., task id or a message)
-		return "Task with ID: " + requestDTO.getTaskId() + " completed successfully.";
-	}
-
-	@Override
 	public void saveNotesheet(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {
 		// TODO Auto-generated method stub
 
@@ -620,6 +577,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 			throw new ResourceNotFoundException(
 					"ApplicationInstance with ID " + notesheetDTO.getApplicationInstanceId() + " not found.");
 		}
+	}
+
+	@Override
+	public List<Map<String, Object>> getallDocumentsTab(Long userId) {
+		return workflowHistoryRepository.findAllDocumentsForUser(userId).stream().map(row -> {
+			Map<String, Object> rowMap = new HashMap<>();
+			rowMap.put("refno", row[0]);
+			rowMap.put("documentname", row[1]);
+			rowMap.put("date", row[2].toString()); // Format date as needed
+			rowMap.put("lsno", row[3]);
+			rowMap.put("ssno", row[4]);
+			rowMap.put("status", row[5]);
+			rowMap.put("pendingat", row[6]);
+			return rowMap;
+		}).collect(Collectors.toList());
 	}
 
 }
