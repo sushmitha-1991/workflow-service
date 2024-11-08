@@ -605,7 +605,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return workflowHistoryRepository.findAllApprovedDocumentsForUser(userId).stream().map(row -> {
 			Map<String, Object> rowMap = new HashMap<>();
 			rowMap.put("applicationNo", row[0]);
-			rowMap.put("documentname", row[1]);
+			rowMap.put("documentName", row[1]);
 			rowMap.put("date", row[2].toString()); // Format date as needed
 			rowMap.put("lsno", row[3]);
 			rowMap.put("ssno", row[4]);
