@@ -263,9 +263,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 					}
 				}
 
-				// Fetch the next task ID using the process instance ID
 				String nextTaskId = fetchNextTaskId(processInstanceId);
-				return nextTaskId; // Return the next task ID instead of the current task ID
+				if (nextTaskId == null) {
+					return "Workflow has ended"; // Return a message or null indicating the end of the workflow
+				}
+				return nextTaskId; // Return the next task ID if available
 			} else {
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
