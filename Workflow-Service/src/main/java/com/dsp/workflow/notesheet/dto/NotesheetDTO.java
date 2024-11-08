@@ -25,44 +25,43 @@ import lombok.NoArgsConstructor;
 @Builder
 public class NotesheetDTO {
 
-    private Long id;  // Add this field
-    private String note;
-    private long receiverRoleId;
-    private int receiverUserId;
-    private String receiverUserName;
-    private long senderRoleId;
-    private long applicationHistoryId;
-    private long applicationInstanceId;
-    private String actionTaken;
-    private Map<String, Object> additionalDetails;
-    private String createdByName;
-    private String roleName;
-    private LocalDateTime createdAt;
-    private String referenceNo;
+	private Long id; // Add this field
+	private String note;
+	private Long receiverRoleId;
+	private Integer receiverUserId;
+	private String receiverUserName;
+	private long senderRoleId;
+	private long applicationHistoryId;
+	private long applicationInstanceId;
+	private String actionTaken;
+	private Map<String, Object> additionalDetails;
+	private String createdByName;
+	private String roleName;
+	private LocalDateTime createdAt;
+	private String referenceNo;
 
-    @JsonIgnore
-    private Long createdBy;
-    private List<ProcessStepwiseDocumentsDTO> documents;
+	@JsonIgnore
+	private Long createdBy;
+	private List<ProcessStepwiseDocumentsDTO> documents;
 
-    // Constructor to create DTO from Entity
-    public NotesheetDTO(Notesheet notesheet) {
-        this.id = notesheet.getId();  // Set the id
-        this.note = notesheet.getNote();
-        this.receiverRoleId = notesheet.getReceiverRoleId();
-        this.receiverUserId = notesheet.getReceiverUserId();
-        this.senderRoleId = notesheet.getSenderRoleId();
-        this.applicationHistoryId = notesheet.getApplicationHistoryId();
-        this.applicationInstanceId = notesheet.getApplicationInstanceId();
-        this.actionTaken = notesheet.getActionTaken();
-        this.additionalDetails = notesheet.getAdditionalDetails();
-        this.createdAt = notesheet.getCreatedAt();
-        this.createdBy = notesheet.getCreatedBy();
-        
-        // Convert NoteStepwiseDocuments to ProcessStepwiseDocumentsDTO
-        if (notesheet.getDocuments() != null) {
-            this.documents = notesheet.getDocuments().stream()
-                                       .map(ProcessStepwiseDocumentsDTO::new)
-                                       .collect(Collectors.toList());
-        }
-    }
+	// Constructor to create DTO from Entity
+	public NotesheetDTO(Notesheet notesheet) {
+		this.id = notesheet.getId(); // Set the id
+		this.note = notesheet.getNote();
+		this.receiverRoleId = notesheet.getReceiverRoleId();
+		this.receiverUserId = notesheet.getReceiverUserId();
+		this.senderRoleId = notesheet.getSenderRoleId();
+		this.applicationHistoryId = notesheet.getApplicationHistoryId();
+		this.applicationInstanceId = notesheet.getApplicationInstanceId();
+		this.actionTaken = notesheet.getActionTaken();
+		this.additionalDetails = notesheet.getAdditionalDetails();
+		this.createdAt = notesheet.getCreatedAt();
+		this.createdBy = notesheet.getCreatedBy();
+
+		// Convert NoteStepwiseDocuments to ProcessStepwiseDocumentsDTO
+		if (notesheet.getDocuments() != null) {
+			this.documents = notesheet.getDocuments().stream().map(ProcessStepwiseDocumentsDTO::new)
+					.collect(Collectors.toList());
+		}
+	}
 }

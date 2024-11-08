@@ -204,9 +204,13 @@ public class WorkflowController {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("processInstanceId", processInstanceId);
 		variables.put("note", completeTaskRequestDTO.getNote());
-		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
-		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
-		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
+		variables.put("receiverRoleId",
+				completeTaskRequestDTO.getReceiverRoleId() != null ? completeTaskRequestDTO.getReceiverRoleId() : 0);
+		variables.put("receiverUserId",
+				completeTaskRequestDTO.getReceiverUserId() != null ? completeTaskRequestDTO.getReceiverUserId() : 0);
+		variables.put("receiverUserName",
+				completeTaskRequestDTO.getReceiverUserName() != null ? completeTaskRequestDTO.getReceiverUserName()
+						: "");
 		variables.put("senderRoleId", utils.getRoleIdByUserId());
 		variables.put("senderUserId", utils.getUserIdFromAuthentication());
 		variables.put("historyId", taskId);
@@ -214,7 +218,8 @@ public class WorkflowController {
 		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
 		variables.put("sendTo",
 				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
-		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
+		variables.put("officeId",
+				completeTaskRequestDTO.getOfficeId() != null ? completeTaskRequestDTO.getOfficeId() : 0);
 		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
 		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
 		variables.put("stepType", completeTaskRequestDTO.getStepType());
