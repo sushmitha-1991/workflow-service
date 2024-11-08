@@ -600,4 +600,22 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}).collect(Collectors.toList());
 	}
 
+	@Override
+	public List<Map<String, Object>> getallApprovedTab(Long userId) {
+		return workflowHistoryRepository.findAllApprovedDocumentsForUser(userId).stream().map(row -> {
+			Map<String, Object> rowMap = new HashMap<>();
+			rowMap.put("applicationNo", row[0]);
+			rowMap.put("documentname", row[1]);
+			rowMap.put("date", row[2].toString()); // Format date as needed
+			rowMap.put("lsno", row[3]);
+			rowMap.put("ssno", row[4]);
+			rowMap.put("status", row[5]);
+			rowMap.put("pendingat", row[6]);
+			rowMap.put("ref_id", row[7]);
+			rowMap.put("application_id", row[8]);
+			rowMap.put("applicationInstanceId", row[9]);
+			return rowMap;
+		}).collect(Collectors.toList());
+	}
+
 }

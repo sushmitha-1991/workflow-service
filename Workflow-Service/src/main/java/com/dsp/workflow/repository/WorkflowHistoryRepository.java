@@ -60,4 +60,14 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "JOIN master.applications a ON ai.application_id = a.id "
 			+ "WHERE wh.action_taken_by = :userId", nativeQuery = true)
 	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
+
+	@Query(value = "SELECT DISTINCT ai.application_no AS applicationNo, " + "a.name AS documentName, "
+			+ "wh.action_taken_on AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, " + "ai.current_status AS status, "
+			+ "wh.action_taken_by_name AS pendingAt, " + "ai.ref_id AS ref_id, "
+			+ "ai.application_id AS application_id, " + "ai.id AS applicationInstanceId "
+			+ "FROM workflow.workflow_history wh "
+			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
+			+ "JOIN master.applications a ON ai.application_id = a.id "
+			+ "WHERE wh.action_taken_by = :userId AND ai.current_status = 'Approved' ", nativeQuery = true)
+	List<Object[]> findAllApprovedDocumentsForUser(@Param("userId") Long userId);
 }

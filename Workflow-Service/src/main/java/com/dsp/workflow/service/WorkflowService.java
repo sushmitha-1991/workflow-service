@@ -96,4 +96,10 @@ public interface WorkflowService {
 	 */
 	List<Map<String, Object>> getallDocumentsTab(Long userId);
 
+	/**
+	 * @param userId
+	 * @return
+	 */
+	List<Map<String, Object>> getallApprovedTab(Long userId);
+
 }
