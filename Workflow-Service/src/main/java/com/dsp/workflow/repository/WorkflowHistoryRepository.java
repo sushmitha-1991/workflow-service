@@ -52,9 +52,9 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 */
 	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
 
-	@Query(value = "SELECT ai.application_no AS refNo, a.name AS documentName, "
+	@Query(value = "SELECT ai.application_no AS applicationNo, a.name AS documentName, "
 			+ "wh.action_taken_on AS date, '18' AS LSNo, 'III' AS SSNo, "
-			+ "ai.current_status AS status, wh.action_taken_by_name AS pendingAt "
+			+ "ai.current_status AS status, wh.action_taken_by_name AS pendingAt, ai.ref_id AS ref_id, ai.application_id AS application_id, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId "
 			+ "FROM workflow.workflow_history wh "
 			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
 			+ "JOIN master.applications a ON ai.application_id = a.id "

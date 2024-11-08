@@ -583,13 +583,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public List<Map<String, Object>> getallDocumentsTab(Long userId) {
 		return workflowHistoryRepository.findAllDocumentsForUser(userId).stream().map(row -> {
 			Map<String, Object> rowMap = new HashMap<>();
-			rowMap.put("refno", row[0]);
+			rowMap.put("applicationNo", row[0]);
 			rowMap.put("documentname", row[1]);
 			rowMap.put("date", row[2].toString()); // Format date as needed
 			rowMap.put("lsno", row[3]);
 			rowMap.put("ssno", row[4]);
 			rowMap.put("status", row[5]);
 			rowMap.put("pendingat", row[6]);
+			rowMap.put("ref_id", row[7]);
+			rowMap.put("application_id", row[8]);
+			rowMap.put("processInstanceId", row[9]);
+			rowMap.put("applicationInstanceId", row[10]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}
