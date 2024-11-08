@@ -592,8 +592,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("ssno", row[4]);
 			rowMap.put("status", row[5]);
 			rowMap.put("pendingat", row[6]);
-			rowMap.put("ref_id", row[7]);
-			rowMap.put("application_id", row[8]);
+			rowMap.put("refId", row[7]);
+			rowMap.put("applicationId", row[8]);
 			rowMap.put("processInstanceId", row[9]);
 			rowMap.put("applicationInstanceId", row[10]);
 			return rowMap;
@@ -611,8 +611,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("ssno", row[4]);
 			rowMap.put("status", row[5]);
 			rowMap.put("pendingat", row[6]);
-			rowMap.put("ref_id", row[7]);
-			rowMap.put("application_id", row[8]);
+			rowMap.put("refId", row[7]);
+			rowMap.put("applicationId", row[8]);
 			rowMap.put("applicationInstanceId", row[9]);
 			return rowMap;
 		}).collect(Collectors.toList());
