@@ -588,7 +588,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("applicationNo", row[0]);
 			rowMap.put("documentName", row[1]);
 			rowMap.put("date", row[2].toString()); // Format date as needed
-			rowMap.put("lsnNo", row[3]);
+			rowMap.put("lsNo", row[3]);
 			rowMap.put("ssNo", row[4]);
 			rowMap.put("status", row[5]);
 			rowMap.put("pendingAt", row[6]);
