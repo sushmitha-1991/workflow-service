@@ -53,15 +53,15 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, a.name AS documentName, "
-			+ "wh.action_taken_on AS date, '18' AS LSNo, 'III' AS SSNo, "
-			+ "ai.current_status AS status, CONCAT(wh.action_taken_by_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, ai.ref_id AS refId, ai.application_id AS applicationId, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId "
+			+ "wh.pending_start_date AS date, '18' AS LSNo, 'III' AS SSNo, "
+			+ "ai.current_status AS status, CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, ai.ref_id AS refId, ai.application_id AS applicationId, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId "
 			+ "FROM workflow.workflow_history wh "
 			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
 			+ "JOIN master.applications a ON ai.application_id = a.id "
 			+ "JOIN authentication.base_user u ON u.id = :userId "
 			+ "JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true "
 			+ "JOIN authentication.roles r ON r.id = ur.role_id " + "JOIN master.offices o ON o.id = ur.office_id "
-			+ "WHERE wh.action_taken_by = :userId", nativeQuery = true)
+			+ "WHERE wh.pending_with = :userId OR wh.action_taken_by = :userId", nativeQuery = true)
 	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, "

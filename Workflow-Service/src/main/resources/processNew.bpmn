@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0fr9mxs" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.26.0">
+  <bpmn:process id="generic-workflow" name="generic-workflow" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="Document Title" value="documentTitle" />
+          <camunda:property name="Reviewer Id" value="reviewerId" />
+          <camunda:property name="Reviewer Name" value="reviewerName" />
+          <camunda:property name="Date" value="currentDate" />
+          <camunda:property name="Comments" value="comments" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>SequenceFlow_1fp17al</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1fp17al" sourceRef="StartEvent_1" targetRef="Activity_0xici8q" />
+    <bpmn:userTask id="creator-id" name="IN-PROCESS" camunda:formKey="camunda-forms:/forms/CreatorForm.form" camunda:candidateUsers="demo">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_19t2ff4</bpmn:incoming>
+      <bpmn:incoming>Flow_1e4yjcr</bpmn:incoming>
+      <bpmn:outgoing>Flow_1eu2dno</bpmn:outgoing>
+      <bpmn:outgoing>Flow_19t2ff4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_1wyafyd" name="End">
+      <bpmn:incoming>Flow_1eu2dno</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1eu2dno" name="Approved" sourceRef="creator-id" targetRef="Event_1wyafyd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{sendTo == 'APPROVED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_19t2ff4" name="Review" sourceRef="creator-id" targetRef="creator-id">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{sendTo == 'REVIEWER'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="Activity_0xici8q" name="CREATOR" camunda:formKey="camunda-forms:/forms/CreatorForm.form" camunda:candidateUsers="demo">
+      <bpmn:incoming>SequenceFlow_1fp17al</bpmn:incoming>
+      <bpmn:outgoing>Flow_1e4yjcr</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1e4yjcr" name="Review" sourceRef="Activity_0xici8q" targetRef="creator-id">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{sendTo == 'REVIEWER'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="generic-workflow">
+      <bpmndi:BPMNShape id="UserTask_08mft2c_di" bpmnElement="creator-id">
+        <dc:Bounds x="420" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0p0s16r" bpmnElement="Activity_0xici8q">
+        <dc:Bounds x="240" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wyafyd_di" bpmnElement="Event_1wyafyd">
+        <dc:Bounds x="632" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="142" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1eu2dno_di" bpmnElement="Flow_1eu2dno">
+        <di:waypoint x="520" y="117" />
+        <di:waypoint x="632" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="553" y="99" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19t2ff4_di" bpmnElement="Flow_19t2ff4">
+        <di:waypoint x="500" y="157" />
+        <di:waypoint x="500" y="220" />
+        <di:waypoint x="440" y="220" />
+        <di:waypoint x="440" y="157" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="452" y="202" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1e4yjcr_di" bpmnElement="Flow_1e4yjcr">
+        <di:waypoint x="340" y="117" />
+        <di:waypoint x="420" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="362" y="99" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1fp17al_di" bpmnElement="SequenceFlow_1fp17al">
+        <di:waypoint x="188" y="117" />
+        <di:waypoint x="240" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="502" y="259" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
