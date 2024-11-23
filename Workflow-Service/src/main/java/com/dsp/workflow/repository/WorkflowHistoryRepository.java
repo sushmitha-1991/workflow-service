@@ -29,13 +29,13 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Modifying
 	@Transactional // Ensure this is present to manage transactions for the update query
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
-			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
 			+ "AND action_taken IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForStepType(@Param("processInstanceId") String processInstanceId,
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
-			@Param("status") String status, @Param("statusKey") String statusKey);
+			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId);
 
 	List<WorkflowHistory> findBySubModuleIdAndActionTakenBy(String subModuleId, Long UserId);
 
@@ -54,7 +54,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, a.name AS documentName, "
 			+ "wh.pending_start_date AS date, '18' AS LSNo, 'III' AS SSNo, "
-			+ "ai.current_status AS status, CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, ai.ref_id AS refId, ai.application_id AS applicationId, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId "
+			+ "ai.current_status AS status, CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, ai.ref_id AS refId, ai.application_id AS applicationId, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId, 'IN-PROCESS' AS taskName, wh.next_task_id AS taskId "
 			+ "FROM workflow.workflow_history wh "
 			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
 			+ "JOIN master.applications a ON ai.application_id = a.id "

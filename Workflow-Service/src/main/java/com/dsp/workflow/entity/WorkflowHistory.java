@@ -74,4 +74,10 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "inital_status_key", nullable = true)
 	private String initalStatusKey;
 
+	@Column(name = "current_task_id", nullable = true)
+	private String currentTaskId;
+
+	@Column(name = "next_task_id", nullable = true)
+	private String nextTaskId;
+
 }

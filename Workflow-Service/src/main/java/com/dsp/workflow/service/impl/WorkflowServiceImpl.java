@@ -210,6 +210,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String receiverUserName = (String) variables.get("receiverUserName");
 			String status = (String) variables.get("status");
 
+			String nextTaskId = fetchNextTaskId(processInstanceId);
 			LocalDateTime actionTakenOn = LocalDateTime.now(); // Assuming the action is taken now
 			// Check if the task was successfully completed
 			if (response.getStatusCode().is2xxSuccessful()) {
@@ -229,16 +230,20 @@ public class WorkflowServiceImpl implements WorkflowService {
 							// statusKey - appno+acc+prestatus
 							.actionTaken(actionTaken).actionTakenOn(LocalDateTime.now()).status(status)
 							.statusKey(statusKey).pendingWith(senderUserId).pendingWithName(userName)
-							.pendingStartDate(LocalDateTime.now()).initalStatusKey(statusKey).note(note).build();
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(statusKey).note(note)
+							.currentTaskId(taskId).build();
 					workflowHistoryRepository.save(firstEntry); // Assuming you have a repository
+					// store currrent task id
 
 					// Second entry, if needed, for the next task or status
 					WorkflowHistory secondEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 							.subModuleId(application_no).applicationInstanceId(applicationInstanceId).actionTaken(null)
 							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
 							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
-							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note).build();
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
+							.nextTaskId(nextTaskId).build();
 					workflowHistoryRepository.save(secondEntry);
+					// store next task id
 
 				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -246,7 +251,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
-							senderUserId, userName, actionTakenOn, status, statusKey);
+							senderUserId, userName, actionTakenOn, status, statusKey, taskId);
+					// store current task id
 
 					// Run update query if stepType is INTER or FINAL
 					if ("INTER".equals(stepType)) {
@@ -258,12 +264,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 								.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
 								.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
 								.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-								.build();
+								.nextTaskId(nextTaskId).build();
 						workflowHistoryRepository.save(entry);
+						// store next task id
 					}
 				}
 
-				String nextTaskId = fetchNextTaskId(processInstanceId);
 				if (nextTaskId == null) {
 					return "Workflow has ended"; // Return a message or null indicating the end of the workflow
 				}
@@ -596,6 +602,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("applicationId", row[8]);
 			rowMap.put("processInstanceId", row[9]);
 			rowMap.put("applicationInstanceId", row[10]);
+			rowMap.put("taskName", row[11]);
+			rowMap.put("taskId", row[12]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}
