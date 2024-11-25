@@ -250,6 +250,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
+					
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 					// store current task id
@@ -600,10 +601,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("pendingAt", row[6]);
 			rowMap.put("refId", row[7]);
 			rowMap.put("applicationId", row[8]);
-			rowMap.put("processInstanceId", row[9]);
-			rowMap.put("applicationInstanceId", row[10]);
-			rowMap.put("taskName", row[11]);
-			rowMap.put("taskId", row[12]);
+			rowMap.put("applicationInstanceId", row[9]);
+			rowMap.put("taskName", row[10]);
+			rowMap.put("taskId", row[11]);
+			rowMap.put("actionPerformed", row[12]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}

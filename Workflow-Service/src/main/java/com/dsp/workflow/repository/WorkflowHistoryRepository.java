@@ -27,11 +27,11 @@ import jakarta.transaction.Transactional;
 public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory, Long> {
 
 	@Modifying
-	@Transactional // Ensure this is present to manage transactions for the update query
+	@Transactional
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
 			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
-			+ "AND action_taken IS NULL", nativeQuery = true)
+			+ "AND action_taken_by IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForStepType(@Param("processInstanceId") String processInstanceId,
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
@@ -52,16 +52,37 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 */
 	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
 
-	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, a.name AS documentName, "
-			+ "wh.pending_start_date AS date, '18' AS LSNo, 'III' AS SSNo, "
-			+ "ai.current_status AS status, CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, ai.ref_id AS refId, ai.application_id AS applicationId, ai.process_instance_id as processInstanceId, ai.id as applicationinstanceId, 'IN-PROCESS' AS taskName, wh.next_task_id AS taskId "
+	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, "
+			+ "a.name AS documentName, " + "wh.created_at AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
+			+ "ai.current_status AS status, "
+			+ "CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, "
+			+ "ai.ref_id AS refId, " + "ai.application_id AS applicationId, " + "ai.id AS applicationinstanceId, "
+			+ "'IN-PROCESS' AS taskName, " + "wh.next_task_id AS taskId, " + "'Pending with me' AS actionPerformed "
 			+ "FROM workflow.workflow_history wh "
 			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
 			+ "JOIN master.applications a ON ai.application_id = a.id "
-			+ "JOIN authentication.base_user u ON u.id = :userId "
+			+ "JOIN authentication.base_user u ON u.id = wh.pending_with "
 			+ "JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true "
 			+ "JOIN authentication.roles r ON r.id = ur.role_id " + "JOIN master.offices o ON o.id = ur.office_id "
-			+ "WHERE wh.pending_with = :userId OR wh.action_taken_by = :userId", nativeQuery = true)
+			+ "WHERE wh.pending_with = :userId AND wh.action_taken_by IS NULL " + "UNION "
+			+ "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, " + "a.name AS documentName, "
+			+ "wh.created_at AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, " + "ai.current_status AS status, "
+			+ "CONCAT(wh.pending_with_name, ' - ', r.abbr, ' - ', o.office_name) AS pendingAt, "
+			+ "ai.ref_id AS refId, " + "ai.application_id AS applicationId, " + "ai.id AS applicationinstanceId, "
+			+ "'IN-PROCESS' AS taskName, " + "wh.next_task_id AS taskId, " + "'Action taken by me' AS actionPerformed "
+			+ "FROM workflow.workflow_history wh "
+			+ "JOIN master.application_instance ai ON wh.application_instance_id = ai.id "
+			+ "JOIN master.applications a ON ai.application_id = a.id "
+			+ "JOIN authentication.base_user u ON u.id = wh.pending_with "
+			+ "JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true "
+			+ "JOIN authentication.roles r ON r.id = ur.role_id " + "JOIN master.offices o ON o.id = ur.office_id "
+			+ "WHERE wh.id = ( " + "SELECT MAX(wh2.id) " + "FROM workflow.workflow_history wh2 "
+			+ "WHERE wh2.application_instance_id IN ( " + "SELECT wh3.application_instance_id "
+			+ "FROM workflow.workflow_history wh3 "
+			+ "WHERE wh3.pending_with IS NOT NULL AND wh3.action_taken_by = :userId "
+			+ "AND wh3.application_instance_id NOT IN ( " + "SELECT wh1.application_instance_id "
+			+ "FROM workflow.workflow_history wh1 "
+			+ "WHERE wh1.action_taken_by IS NULL AND wh1.pending_with = :userId)))", nativeQuery = true)
 	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, "
@@ -78,4 +99,5 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "WHERE wh.action_taken_by = :userId AND ai.current_status = 'Approved' "
 			+ "ORDER BY ai.application_no, wh.action_taken_on DESC", nativeQuery = true)
 	List<Object[]> findAllApprovedDocumentsForUser(@Param("userId") Long userId);
+
 }
