@@ -605,6 +605,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("taskName", row[10]);
 			rowMap.put("taskId", row[11]);
 			rowMap.put("actionPerformed", row[12]);
+			rowMap.put("formUrl", row[13]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}
