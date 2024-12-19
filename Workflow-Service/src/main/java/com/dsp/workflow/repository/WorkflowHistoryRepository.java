@@ -66,7 +66,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "WHERE wh.pending_with = :userId AND wh.action_taken_by IS NULL " + "UNION "
 			+ "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, " + "a.name AS documentName, "
 			+ "ai.document_date AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
-			+ "CASE WHEN ai.current_status = 'Returned' THEN 'In Progress' " + "ELSE ai.current_status END AS status, "
+			+ "CASE WHEN ai.current_status = 'Returned' THEN 'In Progress' ELSE ai.current_status END AS status, "
 			+ "CONCAT(wh.pending_with_name) AS pendingAt, " + "ai.ref_id AS refId, "
 			+ "ai.application_id AS applicationId, " + "ai.id AS applicationinstanceId, " + "'IN-PROCESS' AS taskName, "
 			+ "wh.next_task_id AS taskId, " + "'False' AS actionPerformed, " + "a.form_url as formUrl "
@@ -82,7 +82,16 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "WHERE wh3.pending_with IS NOT NULL AND wh3.action_taken_by = :userId "
 			+ "AND wh3.application_instance_id NOT IN ( " + "SELECT wh1.application_instance_id "
 			+ "FROM workflow.workflow_history wh1 "
-			+ "WHERE wh1.action_taken_by IS NULL AND wh1.pending_with = :userId)) group by wh2.application_instance_id)", nativeQuery = true)
+			+ "WHERE wh1.action_taken_by IS NULL AND wh1.pending_with = :userId)) "
+			+ "GROUP BY wh2.application_instance_id) " + "UNION "
+			+ "SELECT DISTINCT ON (ii.application_no) ii.application_no AS applicationNo, " + "a.name AS documentName, "
+			+ "ii.document_date AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, " + "ii.current_status AS status, "
+			+ "'Table Office A' AS pendingAt, " + "ii.ref_id AS refId, " + "ii.application_id AS applicationId, "
+			+ "ii.id AS applicationinstanceId, " + "'IN-PROCESS' AS taskName, " + "NULL AS taskId, "
+			+ "'True' AS actionPerformed, " + "a.form_url AS formUrl " + "FROM master.input_instance ii "
+			+ "JOIN master.applications a ON a.id = ii.application_id "
+			+ "JOIN authentication.base_user u ON u.id = ii.created_by "
+			+ "WHERE ii.created_by = :userId", nativeQuery = true)
 	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, "
