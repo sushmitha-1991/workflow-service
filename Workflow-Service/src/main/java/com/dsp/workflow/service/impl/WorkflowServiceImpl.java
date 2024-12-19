@@ -250,7 +250,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
 					notesheetRepository.save(notesheet);
-					
+
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 					// store current task id
@@ -594,7 +594,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			Map<String, Object> rowMap = new HashMap<>();
 			rowMap.put("applicationNo", row[0]);
 			rowMap.put("documentName", row[1]);
-			rowMap.put("date", row[2].toString()); // Format date as needed
+			rowMap.put("date", row[2] != null ? row[2].toString() : null); // Handle NULL date
 			rowMap.put("lsNo", row[3]);
 			rowMap.put("ssNo", row[4]);
 			rowMap.put("status", row[5]);

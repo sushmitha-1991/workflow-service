@@ -53,7 +53,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	List<WorkflowHistory> findByApplicationInstanceId(Long applicationInstanceId);
 
 	@Query(value = "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, "
-			+ "a.name AS documentName, " + "wh.created_at AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
+			+ "a.name AS documentName, " + "ai.document_date AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
 			+ "ai.current_status AS status, " + "CONCAT(wh.pending_with_name) AS pendingAt, " + "ai.ref_id AS refId, "
 			+ "ai.application_id AS applicationId, " + "ai.id AS applicationinstanceId, " + "'IN-PROCESS' AS taskName, "
 			+ "wh.next_task_id AS taskId, " + "'True' AS actionPerformed, " + "a.form_url as formUrl "
@@ -65,7 +65,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "JOIN authentication.roles r ON r.id = ur.role_id " + "JOIN master.offices o ON o.id = ur.office_id "
 			+ "WHERE wh.pending_with = :userId AND wh.action_taken_by IS NULL " + "UNION "
 			+ "SELECT DISTINCT ON (ai.application_no) ai.application_no AS applicationNo, " + "a.name AS documentName, "
-			+ "wh.created_at AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
+			+ "ai.document_date AS date, " + "'18' AS LSNo, " + "'III' AS SSNo, "
 			+ "CASE WHEN ai.current_status = 'Returned' THEN 'In Progress' " + "ELSE ai.current_status END AS status, "
 			+ "CONCAT(wh.pending_with_name) AS pendingAt, " + "ai.ref_id AS refId, "
 			+ "ai.application_id AS applicationId, " + "ai.id AS applicationinstanceId, " + "'IN-PROCESS' AS taskName, "
