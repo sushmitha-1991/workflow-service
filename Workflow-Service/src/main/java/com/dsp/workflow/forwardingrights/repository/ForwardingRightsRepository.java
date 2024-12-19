@@ -23,7 +23,8 @@ public interface ForwardingRightsRepository extends JpaRepository<ForwardingRigh
 			+ "LEFT JOIN authentication.roles ar ON ur.role_id = ar.id "
 			+ "LEFT JOIN master.offices of ON ur.office_id = of.id " + "WHERE fr.application_id = :applicationId "
 			+ "AND fr.sender_role_id IN :senderRoleIds " + "AND u.house_id = :house "
-			+ "AND fr.action_id = :actionId", nativeQuery = true)
+			+ "AND fr.action_id = :actionId AND u.id != :userId", nativeQuery = true)
 	List<Object[]> findUserDetailsWithForwardingRights(@Param("applicationId") Long applicationId,
-			@Param("senderRoleIds") List<Long> senderRoleIds, @Param("actionId") Long actionId, Long house);
+			@Param("senderRoleIds") List<Long> senderRoleIds, @Param("actionId") Long actionId, Long house,
+			Long userId);
 }

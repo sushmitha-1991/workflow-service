@@ -75,9 +75,11 @@ public class ForwardingRightsController {
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getUserDetails(
 			@RequestParam(name = "applicationId") Long applicationId, @RequestParam(name = "actionId") Long actionId) {
 		List<Long> senderRoleIds = utils.getRoleIdsByUserId();
+		Long userId = utils.getUserIdFromAuthentication();
 		Long houseId = utils.getHouseIdFromAuthentication();
+
 		List<Map<String, Object>> userDetails = forwardingRightsService.getUserDetails(applicationId, senderRoleIds,
-				actionId, houseId);
+				actionId, houseId, userId);
 		GenericResponse<List<Map<String, Object>>> response = new GenericResponse<>(true,
 				"User details fetched successfully", userDetails, HttpStatus.OK.value());
 		return ResponseEntity.ok(response);

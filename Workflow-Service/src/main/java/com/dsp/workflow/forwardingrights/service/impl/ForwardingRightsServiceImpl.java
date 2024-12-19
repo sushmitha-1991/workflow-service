@@ -90,10 +90,10 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 	 * Fetches user details based on applicationId, senderRoleIds, and actionId.
 	 */
 	public List<Map<String, Object>> getUserDetails(Long applicationId, List<Long> senderRoleIds, Long actionId,
-			Long house) {
+			Long house, Long userId) {
 		// Query the repository for user details along with forwarding rights
 		List<Object[]> resultList = repository.findUserDetailsWithForwardingRights(applicationId, senderRoleIds,
-				actionId, house);
+				actionId, house, userId);
 
 		if (resultList.isEmpty()) {
 			throw new UserNotFoundException("No user details found for the given criteria");
