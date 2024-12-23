@@ -16,7 +16,7 @@ public interface ForwardingRightsRepository extends JpaRepository<ForwardingRigh
 	// query
 	@Query(value = "SELECT u.id AS userId, u.first_name AS firstName, u.middle_name AS middleName, "
 			+ "u.last_name AS lastName, u.email AS email, ur.office_id AS officeId, of.office_name AS officeName, "
-			+ "ar.id AS roleId, ar.abbr AS roleName, ar.description AS description "
+			+ "ar.id AS roleId, ar.abbr AS roleName, ar.description AS description, fr.action_url as actionUrl "
 			+ "FROM workflow.forwarding_rights fr "
 			+ "JOIN authentication.user_roles ur ON fr.receiver_role_id = ur.role_id "
 			+ "JOIN authentication.base_user u ON ur.user_id = u.id "

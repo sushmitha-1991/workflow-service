@@ -180,7 +180,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables,
-			List<ProcessStepwiseDocumentsDTO> documentList) {
+			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl) {
 		try {
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
@@ -241,7 +241,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
 							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-							.nextTaskId(nextTaskId).build();
+							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
 					workflowHistoryRepository.save(secondEntry);
 					// store next task id
 
@@ -265,7 +265,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 								.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
 								.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
 								.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-								.nextTaskId(nextTaskId).build();
+								.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
 						workflowHistoryRepository.save(entry);
 						// store next task id
 					}
@@ -606,6 +606,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("taskId", row[11]);
 			rowMap.put("actionPerformed", row[12]);
 			rowMap.put("formUrl", row[13]);
+			rowMap.put("actionUrl", row[14]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}

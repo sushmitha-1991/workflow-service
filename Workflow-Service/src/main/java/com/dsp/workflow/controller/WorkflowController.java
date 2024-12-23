@@ -93,7 +93,8 @@ public class WorkflowController {
 		variables.put("status", completeTaskRequestDTO.getStatus());
 		// variables.put("document", completeTaskRequestDTO.getDocument());
 
-		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument());
+		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
+				completeTaskRequestDTO.getActionUrl());
 
 		if (newTaskId != null) {
 			return new GenericResponse<>(true, "Task completed successfully", newTaskId, HttpStatus.OK.value());
@@ -174,7 +175,7 @@ public class WorkflowController {
 		}
 		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
 	}
-	
+
 	// API for All documents
 	@GetMapping("/allApprovedTab")
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getallApprovedTab() {
@@ -237,7 +238,8 @@ public class WorkflowController {
 		variables.put("status", completeTaskRequestDTO.getStatus());
 
 		// Complete the task with provided variables and document list
-		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument());
+		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
+				completeTaskRequestDTO.getActionUrl());
 
 		// Return success or failure based on the completion of the task
 		if (newTaskId != null) {

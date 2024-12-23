@@ -33,6 +33,7 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	private String stepType;
 	private String status;
 	private List<ProcessStepwiseDocumentsDTO> document;
+	private String actionUrl;
 
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:

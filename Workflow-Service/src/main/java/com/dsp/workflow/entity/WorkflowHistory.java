@@ -80,4 +80,7 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "next_task_id", nullable = true)
 	private String nextTaskId;
 
+	@Column(name = "action_url")
+	private String actionUrl;
+
 }
