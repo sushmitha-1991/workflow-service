@@ -28,7 +28,7 @@ public class NotesheetMapper {
 		Notesheet notesheet = Notesheet.builder().note((String) variables.get("note"))
 				.receiverRoleId(convertToInteger(variables.get("receiverRoleId")))
 				.receiverUserId((Integer) variables.get("receiverUserId"))
-				.senderRoleId(convertToInteger(variables.get("senderRoleId")))
+				// .senderRoleId(convertToInteger(variables.get("senderRoleId")))
 				.applicationInstanceId((Long) variables.get("applicationInstanceId"))
 				.actionTaken((String) variables.get("actionTaken")).build();
 

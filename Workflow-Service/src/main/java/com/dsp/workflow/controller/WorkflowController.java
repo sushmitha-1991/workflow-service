@@ -195,12 +195,13 @@ public class WorkflowController {
 	public GenericResponse<String> processTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
 		String processInstanceId;
 		String taskId;
-		// StepType logic
+
 		if ("INIT".equals(completeTaskRequestDTO.getStepType())) {
 			// Start workflow and fetch processInstanceId and taskId
 			processInstanceId = workflowService.startProcessInstance(completeTaskRequestDTO.getWorkflowId());
 			taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
-			// Update notesheet or application instance after starting the workflow
+			
+			// Update application instance after starting the workflow
 			workflowService.updateApplicationInstance(completeTaskRequestDTO.getApplicationInstanceId(),
 					processInstanceId, taskId, completeTaskRequestDTO.getStatus());
 
@@ -223,7 +224,7 @@ public class WorkflowController {
 		variables.put("receiverUserName",
 				completeTaskRequestDTO.getReceiverUserName() != null ? completeTaskRequestDTO.getReceiverUserName()
 						: "");
-		variables.put("senderRoleId", utils.getRoleIdByUserId());
+		// variables.put("senderRoleId", utils.getRoleIdByUserId());
 		variables.put("senderUserId", utils.getUserIdFromAuthentication());
 		variables.put("historyId", taskId);
 		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
