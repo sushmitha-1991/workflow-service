@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import com.dsp.workflow.exception.UserNotFoundException;
+import com.dsp.workflow.exception.ForwardingRightsNotFoundException;
 import com.dsp.workflow.forwardingrights.dto.ForwardingRightsDTO;
 import com.dsp.workflow.forwardingrights.entity.ForwardingRights;
 import com.dsp.workflow.forwardingrights.mapper.ForwardingRightsMapper;
@@ -96,7 +96,7 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 				actionId, house, userId);
 
 		if (resultList.isEmpty()) {
-			throw new UserNotFoundException("No user details found for the given criteria");
+			throw new ForwardingRightsNotFoundException("No user details found for the given criteria");
 		}
 
 		// Process the result list into a list of user details maps
@@ -114,6 +114,7 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 			userDetails.put("roleName", userResult[8]);
 			userDetails.put("description", userResult[9]);
 			userDetails.put("actionUrl", userResult[10]);
+			userDetails.put("designation", userResult[11]);
 			usersDetailsList.add(userDetails);
 		}
 		return usersDetailsList;

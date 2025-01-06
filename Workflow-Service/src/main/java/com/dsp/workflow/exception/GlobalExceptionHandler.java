@@ -40,6 +40,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
 
+	@ExceptionHandler(ForwardingRightsNotFoundException.class)
+	public ResponseEntity<GenericResponse<String>> handleForwardingRightsNotFoundException(
+			ForwardingRightsNotFoundException ex) {
+		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null, HttpStatus.OK.value());
+		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<GenericResponse<String>> handleIllegalArgumentException(IllegalArgumentException ex) {
 		GenericResponse<String> response = new GenericResponse<>(false, ex.getMessage(), null,
