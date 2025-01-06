@@ -594,16 +594,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("date", row[2] != null ? row[2].toString() : null); // Handle NULL date
 			rowMap.put("lsNo", row[3]);
 			rowMap.put("ssNo", row[4]);
-			rowMap.put("status", row[5]);
-			rowMap.put("pendingAt", row[6]);
-			rowMap.put("refId", row[7]);
-			rowMap.put("applicationId", row[8]);
-			rowMap.put("applicationInstanceId", row[9]);
-			rowMap.put("taskName", row[10]);
-			rowMap.put("taskId", row[11]);
-			rowMap.put("actionPerformed", row[12]);
-			rowMap.put("formUrl", row[13]);
-			rowMap.put("actionUrl", row[14]);
+			rowMap.put("rssNo", row[5]);
+			rowMap.put("status", row[6]);
+			rowMap.put("pendingAt", row[7]);
+			rowMap.put("refId", row[8]);
+			rowMap.put("applicationId", row[9]);
+			rowMap.put("applicationInstanceId", row[10]);
+			rowMap.put("taskName", row[11]);
+			rowMap.put("taskId", row[12]);
+			rowMap.put("actionPerformed", row[13]);
+			rowMap.put("formUrl", row[14]);
+			rowMap.put("actionUrl", row[15]);
 			return rowMap;
 		}).collect(Collectors.toList());
 	}
