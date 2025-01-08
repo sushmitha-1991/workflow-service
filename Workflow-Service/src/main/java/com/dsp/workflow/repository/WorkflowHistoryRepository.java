@@ -54,7 +54,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 
 	@Query(value = """
 			    SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			           applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl
+			           applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, ma.translate_flag, ma.download_flag
 			    FROM (
 			        SELECT DISTINCT ON (ai.application_no)
 			               ai.application_no AS applicationNo,
@@ -160,6 +160,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			        JOIN authentication.base_user u ON u.id = ii.created_by
 			        WHERE ii.created_by = :userId
 			    ) A
+			    LEFT JOIN master.applications ma on ma.id = A.applicationId
 			    ORDER BY "date" DESC
 			""", nativeQuery = true)
 	List<Object[]> findAllDocumentsForUser(@Param("userId") Long userId);
