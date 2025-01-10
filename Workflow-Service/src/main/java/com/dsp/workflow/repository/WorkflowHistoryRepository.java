@@ -60,8 +60,8 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               ai.application_no AS applicationNo,
 			               a.name AS documentName,
 			               ai.document_date AS date,
-			               '18' AS LSNo,
-			               'III' AS SSNo,
+			               ai.lok_sabha_session AS LSNo,
+			               ai.lok_sabha_session_number AS SSNo,
 			               ai.rajya_sabha_session AS RSSNo,
 			               ai.current_status AS status,
 			               CASE
@@ -92,8 +92,8 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               ai.application_no AS applicationNo,
 			               a.name AS documentName,
 			               ai.document_date AS date,
-			               '18' AS LSNo,
-			               'III' AS SSNo,
+			               ai.lok_sabha_session AS LSNo,
+			               ai.lok_sabha_session_number AS SSNo,
 			               ai.rajya_sabha_session AS RSSNo,
 			               CASE
 			                   WHEN ai.current_status = 'Returned' THEN 'In Progress'
@@ -142,8 +142,8 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               ii.application_no AS applicationNo,
 			               a.name AS documentName,
 			               ii.document_date AS date,
-			               '18' AS LSNo,
-			               'III' AS SSNo,
+			               ii.lok_sabha_session AS LSNo,
+			               ii.lok_sabha_session_number AS SSNo,
 			               ii.rajya_sabha_session AS RSSNo,
 			               ii.current_status AS status,
 			               ii.pending_at AS pendingAt,
