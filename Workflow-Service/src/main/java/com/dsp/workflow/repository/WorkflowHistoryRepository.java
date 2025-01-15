@@ -75,7 +75,8 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               wh.next_task_id AS taskId,
 			               'True' AS actionPerformed,
 			               a.form_url AS formUrl,
-			               wh.action_url AS actionUrl
+			               wh.action_url AS actionUrl,
+			               			            NULL as draftId
 			        FROM workflow.workflow_history wh
 			        JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			        JOIN master.applications a ON ai.application_id = a.id
@@ -110,7 +111,8 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               wh.next_task_id AS taskId,
 			               'False' AS actionPerformed,
 			               a.form_url AS formUrl,
-			               wh.action_url AS actionUrl
+			               wh.action_url AS actionUrl,
+			               			            NULL as draftId
 			        FROM workflow.workflow_history wh
 			        JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			        JOIN master.applications a ON ai.application_id = a.id
@@ -154,11 +156,38 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			               NULL AS taskId,
 			               'False' AS actionPerformed,
 			               a.form_url AS formUrl,
-			               NULL AS actionUrl
+			               NULL AS actionUrl,
+			               			            NULL as draftId
 			        FROM master.input_instance ii
 			        JOIN master.applications a ON a.id = ii.application_id
 			        JOIN authentication.base_user u ON u.id = ii.created_by
 			        WHERE ii.created_by = :userId
+
+			     UNION
+
+				 SELECT DISTINCT ON (dd.application_no)
+			            dd.application_no AS applicationNo,
+			            a.name AS documentName,
+			            NULL AS date,
+			            dd.lok_sabha_session AS LSNo,
+			            dd.lok_sabha_session_number AS SSNo,
+			            dd.rajya_sabha_session AS RSSNo,
+			            wh.status AS status,
+			            wh.pending_with_name AS pendingAt,
+			            NULL AS refId,
+			            dd.application_id AS applicationId,
+			            NULL AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            NULL AS taskId,
+			            'True' AS actionPerformed,
+			            NULL AS formUrl,
+			            NULL AS actionUrl,
+			            wh.draft_id as draftId
+			     FROM workflow.workflow_history wh
+			     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
+			     LEFT JOIN master.applications a ON a.id = dd.application_id
+			     left JOIN authentication.base_user u ON u.id = wh.pending_with
+			     WHERE wh.pending_with = :userId
 			    ) A
 			    LEFT JOIN master.applications ma on ma.id = A.applicationId
 			    ORDER BY "date" DESC

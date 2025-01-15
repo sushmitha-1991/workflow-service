@@ -34,4 +34,5 @@ public class DocumentRowMapper {
 	String actionUrl;
 	Boolean translateFlag;
 	Boolean downloadFlag;
+	Long draftId;
 }

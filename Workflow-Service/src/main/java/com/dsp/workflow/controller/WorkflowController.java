@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
+import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
@@ -254,9 +255,44 @@ public class WorkflowController {
 	// API for Filter - My Task Page
 	@GetMapping("/my-task")
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> filterAllDocumentsTab(
-			@RequestBody TaskQueryDTO queryDTO) {
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String lsSessionNo,
+			@RequestParam(required = false) String rsSessionNo, @RequestParam(required = false) Long applicationId,
+			@RequestParam(required = false) String pendingAt) {
+
 		Long userId = utils.getUserIdFromAuthentication();
+		TaskQueryDTO queryDTO = TaskQueryDTO.builder().lsNo(lsNo).lsSessionNo(lsSessionNo).rsSessionNo(rsSessionNo)
+				.applicationId(applicationId).pendingAt(pendingAt).build();
 		List<Map<String, Object>> data = workflowService.filterAllDocumentsTab(userId, queryDTO);
+		if (data.isEmpty()) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
+	}
+
+	@PostMapping("/save-as-draft")
+	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> saveAsDraft(
+			@RequestBody DraftDataDTO draftDataDTO) {
+		Long userId = utils.getUserIdFromAuthentication();
+
+		// Call the service method to save the draft data
+		List<Map<String, Object>> data = workflowService.saveAsDraft(userId, draftDataDTO);
+
+		// Return appropriate response based on whether data is found
+		if (data.isEmpty()) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
+	}
+
+	@GetMapping("/get-save-as-draft")
+	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getSaveAsDraft(
+			@RequestParam("applicationId") Long applicationId) {
+		Long userId = utils.getUserIdFromAuthentication();
+
+		// Call the service method to fetch the draft data
+		List<Map<String, Object>> data = workflowService.getSaveAsDraft(userId, applicationId);
+
+		// Return appropriate response based on whether data is found
 		if (data.isEmpty()) {
 			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
 		}

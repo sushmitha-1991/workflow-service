@@ -3,6 +3,7 @@ package com.dsp.workflow.service;
 import java.util.List;
 import java.util.Map;
 
+import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
@@ -112,5 +113,19 @@ public interface WorkflowService {
 	 * @return
 	 */
 	List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto);
+
+	/**
+	 * @param userId
+	 * @param draftDataDTO
+	 * @return
+	 */
+	List<Map<String, Object>> saveAsDraft(Long userId, DraftDataDTO draftDataDTO);
+
+	/**
+	 * @param userId
+	 * @param applicationId
+	 * @return
+	 */
+	List<Map<String, Object>> getSaveAsDraft(Long userId, Long applicationId);
 
 }

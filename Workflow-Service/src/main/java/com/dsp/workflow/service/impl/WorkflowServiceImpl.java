@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,16 +23,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
+import com.dsp.workflow.dto.SerialNumberRequest;
+import com.dsp.workflow.dto.SerialNumberResponse;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
+import com.dsp.workflow.dto.UserDetailsDTO;
 import com.dsp.workflow.entity.ApplicationInstance;
+import com.dsp.workflow.entity.DraftDocument;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
@@ -45,16 +49,17 @@ import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
-import com.dsp.workflow.repository.ApplicationAuthorityRepository;
-import com.dsp.workflow.repository.ApplicationHistoryRepository;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
+import com.dsp.workflow.repository.DraftDocumentRepository;
 import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import spinjar.com.fasterxml.jackson.core.JsonProcessingException;
 import spinjar.com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,22 +68,10 @@ import spinjar.com.fasterxml.jackson.databind.ObjectMapper;
 public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
-	private RuntimeService runtimeService;
-
-	@Autowired
-	private TaskService taskService;
-
-	@Autowired
 	private NotesheetRepository notesheetRepository;
 
 	@Autowired
-	private ApplicationAuthorityRepository applicationAuthorityRepository;
-
-	@Autowired
 	private ApplicationInstanceRepository applicationInstanceRepository;
-
-	@Autowired
-	private ApplicationHistoryRepository applicationHistoryRepository;
 
 	@Autowired
 	private WorkflowHistoryRepository workflowHistoryRepository;
@@ -109,9 +102,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private DraftDocumentRepository draftDocumentRepository;
+
+	@Value("${master.service.url}")
+	private String masterServiceUrl;
+	@Autowired
+	private HttpServletRequest httpRequest;
+
 	private final static String allDocumentsQuery = """
 			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, ma.translate_flag, ma.download_flag
+			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, ma.translate_flag, ma.download_flag
 			FROM (
 			     SELECT DISTINCT ON (ai.application_no)
 			            ai.application_no AS applicationNo,
@@ -132,7 +133,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            wh.next_task_id AS taskId,
 			            'True' AS actionPerformed,
 			            a.form_url AS formUrl,
-			            wh.action_url AS actionUrl
+			            wh.action_url AS actionUrl,
+			            wh.draft_id as draftId
 			     FROM workflow.workflow_history wh
 			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			     JOIN master.applications a ON ai.application_id = a.id
@@ -167,7 +169,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            wh.next_task_id AS taskId,
 			            'False' AS actionPerformed,
 			            a.form_url AS formUrl,
-			            wh.action_url AS actionUrl
+			            wh.action_url AS actionUrl,
+			            wh.draft_id as draftId
 			     FROM workflow.workflow_history wh
 			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			     JOIN master.applications a ON ai.application_id = a.id
@@ -211,11 +214,38 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            NULL AS taskId,
 			            'False' AS actionPerformed,
 			            a.form_url AS formUrl,
-			            NULL AS actionUrl
+			            NULL AS actionUrl,
+			            NULL as draftId
 			     FROM master.input_instance ii
 			     JOIN master.applications a ON a.id = ii.application_id
 			     JOIN authentication.base_user u ON u.id = ii.created_by
 			     WHERE ii.created_by = :userId
+
+			     UNION
+
+				 SELECT DISTINCT ON (dd.application_no)
+			            dd.application_no AS applicationNo,
+			            a.name AS documentName,
+			            NULL AS date,
+			            dd.lok_sabha_session AS LSNo,
+			            dd.lok_sabha_session_number AS SSNo,
+			            dd.rajya_sabha_session AS RSSNo,
+			            wh.status AS status,
+			            wh.pending_with_name AS pendingAt,
+			            NULL AS refId,
+			            dd.application_id AS applicationId,
+			            NULL AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            NULL AS taskId,
+			            'True' AS actionPerformed,
+			            NULL AS formUrl,
+			            NULL AS actionUrl,
+			            wh.draft_id as draftId
+			     FROM workflow.workflow_history wh
+			     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
+			     LEFT JOIN master.applications a ON a.id = dd.application_id
+			     left JOIN authentication.base_user u ON u.id = wh.pending_with
+			     WHERE wh.pending_with = :userId
 			 ) A
 			 LEFT JOIN master.applications ma on ma.id = A.applicationId
 			""";
@@ -727,8 +757,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("actionPerformed", row[13]);
 			rowMap.put("formUrl", row[14]);
 			rowMap.put("actionUrl", row[15]);
-			rowMap.put("translateFlag", row[16]);
-			rowMap.put("downloadFlag", row[17]);
+			rowMap.put("draftId", row[16]);
+			rowMap.put("translateFlag", row[17]);
+			rowMap.put("downloadFlag", row[18]);
 
 			return rowMap;
 		}).collect(Collectors.toList());
@@ -810,10 +841,113 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("actionPerformed", row.getActionPerformed());
 			rowMap.put("formUrl", row.getFormUrl());
 			rowMap.put("actionUrl", row.getActionUrl());
+			rowMap.put("draftId", row.getDraftId());
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			return rowMap;
 		}).collect(Collectors.toList());
 
 	}
+
+	@Transactional
+	public List<Map<String, Object>> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
+		// Convert the incoming JSON data (draftDataDTO.getData()) to a JsonNode
+		String userName = utils.getUserFullNameFromAuthentication();
+
+		Long houseId = null;
+		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		if (principal instanceof UserDetailsDTO) {
+			houseId = ((UserDetailsDTO) principal).getHouseId();
+		}
+		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
+
+		serialNumberRequest.setAppId(draftDataDTO.getApplicationId());
+		if (houseId == 1) {
+			serialNumberRequest.setSessionId(draftDataDTO.getRajyaSabhaSession());
+		}
+		if (houseId == 2) {
+			serialNumberRequest.setSessionId(draftDataDTO.getLokSabhaSessionNumber());
+		}
+		System.out.println("### serialNumberRequest - " + serialNumberRequest);
+		SerialNumberResponse applicationNo = generateApplicationNo(serialNumberRequest);
+
+		System.out.println("### applicationNo - " + applicationNo);
+
+		JsonNode draftData = draftDataDTO.getData();
+
+		// Create a new DraftDocument entity and set the draftData field
+		DraftDocument draftDocument = new DraftDocument();
+		draftDocument.setDraftData(draftData);
+		draftDocument.setApplicationId(draftDataDTO.getApplicationId());
+		draftDocument.setApplicationNo(applicationNo.getId());
+		draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
+		draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
+		draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+
+		// Save the draft document to the database
+		draftDocumentRepository.save(draftDocument);
+
+		// Insert an entry to Workflow History (no result expected from this query)
+		draftDocumentRepository.saveIntoWorkflowHistory(draftDataDTO.getApplicationId(), userId, userName,
+				draftDocument.getId());
+
+		// Prepare the response with the saved data
+		List<Map<String, Object>> result = new ArrayList<>();
+		Map<String, Object> responseMap = new HashMap<>();
+		responseMap.put("id", draftDocument.getId());
+		responseMap.put("draftData", draftDocument.getDraftData().toString());
+		responseMap.put("applicationId", draftDocument.getApplicationId());
+		result.add(responseMap);
+
+		return result;
+	}
+
+	// Generate Application No Functionality
+	public SerialNumberResponse generateApplicationNo(SerialNumberRequest request) {
+		String url = masterServiceUrl + "/serial-number";
+		String token = getTokenFromRequest();
+		if (token == null) {
+			throw new IllegalStateException("Authorization token is missing");
+		}
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + token);
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<SerialNumberRequest> entity = new HttpEntity<>(request, headers);
+
+		try {
+			// RestTemplate restTemplate = new RestTemplate();
+			return restTemplate.postForObject(url, entity, SerialNumberResponse.class);
+		} catch (Exception e) {
+			System.err.println("Error during API call: " + e.getMessage());
+			throw e;
+		}
+	}
+
+	public String getTokenFromRequest() {
+		String authorizationHeader = httpRequest.getHeader("Authorization");
+		if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+			return authorizationHeader.substring(7);
+		}
+		return null;
+	}
+
+	public List<Map<String, Object>> getSaveAsDraft(Long userId, Long applicationId) {
+		// Call the repository method to fetch the draft data
+		List<JsonNode> draftDataList = draftDocumentRepository.findDraftDataByUserAndApplication(userId, applicationId);
+
+		List<Map<String, Object>> result = new ArrayList<>();
+
+		// If data is found, return it in the desired format
+		if (!draftDataList.isEmpty()) {
+			for (JsonNode draftData : draftDataList) {
+				Map<String, Object> responseMap = new HashMap<>();
+				responseMap.put("draftData", draftData);
+				result.add(responseMap);
+			}
+		}
+
+		return result;
+	}
+
 }
