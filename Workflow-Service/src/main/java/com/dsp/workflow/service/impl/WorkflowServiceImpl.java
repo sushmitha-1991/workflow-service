@@ -22,12 +22,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
+import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
 import com.dsp.workflow.entity.ApplicationInstance;
@@ -35,6 +39,7 @@ import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
+import com.dsp.workflow.mapper.DocumentRowMapper;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
@@ -101,6 +106,123 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Autowired
 	private RestTemplate restTemplate;
 
+	@Autowired
+	private NamedParameterJdbcTemplate jdbcTemplate;
+
+	private final static String allDocumentsQuery = """
+			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, ma.translate_flag, ma.download_flag
+			FROM (
+			     SELECT DISTINCT ON (ai.application_no)
+			            ai.application_no AS applicationNo,
+			            a.name AS documentName,
+			            ai.document_date AS date,
+			            ai.lok_sabha_session AS LSNo,
+			            ai.lok_sabha_session_number AS SSNo,
+			            ai.rajya_sabha_session AS RSSNo,
+			            ai.current_status AS status,
+			            CASE
+			                WHEN ai.current_status = 'Approved' THEN NULL
+			                ELSE CONCAT(wh.pending_with_name)
+			            END AS pendingAt,
+			            ai.ref_id AS refId,
+			            ai.application_id AS applicationId,
+			            ai.id AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            wh.next_task_id AS taskId,
+			            'True' AS actionPerformed,
+			            a.form_url AS formUrl,
+			            wh.action_url AS actionUrl
+			     FROM workflow.workflow_history wh
+			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
+			     JOIN master.applications a ON ai.application_id = a.id
+			     JOIN authentication.base_user u ON u.id = wh.pending_with
+			     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
+			     JOIN authentication.roles r ON r.id = ur.role_id
+			     JOIN master.offices o ON o.id = ur.office_id
+			     WHERE wh.pending_with = :userId
+			       AND wh.action_taken_by IS NULL
+
+			     UNION
+
+			     SELECT DISTINCT ON (ai.application_no)
+			            ai.application_no AS applicationNo,
+			            a.name AS documentName,
+			            ai.document_date AS date,
+			            ai.lok_sabha_session AS LSNo,
+			            ai.lok_sabha_session_number AS SSNo,
+			            ai.rajya_sabha_session AS RSSNo,
+			            CASE
+			                WHEN ai.current_status = 'Returned' THEN 'In Progress'
+			                ELSE ai.current_status
+			            END AS status,
+			            CASE
+			                WHEN ai.current_status = 'Approved' THEN NULL
+			                ELSE CONCAT(wh.pending_with_name)
+			            END AS pendingAt,
+			            ai.ref_id AS refId,
+			            ai.application_id AS applicationId,
+			            ai.id AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            wh.next_task_id AS taskId,
+			            'False' AS actionPerformed,
+			            a.form_url AS formUrl,
+			            wh.action_url AS actionUrl
+			     FROM workflow.workflow_history wh
+			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
+			     JOIN master.applications a ON ai.application_id = a.id
+			     JOIN authentication.base_user u ON u.id = wh.pending_with
+			     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
+			     JOIN authentication.roles r ON r.id = ur.role_id
+			     JOIN master.offices o ON o.id = ur.office_id
+			     WHERE wh.id IN (
+			         SELECT MAX(wh2.id)
+			         FROM workflow.workflow_history wh2
+			         WHERE wh2.application_instance_id IN (
+			             SELECT wh3.application_instance_id
+			             FROM workflow.workflow_history wh3
+			             WHERE wh3.pending_with IS NOT NULL
+			               AND wh3.action_taken_by = :userId
+			               AND wh3.application_instance_id NOT IN (
+			                   SELECT wh1.application_instance_id
+			                   FROM workflow.workflow_history wh1
+			                   WHERE wh1.action_taken_by IS NULL
+			                     AND wh1.pending_with = :userId
+			               )
+			         )
+			         GROUP BY wh2.application_instance_id
+			     )
+
+			     UNION
+
+			     SELECT DISTINCT ON (ii.application_no)
+			            ii.application_no AS applicationNo,
+			            a.name AS documentName,
+			            ii.document_date AS date,
+			            ii.lok_sabha_session AS LSNo,
+			            ii.lok_sabha_session_number AS SSNo,
+			            ii.rajya_sabha_session AS RSSNo,
+			            ii.current_status AS status,
+			            ii.pending_at AS pendingAt,
+			            ii.ref_id AS refId,
+			            ii.application_id AS applicationId,
+			            ii.id AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            NULL AS taskId,
+			            'True' AS actionPerformed,
+			            a.form_url AS formUrl,
+			            NULL AS actionUrl
+			     FROM master.input_instance ii
+			     JOIN master.applications a ON a.id = ii.application_id
+			     JOIN authentication.base_user u ON u.id = ii.created_by
+			     WHERE ii.created_by = :userId
+			 ) A
+			 LEFT JOIN master.applications ma on ma.id = A.applicationId
+			""";
+
+	private final static String orderByClause = """
+			ORDER BY "date" DESC
+			""";
 //	@Override
 //	public String startProcessInstance(String workflowId) {
 //		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(workflowId);
@@ -630,4 +752,68 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}).collect(Collectors.toList());
 	}
 
+	@Override
+	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
+
+		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(" where 1 = 1 ");
+
+		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
+
+		if (queryDto.getApplicationId() != null) {
+//	            qry = qry.append(" and applicationNo = ").append(queryDto.getApplicationId());
+			qry = qry.append(" and applicationId = :applicationId ");
+			parameters.addValue("applicationId", queryDto.getApplicationId());
+		}
+
+		if (!Utils.isEmpty(queryDto.getLsNo())) {
+//	            qry = qry.append(" and LSNo = '").append(queryDto.getLsNo()).append("'");
+			qry = qry.append(" and LSNo = :LsNo ");
+			parameters.addValue("LsNo", queryDto.getLsNo());
+		}
+
+		if (!Utils.isEmpty(queryDto.getLsSessionNo())) {
+//	            qry = qry.append(" and SSNo = '").append(queryDto.getLsSessionNo()).append("'");
+			qry = qry.append(" and SSNo = :LsSessionNo ");
+			parameters.addValue("LsSessionNo", queryDto.getLsSessionNo());
+		}
+
+		if (!Utils.isEmpty(queryDto.getRsSessionNo())) {
+//	            qry = qry.append(" and RSSNo = '").append(queryDto.getRsSessionNo()).append("'");
+			qry = qry.append(" and RSSNo = :RsSessionNo ");
+			parameters.addValue("RsSessionNo", queryDto.getRsSessionNo());
+		}
+
+		if (!Utils.isEmpty(queryDto.getPendingAt())) {
+			qry = qry.append(" and pendingAt like '%").append(queryDto.getPendingAt()).append("%'");
+		}
+
+		qry.append(orderByClause);
+
+		List<DocumentRowMapper> results = jdbcTemplate.query(qry.toString(), parameters,
+				new BeanPropertyRowMapper<>(DocumentRowMapper.class));
+
+		return results.stream().map(row -> {
+			Map<String, Object> rowMap = new HashMap<>();
+			rowMap.put("applicationNo", row.getApplicationNo());
+			rowMap.put("documentName", row.getDocumentName());
+			rowMap.put("date", row.getDate() != null ? row.getDate().toString() : null); // Handle NULL date
+			rowMap.put("lsNo", row.getLSNo());
+			rowMap.put("ssNo", row.getSSNo());
+			rowMap.put("rssNo", row.getRSSNo());
+			rowMap.put("status", row.getStatus());
+			rowMap.put("pendingAt", row.getPendingAt());
+			rowMap.put("refId", row.getRefId());
+			rowMap.put("applicationId", row.getApplicationId());
+			rowMap.put("applicationInstanceId", row.getApplicationInstanceId());
+			rowMap.put("taskName", row.getTaskName());
+			rowMap.put("taskId", row.getTaskId());
+			rowMap.put("actionPerformed", row.getActionPerformed());
+			rowMap.put("formUrl", row.getFormUrl());
+			rowMap.put("actionUrl", row.getActionUrl());
+			rowMap.put("translateFlag", row.getTranslateFlag());
+			rowMap.put("downloadFlag", row.getDownloadFlag());
+			return rowMap;
+		}).collect(Collectors.toList());
+
+	}
 }

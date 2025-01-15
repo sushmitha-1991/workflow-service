@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
+import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -26,11 +27,12 @@ public interface WorkflowService {
 	 * @param taskId       The ID of the task to complete.
 	 * @param variables    The variables to pass for task completion.
 	 * @param list
-	 * @param actionUrl 
+	 * @param actionUrl
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
-	String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list, String actionUrl);
+	String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list,
+			String actionUrl);
 
 	/**
 	 * Retrieves a task ID by process instance ID.
@@ -102,5 +104,13 @@ public interface WorkflowService {
 	 * @return
 	 */
 	List<Map<String, Object>> getallApprovedTab(Long userId);
+
+	/**
+	 * 
+	 * @param userId
+	 * @param queryDto
+	 * @return
+	 */
+	List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto);
 
 }

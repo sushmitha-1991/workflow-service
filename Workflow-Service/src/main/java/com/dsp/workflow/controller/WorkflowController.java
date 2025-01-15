@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
+import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -200,7 +201,7 @@ public class WorkflowController {
 			// Start workflow and fetch processInstanceId and taskId
 			processInstanceId = workflowService.startProcessInstance(completeTaskRequestDTO.getWorkflowId());
 			taskId = workflowService.getTaskIdByProcessInstanceId(processInstanceId);
-			
+
 			// Update application instance after starting the workflow
 			workflowService.updateApplicationInstance(completeTaskRequestDTO.getApplicationInstanceId(),
 					processInstanceId, taskId, completeTaskRequestDTO.getStatus());
@@ -248,6 +249,18 @@ public class WorkflowController {
 		} else {
 			return new GenericResponse<>(false, "Failed to process task", taskId, HttpStatus.BAD_REQUEST.value());
 		}
+	}
+
+	// API for Filter - My Task Page
+	@GetMapping("/my-task")
+	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> filterAllDocumentsTab(
+			@RequestBody TaskQueryDTO queryDTO) {
+		Long userId = utils.getUserIdFromAuthentication();
+		List<Map<String, Object>> data = workflowService.filterAllDocumentsTab(userId, queryDTO);
+		if (data.isEmpty()) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
 	}
 
 }
