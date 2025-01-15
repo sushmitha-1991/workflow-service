@@ -209,7 +209,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            ii.id AS applicationinstanceId,
 			            'IN-PROCESS' AS taskName,
 			            NULL AS taskId,
-			            'True' AS actionPerformed,
+			            'False' AS actionPerformed,
 			            a.form_url AS formUrl,
 			            NULL AS actionUrl
 			     FROM master.input_instance ii
