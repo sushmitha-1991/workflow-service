@@ -6,6 +6,7 @@
 package com.dsp.workflow.mapper;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,4 +37,6 @@ public class DocumentRowMapper {
 	Boolean downloadFlag;
 	Long draftId;
 	String publishedUrl;
+	UUID documentUUIDEn;
+	UUID documentUUIDHi;
 }

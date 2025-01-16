@@ -112,7 +112,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, ma.translate_flag, ma.download_flag
+			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
 			FROM (
 			     SELECT DISTINCT ON (ai.application_no)
 			            ai.application_no AS applicationNo,
@@ -135,7 +135,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            a.form_url AS formUrl,
 			            wh.action_url AS actionUrl,
 			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl
+			            a.published_url as publishedUrl,
+			            ai.published_document_uuid_en as documentUUIDEn,
+			            ai.published_document_uuid_hi as documentUUIDHi
 			     FROM workflow.workflow_history wh
 			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			     JOIN master.applications a ON ai.application_id = a.id
@@ -172,7 +174,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            a.form_url AS formUrl,
 			            wh.action_url AS actionUrl,
 			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl
+			            a.published_url as publishedUrl,
+			            ai.published_document_uuid_en as documentUUIDEn,
+			            ai.published_document_uuid_hi as documentUUIDHi
 			     FROM workflow.workflow_history wh
 			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 			     JOIN master.applications a ON ai.application_id = a.id
@@ -218,7 +222,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            a.form_url AS formUrl,
 			            NULL AS actionUrl,
 			            NULL as draftId,
-			            a.published_url as publishedUrl
+			            a.published_url as publishedUrl,
+			            NULL as documentUUIDEn,
+			            NULL as documentUUIDHi
 			     FROM master.input_instance ii
 			     JOIN master.applications a ON a.id = ii.application_id
 			     JOIN authentication.base_user u ON u.id = ii.created_by
@@ -244,7 +250,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            NULL AS formUrl,
 			            NULL AS actionUrl,
 			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl
+			            a.published_url as publishedUrl,
+			            NULL as documentUUIDEn,
+			            NULL as documentUUIDHi
 			     FROM workflow.workflow_history wh
 			     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
 			     LEFT JOIN master.applications a ON a.id = dd.application_id
@@ -846,6 +854,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("actionUrl", row.getActionUrl());
 			rowMap.put("draftId", row.getDraftId());
 			rowMap.put("publishedUrl", row.getPublishedUrl());
+			rowMap.put("documentUUIDEn", row.getDocumentUUIDEn());
+			rowMap.put("documentUUIDHi", row.getDocumentUUIDHi());
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			return rowMap;
