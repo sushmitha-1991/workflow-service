@@ -264,7 +264,7 @@ public class WorkflowController {
 				.applicationId(applicationId).pendingAt(pendingAt).build();
 		List<Map<String, Object>> data = workflowService.filterAllDocumentsTab(userId, queryDTO);
 		if (data.isEmpty()) {
-			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
+			return ResponseEntity.ok(new GenericResponse<>(true, "No records found", data, 200));
 		}
 		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
 	}
