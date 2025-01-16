@@ -931,17 +931,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return null;
 	}
 
-	public List<Map<String, Object>> getSaveAsDraft(Long userId, Long applicationId) {
+	public List<Map<String, Object>> getSaveAsDraft(Long draftId) {
 		// Call the repository method to fetch the draft data
-		List<JsonNode> draftDataList = draftDocumentRepository.findDraftDataByUserAndApplication(userId, applicationId);
+		List<Object[]> draftDataList = draftDocumentRepository.findDraftDataByUserAndApplication(draftId);
 
 		List<Map<String, Object>> result = new ArrayList<>();
 
-		// If data is found, return it in the desired format
+		// If data is found, map the fields to a structured response
 		if (!draftDataList.isEmpty()) {
-			for (JsonNode draftData : draftDataList) {
+			for (Object[] draftDataRow : draftDataList) {
 				Map<String, Object> responseMap = new HashMap<>();
-				responseMap.put("draftData", draftData);
+				responseMap.put("draftData", draftDataRow[0]); // draftData (JsonNode)
+				responseMap.put("applicationNo", draftDataRow[1]); // applicationNo
+				responseMap.put("lokSabhaSession", draftDataRow[2]); // lokSabhaSession
+				responseMap.put("lokSabhaSessionNumber", draftDataRow[3]); // lokSabhaSessionNumber
+				responseMap.put("rajyaSabhaSession", draftDataRow[4]); // rajyaSabhaSession
 				result.add(responseMap);
 			}
 		}

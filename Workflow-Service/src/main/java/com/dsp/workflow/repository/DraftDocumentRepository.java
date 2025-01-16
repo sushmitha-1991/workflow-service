@@ -14,7 +14,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.dsp.workflow.entity.DraftDocument;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.transaction.Transactional;
 
@@ -26,9 +25,9 @@ public interface DraftDocumentRepository extends JpaRepository<DraftDocument, Lo
 	 * @param applicationId
 	 * @return
 	 */
-	@Query("SELECT d.draftData FROM DraftDocument d WHERE d.isActive = true AND d.isDeleted = false AND d.createdBy = :userId AND d.applicationId = :applicationId")
-	List<JsonNode> findDraftDataByUserAndApplication(@Param("userId") Long userId,
-			@Param("applicationId") Long applicationId);
+	@Query("SELECT d.draftData, d.applicationNo, d.lokSabhaSession, d.lokSabhaSessionNumber, d.rajyaSabhaSession "
+			+ "FROM DraftDocument d " + "WHERE d.isActive = true AND d.isDeleted = false AND d.id = :draftId")
+	List<Object[]> findDraftDataByUserAndApplication(@Param("draftId") Long draftId);
 
 	/**
 	 * @param applicationId

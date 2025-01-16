@@ -286,11 +286,9 @@ public class WorkflowController {
 
 	@GetMapping("/get-save-as-draft")
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getSaveAsDraft(
-			@RequestParam("applicationId") Long applicationId) {
-		Long userId = utils.getUserIdFromAuthentication();
-
+			@RequestParam("draftId") Long draftId) {
 		// Call the service method to fetch the draft data
-		List<Map<String, Object>> data = workflowService.getSaveAsDraft(userId, applicationId);
+		List<Map<String, Object>> data = workflowService.getSaveAsDraft(draftId);
 
 		// Return appropriate response based on whether data is found
 		if (data.isEmpty()) {
