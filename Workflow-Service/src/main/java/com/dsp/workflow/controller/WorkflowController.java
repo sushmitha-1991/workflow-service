@@ -5,6 +5,7 @@
  */
 package com.dsp.workflow.controller;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -257,11 +258,12 @@ public class WorkflowController {
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> filterAllDocumentsTab(
 			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String lsSessionNo,
 			@RequestParam(required = false) String rsSessionNo, @RequestParam(required = false) Long applicationId,
-			@RequestParam(required = false) String pendingAt) {
+			@RequestParam(required = false) String pendingAt, @RequestParam(required = false) LocalDate fromDate,
+			@RequestParam(required = false) LocalDate toDate) {
 
 		Long userId = utils.getUserIdFromAuthentication();
 		TaskQueryDTO queryDTO = TaskQueryDTO.builder().lsNo(lsNo).lsSessionNo(lsSessionNo).rsSessionNo(rsSessionNo)
-				.applicationId(applicationId).pendingAt(pendingAt).build();
+				.applicationId(applicationId).pendingAt(pendingAt).fromDate(fromDate).toDate(toDate).build();
 		List<Map<String, Object>> data = workflowService.filterAllDocumentsTab(userId, queryDTO);
 		if (data.isEmpty()) {
 			return ResponseEntity.ok(new GenericResponse<>(true, "No records found", data, 200));

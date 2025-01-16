@@ -829,8 +829,19 @@ public class WorkflowServiceImpl implements WorkflowService {
 			qry = qry.append(" and pendingAt like '%").append(queryDto.getPendingAt()).append("%'");
 		}
 
+		if (queryDto.getFromDate() != null) {
+			qry = qry.append(" and date >= :from_date ");
+			parameters.addValue("from_date", queryDto.getFromDate());
+		}
+
+		if (queryDto.getToDate() != null) {
+			qry = qry.append(" and date <= :to_date ");
+			parameters.addValue("from_date", queryDto.getToDate());
+		}
+
 		qry.append(orderByClause);
 
+		System.out.println("### qry - " + qry);
 		List<DocumentRowMapper> results = jdbcTemplate.query(qry.toString(), parameters,
 				new BeanPropertyRowMapper<>(DocumentRowMapper.class));
 
