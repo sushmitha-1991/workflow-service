@@ -126,6 +126,6 @@ public interface WorkflowService {
 	 * @param applicationId
 	 * @return
 	 */
-	List<Map<String, Object>> getSaveAsDraft(Long draftId);
+	Map<String, Object> getSaveAsDraft(Long draftId);
 
 }

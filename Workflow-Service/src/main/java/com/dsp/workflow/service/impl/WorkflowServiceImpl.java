@@ -957,26 +957,25 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return null;
 	}
 
-	public List<Map<String, Object>> getSaveAsDraft(Long draftId) {
+	public Map<String, Object> getSaveAsDraft(Long draftId) {
 		// Call the repository method to fetch the draft data
 		List<Object[]> draftDataList = draftDocumentRepository.findDraftDataByUserAndApplication(draftId);
 
-		List<Map<String, Object>> result = new ArrayList<>();
-
-		// If data is found, map the fields to a structured response
+		// If data is found, map the fields to a structured response for the first
+		// record
 		if (!draftDataList.isEmpty()) {
-			for (Object[] draftDataRow : draftDataList) {
-				Map<String, Object> responseMap = new HashMap<>();
-				responseMap.put("draftData", draftDataRow[0]); // draftData (JsonNode)
-				responseMap.put("applicationNo", draftDataRow[1]); // applicationNo
-				responseMap.put("lokSabhaSession", draftDataRow[2]); // lokSabhaSession
-				responseMap.put("lokSabhaSessionNumber", draftDataRow[3]); // lokSabhaSessionNumber
-				responseMap.put("rajyaSabhaSession", draftDataRow[4]); // rajyaSabhaSession
-				result.add(responseMap);
-			}
+			Object[] draftDataRow = draftDataList.get(0);
+			Map<String, Object> responseMap = new HashMap<>();
+			responseMap.put("draftData", draftDataRow[0]); // draftData (JsonNode)
+			responseMap.put("applicationNo", draftDataRow[1]); // applicationNo
+			responseMap.put("lokSabhaSession", draftDataRow[2]); // lokSabhaSession
+			responseMap.put("lokSabhaSessionNumber", draftDataRow[3]); // lokSabhaSessionNumber
+			responseMap.put("rajyaSabhaSession", draftDataRow[4]); // rajyaSabhaSession
+			return responseMap;
 		}
 
-		return result;
+		// Return an empty map if no data is found
+		return new HashMap<>();
 	}
 
 }
