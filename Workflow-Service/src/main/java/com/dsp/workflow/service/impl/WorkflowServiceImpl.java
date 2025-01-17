@@ -836,7 +836,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		if (queryDto.getToDate() != null) {
 			qry = qry.append(" and date <= :to_date ");
-			parameters.addValue("from_date", queryDto.getToDate());
+			parameters.addValue("to_date", queryDto.getToDate());
 		}
 
 		qry.append(orderByClause);
