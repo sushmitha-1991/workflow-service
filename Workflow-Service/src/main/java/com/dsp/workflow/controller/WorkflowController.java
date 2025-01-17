@@ -283,7 +283,7 @@ public class WorkflowController {
 		if (data.isEmpty()) {
 			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
 		}
-		return ResponseEntity.ok(new GenericResponse<>(true, "Records found", data, 200));
+		return ResponseEntity.ok(new GenericResponse<>(true, "Document saved as draft", data, 200));
 	}
 
 	@GetMapping("/get-save-as-draft")
