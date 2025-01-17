@@ -920,7 +920,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		List<Map<String, Object>> result = new ArrayList<>();
 		Map<String, Object> responseMap = new HashMap<>();
 		responseMap.put("id", draftDocument.getId());
-		responseMap.put("draftData", draftDocument.getDraftData().toString());
+		responseMap.put("draftData", draftDocument.getDraftData());
 		responseMap.put("applicationId", draftDocument.getApplicationId());
 		result.add(responseMap);
 
