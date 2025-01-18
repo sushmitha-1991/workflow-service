@@ -218,7 +218,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            ii.id AS applicationinstanceId,
 			            'IN-PROCESS' AS taskName,
 			            NULL AS taskId,
-			            'False' AS actionPerformed,
+			                   CASE
+			        	WHEN ii.current_status = 'Returned' THEN 'True'
+			        	ELSE 'False'
+			    		END AS actionPerformed,
 			            a.form_url AS formUrl,
 			            NULL AS actionUrl,
 			            NULL as draftId,
