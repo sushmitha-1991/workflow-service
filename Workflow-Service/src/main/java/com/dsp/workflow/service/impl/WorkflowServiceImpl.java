@@ -250,7 +250,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            'IN-PROCESS' AS taskName,
 			            NULL AS taskId,
 			            'True' AS actionPerformed,
-			            NULL AS formUrl,
+			            a.form_url AS formUrl,
 			            NULL AS actionUrl,
 			            wh.draft_id as draftId,
 			            a.published_url as publishedUrl,
