@@ -29,14 +29,14 @@ public interface DraftDocumentRepository extends JpaRepository<DraftDocument, Lo
 			+ "FROM DraftDocument d " + "WHERE d.isActive = true AND d.isDeleted = false AND d.id = :draftId")
 	List<Object[]> findDraftDataByUserAndApplication(@Param("draftId") Long draftId);
 
-	/**
-	 * @param applicationId
-	 * @param userId
-	 * @param userName
-	 */
-	@Modifying
-	@Transactional
-	@Query(value = "INSERT INTO workflow.workflow_history (sub_module_id, pending_with, pending_with_name, draft_id, status) VALUES (:applicationId, :userId, :userName, :draftId, 'Draft')", nativeQuery = true)
-	void saveIntoWorkflowHistory(Long applicationId, Long userId, String userName, Long draftId);
+//	/**
+//	 * @param applicationId
+//	 * @param userId
+//	 * @param userName
+//	 */
+//	@Modifying
+//	@Transactional
+//	@Query(value = "INSERT INTO workflow.workflow_history (sub_module_id, pending_with, pending_with_name, draft_id, status) VALUES (:applicationId, :userId, :userName, :draftId, 'Draft')", nativeQuery = true)
+//	void saveIntoWorkflowHistory(Long applicationId, Long userId, String userName, Long draftId);
 
 }

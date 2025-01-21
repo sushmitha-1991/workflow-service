@@ -8,12 +8,15 @@ package com.dsp.workflow.entity;
 import com.dsp.workflow.util.JsonNodeConverter;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -50,5 +53,8 @@ public class DraftDocument extends Auditable {
 	@Column(name = "draft_data", nullable = false, columnDefinition = "jsonb")
 	@Convert(converter = JsonNodeConverter.class) // Use the converter here
 	private JsonNode draftData;
+
+	@OneToOne(mappedBy = "draftDocument", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private WorkflowHistory workflowHistory;
 
 }

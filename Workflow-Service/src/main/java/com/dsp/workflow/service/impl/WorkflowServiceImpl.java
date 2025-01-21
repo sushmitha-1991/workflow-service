@@ -217,7 +217,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
 			     		THEN applicationInstance.current_status
 			     		ELSE ii.current_status
-			 			END AS status,			            
+			 			END AS status,
 			 			ii.pending_at AS pendingAt,
 			            ii.ref_id AS refId,
 			            ii.application_id AS applicationId,
@@ -935,9 +935,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Save new draft document
 			draftDocumentRepository.save(draftDocument);
 
-			// Insert into Workflow History
-			draftDocumentRepository.saveIntoWorkflowHistory(draftDataDTO.getApplicationId(), userId, userName,
-					draftDocument.getId());
+			// Create and save WorkflowHistory
+			WorkflowHistory workflowHistory = WorkflowHistory.builder()
+					.subModuleId(draftDataDTO.getApplicationId().toString()).pendingWith(userId)
+					.pendingWithName(userName).draftDocument(draftDocument) // Use the draftDocument entity directly
+					.status("Draft").build();
+
+			workflowHistoryRepository.save(workflowHistory);
 		}
 
 		// Prepare the response with the saved data
