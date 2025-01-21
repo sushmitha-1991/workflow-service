@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DraftDataDTO {
+	private Long draftId;
 	private JsonNode data;
 	private Long applicationId;
 	private Long rajyaSabhaSession;

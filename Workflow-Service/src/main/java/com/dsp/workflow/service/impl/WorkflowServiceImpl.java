@@ -192,10 +192,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			             FROM workflow.workflow_history wh3
 			             WHERE wh3.pending_with IS NOT NULL
 			               AND wh3.action_taken_by = :userId
-			               AND wh3.application_instance_id NOT IN (
+			               AND wh3.application_instance_id IN (
 			                   SELECT wh1.application_instance_id
 			                   FROM workflow.workflow_history wh1
-			                   WHERE wh1.action_taken_by IS NULL
+			                   WHERE wh1.action_taken_by IS NOT NULL
 			                     AND wh1.pending_with = :userId
 			               )
 			         )
@@ -211,8 +211,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            ii.lok_sabha_session AS LSNo,
 			            ii.lok_sabha_session_number AS SSNo,
 			            ii.rajya_sabha_session AS RSSNo,
-			            ii.current_status AS status,
-			            ii.pending_at AS pendingAt,
+			 			CASE
+			     		WHEN ii.application_instance_id IS NOT NULL
+			          	AND applicationInstance.id = ii.application_instance_id
+			          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
+			     		THEN applicationInstance.current_status
+			     		ELSE ii.current_status
+			 			END AS status,			            
+			 			ii.pending_at AS pendingAt,
 			            ii.ref_id AS refId,
 			            ii.application_id AS applicationId,
 			            ii.id AS applicationinstanceId,
@@ -231,6 +237,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			     FROM master.input_instance ii
 			     JOIN master.applications a ON a.id = ii.application_id
 			     JOIN authentication.base_user u ON u.id = ii.created_by
+			     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
 			     WHERE ii.created_by = :userId
 
 			     UNION
@@ -879,7 +886,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Transactional
 	public List<Map<String, Object>> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
-		// Convert the incoming JSON data (draftDataDTO.getData()) to a JsonNode
 		String userName = utils.getUserFullNameFromAuthentication();
 
 		Long houseId = null;
@@ -887,8 +893,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 		if (principal instanceof UserDetailsDTO) {
 			houseId = ((UserDetailsDTO) principal).getHouseId();
 		}
-		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
 
+		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
 		serialNumberRequest.setAppId(draftDataDTO.getApplicationId());
 		if (houseId == 1) {
 			serialNumberRequest.setSessionId(draftDataDTO.getRajyaSabhaSession());
@@ -896,28 +902,43 @@ public class WorkflowServiceImpl implements WorkflowService {
 		if (houseId == 2) {
 			serialNumberRequest.setSessionId(draftDataDTO.getLokSabhaSessionNumber());
 		}
-		System.out.println("### serialNumberRequest - " + serialNumberRequest);
-		SerialNumberResponse applicationNo = generateApplicationNo(serialNumberRequest);
-
-		System.out.println("### applicationNo - " + applicationNo);
 
 		JsonNode draftData = draftDataDTO.getData();
 
-		// Create a new DraftDocument entity and set the draftData field
-		DraftDocument draftDocument = new DraftDocument();
-		draftDocument.setDraftData(draftData);
-		draftDocument.setApplicationId(draftDataDTO.getApplicationId());
-		draftDocument.setApplicationNo(applicationNo.getId());
-		draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
-		draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
-		draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+		DraftDocument draftDocument;
 
-		// Save the draft document to the database
-		draftDocumentRepository.save(draftDocument);
+		if (draftDataDTO.getDraftId() != null) {
+			// Update existing draft
+			draftDocument = draftDocumentRepository.findById(draftDataDTO.getDraftId()).orElseThrow(
+					() -> new IllegalArgumentException("Draft not found for ID: " + draftDataDTO.getDraftId()));
 
-		// Insert an entry to Workflow History (no result expected from this query)
-		draftDocumentRepository.saveIntoWorkflowHistory(draftDataDTO.getApplicationId(), userId, userName,
-				draftDocument.getId());
+			draftDocument.setDraftData(draftData);
+			draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
+			draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
+			draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+
+			// Save updated draft document
+			draftDocumentRepository.save(draftDocument);
+
+		} else {
+			// Create new draft
+			SerialNumberResponse applicationNo = generateApplicationNo(serialNumberRequest);
+
+			draftDocument = new DraftDocument();
+			draftDocument.setDraftData(draftData);
+			draftDocument.setApplicationId(draftDataDTO.getApplicationId());
+			draftDocument.setApplicationNo(applicationNo.getId());
+			draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
+			draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
+			draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+
+			// Save new draft document
+			draftDocumentRepository.save(draftDocument);
+
+			// Insert into Workflow History
+			draftDocumentRepository.saveIntoWorkflowHistory(draftDataDTO.getApplicationId(), userId, userName,
+					draftDocument.getId());
+		}
 
 		// Prepare the response with the saved data
 		List<Map<String, Object>> result = new ArrayList<>();
