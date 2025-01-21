@@ -885,7 +885,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	@Transactional
-	public List<Map<String, Object>> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
+	public Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
 		String userName = utils.getUserFullNameFromAuthentication();
 
 		Long houseId = null;
@@ -904,7 +904,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 
 		JsonNode draftData = draftDataDTO.getData();
-
 		DraftDocument draftDocument;
 
 		if (draftDataDTO.getDraftId() != null) {
@@ -945,14 +944,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 
 		// Prepare the response with the saved data
-		List<Map<String, Object>> result = new ArrayList<>();
 		Map<String, Object> responseMap = new HashMap<>();
 		responseMap.put("id", draftDocument.getId());
 		responseMap.put("draftData", draftDocument.getDraftData());
 		responseMap.put("applicationId", draftDocument.getApplicationId());
-		result.add(responseMap);
+		responseMap.put("lokSabhaSession", draftDocument.getLokSabhaSession());
+		responseMap.put("rajyaSabhaSession", draftDocument.getRajyaSabhaSession());
+		responseMap.put("lokSabhaSessionNumber", draftDocument.getLokSabhaSessionNumber());
 
-		return result;
+		return responseMap;
 	}
 
 	// Generate Application No Functionality

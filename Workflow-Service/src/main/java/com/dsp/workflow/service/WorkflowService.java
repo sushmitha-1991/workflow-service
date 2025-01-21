@@ -119,7 +119,7 @@ public interface WorkflowService {
 	 * @param draftDataDTO
 	 * @return
 	 */
-	List<Map<String, Object>> saveAsDraft(Long userId, DraftDataDTO draftDataDTO);
+	Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO);
 
 	/**
 	 * @param userId

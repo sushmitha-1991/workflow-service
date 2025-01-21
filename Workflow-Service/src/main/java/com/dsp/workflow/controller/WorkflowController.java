@@ -272,12 +272,11 @@ public class WorkflowController {
 	}
 
 	@PostMapping("/save-as-draft")
-	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> saveAsDraft(
-			@RequestBody DraftDataDTO draftDataDTO) {
+	public ResponseEntity<GenericResponse<Map<String, Object>>> saveAsDraft(@RequestBody DraftDataDTO draftDataDTO) {
 		Long userId = utils.getUserIdFromAuthentication();
-		
+
 		// Call the service method to save the draft data
-		List<Map<String, Object>> data = workflowService.saveAsDraft(userId, draftDataDTO);
+		Map<String, Object> data = workflowService.saveAsDraft(userId, draftDataDTO);
 
 		// Return appropriate response based on whether data is found
 		if (data.isEmpty()) {
