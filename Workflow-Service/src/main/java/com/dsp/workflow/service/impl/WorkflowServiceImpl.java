@@ -192,10 +192,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			             FROM workflow.workflow_history wh3
 			             WHERE wh3.pending_with IS NOT NULL
 			               AND wh3.action_taken_by = :userId
-			               AND wh3.application_instance_id IN (
+			               AND wh3.application_instance_id NOT IN (
 			                   SELECT wh1.application_instance_id
 			                   FROM workflow.workflow_history wh1
-			                   WHERE wh1.action_taken_by IS NOT NULL
+			                   WHERE wh1.action_taken_by IS NULL
 			                     AND wh1.pending_with = :userId
 			               )
 			         )
