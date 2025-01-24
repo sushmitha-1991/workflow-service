@@ -20,12 +20,13 @@ public class NotesheetMapper {
 	 * @param variables    A Map containing the variables to be mapped.
 	 * @param taskId       The task ID related to the workflow.
 	 * @param documentList
+	 * @param note
 	 * @return A Notesheet entity.
 	 */
 	public static Notesheet fromVariables(Map<String, Object> variables, String taskId,
-			List<ProcessStepwiseDocumentsDTO> documentList) {
+			List<ProcessStepwiseDocumentsDTO> documentList, String note) {
 		// Build the Notesheet entity from the variables
-		Notesheet notesheet = Notesheet.builder().note((String) variables.get("note"))
+		Notesheet notesheet = Notesheet.builder().note(note)
 				.receiverRoleId(convertToInteger(variables.get("receiverRoleId")))
 				.receiverUserId((Integer) variables.get("receiverUserId"))
 				// .senderRoleId(convertToInteger(variables.get("senderRoleId")))

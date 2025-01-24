@@ -69,42 +69,42 @@ public class WorkflowController {
 		return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
 	}
 
-	@Operation(summary = "Complete Assigned Task", description = "Completes a specific task in the workflow with the provided task details.")
-	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task completed successfully"),
-			@ApiResponse(responseCode = "400", description = "Failed to complete task due to invalid data"),
-			@ApiResponse(responseCode = "500", description = "Error completing task") })
-	@PostMapping("/completeTask")
-	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
-		String taskId = completeTaskRequestDTO.getTaskId();
-		Map<String, Object> variables = new HashMap<>();
-		variables.put("processInstanceId", completeTaskRequestDTO.getProcessInstanceId());
-		variables.put("note", completeTaskRequestDTO.getNote());
-		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
-		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
-		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
-		variables.put("senderRoleId", utils.getRoleIdByUserId());
-		variables.put("senderUserId", utils.getUserIdFromAuthentication());
-		variables.put("historyId", taskId);
-		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
-		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
-		variables.put("sendTo",
-				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
-		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
-		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
-		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
-		variables.put("stepType", completeTaskRequestDTO.getStepType());
-		variables.put("status", completeTaskRequestDTO.getStatus());
-		// variables.put("document", completeTaskRequestDTO.getDocument());
-
-		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
-				completeTaskRequestDTO.getActionUrl());
-
-		if (newTaskId != null) {
-			return new GenericResponse<>(true, "Task completed successfully", newTaskId, HttpStatus.OK.value());
-		} else {
-			return new GenericResponse<>(false, "Failed to complete task", taskId, HttpStatus.BAD_REQUEST.value());
-		}
-	}
+//	@Operation(summary = "Complete Assigned Task", description = "Completes a specific task in the workflow with the provided task details.")
+//	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task completed successfully"),
+//			@ApiResponse(responseCode = "400", description = "Failed to complete task due to invalid data"),
+//			@ApiResponse(responseCode = "500", description = "Error completing task") })
+//	@PostMapping("/completeTask")
+//	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
+//		String taskId = completeTaskRequestDTO.getTaskId();
+//		Map<String, Object> variables = new HashMap<>();
+//		variables.put("processInstanceId", completeTaskRequestDTO.getProcessInstanceId());
+//		variables.put("note", completeTaskRequestDTO.getNote());
+//		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
+//		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
+//		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
+//		variables.put("senderRoleId", utils.getRoleIdByUserId());
+//		variables.put("senderUserId", utils.getUserIdFromAuthentication());
+//		variables.put("historyId", taskId);
+//		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
+//		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
+//		variables.put("sendTo",
+//				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
+//		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
+//		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
+//		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
+//		variables.put("stepType", completeTaskRequestDTO.getStepType());
+//		variables.put("status", completeTaskRequestDTO.getStatus());
+//		// variables.put("document", completeTaskRequestDTO.getDocument());
+//
+//		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
+//				completeTaskRequestDTO.getActionUrl());
+//
+//		if (newTaskId != null) {
+//			return new GenericResponse<>(true, "Task completed successfully", newTaskId, HttpStatus.OK.value());
+//		} else {
+//			return new GenericResponse<>(false, "Failed to complete task", taskId, HttpStatus.BAD_REQUEST.value());
+//		}
+//	}
 
 	@Operation(summary = "Get Pending Tasks", description = "Retrieves a list of pending tasks for a given receiver user ID.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Pending tasks retrieved successfully"),
@@ -219,7 +219,7 @@ public class WorkflowController {
 		// Proceed with completing the task regardless of the stepType
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("processInstanceId", processInstanceId);
-		variables.put("note", completeTaskRequestDTO.getNote());
+		// variables.put("note", completeTaskRequestDTO.getNote());
 		variables.put("receiverRoleId",
 				completeTaskRequestDTO.getReceiverRoleId() != null ? completeTaskRequestDTO.getReceiverRoleId() : 0);
 		variables.put("receiverUserId",
@@ -243,7 +243,7 @@ public class WorkflowController {
 
 		// Complete the task with provided variables and document list
 		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
-				completeTaskRequestDTO.getActionUrl());
+				completeTaskRequestDTO.getActionUrl(), completeTaskRequestDTO.getNote());
 
 		// Return success or failure based on the completion of the task
 		if (newTaskId != null) {

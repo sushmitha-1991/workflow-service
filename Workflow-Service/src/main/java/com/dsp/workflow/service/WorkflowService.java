@@ -29,11 +29,12 @@ public interface WorkflowService {
 	 * @param variables    The variables to pass for task completion.
 	 * @param list
 	 * @param actionUrl
+	 * @param note
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
 	String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list,
-			String actionUrl);
+			String actionUrl, String note);
 
 	/**
 	 * Retrieves a task ID by process instance ID.

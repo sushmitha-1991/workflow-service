@@ -353,7 +353,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables,
-			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl) {
+			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note) {
 		try {
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
@@ -377,7 +377,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String processInstanceId = (String) variables.get("processInstanceId");
 			String application_no = (String) variables.get("application_no");
 			String actionTaken = (String) variables.get("actionTaken");
-			String note = (String) variables.get("note");
 			String statusKey = application_no + "." + actionTaken + ".PRESTATUS";
 			String initalStatusKey = application_no + "." + actionTaken + ".POSTSTATUS";
 			String receiverUserName = (String) variables.get("receiverUserName");
@@ -395,7 +394,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				if ("INIT".equals(stepType)) {
 
 					// Entry to Notesheet Table
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
 
 					// First entry with status = "submitted"
@@ -420,7 +419,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
 
 					// Entry to Notesheet Table
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList);
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
 
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
