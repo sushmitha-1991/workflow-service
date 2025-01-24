@@ -111,166 +111,165 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private HttpServletRequest httpRequest;
 
 	private final static String allDocumentsQuery = """
-			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
-			FROM (
-			     SELECT DISTINCT ON (ai.application_no)
-			            ai.application_no AS applicationNo,
-			            a.name AS documentName,
-			            ai.document_date AS date,
-			            ai.lok_sabha_session AS LSNo,
-			            ai.lok_sabha_session_number AS SSNo,
-			            ai.rajya_sabha_session AS RSSNo,
-			            ai.current_status AS status,
-			            CASE
-			                WHEN ai.current_status = 'Approved' THEN NULL
-			                ELSE CONCAT(wh.pending_with_name)
-			            END AS pendingAt,
-			            ai.ref_id AS refId,
-			            ai.application_id AS applicationId,
-			            ai.id AS applicationinstanceId,
-			            'IN-PROCESS' AS taskName,
-			            wh.next_task_id AS taskId,
-			            'True' AS actionPerformed,
-			            a.form_url AS formUrl,
-			            wh.action_url AS actionUrl,
-			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl,
-			            ai.published_document_uuid_en as documentUUIDEn,
-			            ai.published_document_uuid_hi as documentUUIDHi
-			     FROM workflow.workflow_history wh
-			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
-			     JOIN master.applications a ON ai.application_id = a.id
-			     JOIN authentication.base_user u ON u.id = wh.pending_with
-			     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
-			     JOIN authentication.roles r ON r.id = ur.role_id
-			     JOIN master.offices o ON o.id = ur.office_id
-			     WHERE wh.pending_with = :userId
-			       AND wh.action_taken_by IS NULL
+						SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+						        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
+						FROM (
+						     SELECT DISTINCT ON (ai.application_no)
+						            ai.application_no AS applicationNo,
+						            a.name AS documentName,
+						            ai.document_date AS date,
+						            ai.lok_sabha_session AS LSNo,
+						            ai.lok_sabha_session_number AS SSNo,
+						            ai.rajya_sabha_session AS RSSNo,
+						            ai.current_status AS status,
+						            CASE
+						                WHEN ai.current_status = 'Approved' THEN NULL
+						                ELSE CONCAT(wh.pending_with_name)
+						            END AS pendingAt,
+						            ai.ref_id AS refId,
+						            ai.application_id AS applicationId,
+						            ai.id AS applicationinstanceId,
+						            'IN-PROCESS' AS taskName,
+						            wh.next_task_id AS taskId,
+						            'True' AS actionPerformed,
+						            a.form_url AS formUrl,
+						            wh.action_url AS actionUrl,
+						            wh.draft_id as draftId,
+						            a.published_url as publishedUrl,
+						            ai.published_document_uuid_en as documentUUIDEn,
+						            ai.published_document_uuid_hi as documentUUIDHi
+						     FROM workflow.workflow_history wh
+						     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
+						     JOIN master.applications a ON ai.application_id = a.id
+						     JOIN authentication.base_user u ON u.id = wh.pending_with
+						     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
+						     JOIN authentication.roles r ON r.id = ur.role_id
+						     JOIN master.offices o ON o.id = ur.office_id
+						     WHERE wh.pending_with = :userId
+						       AND wh.action_taken_by IS NULL
 
-			     UNION
+						     UNION
 
-			     SELECT DISTINCT ON (ai.application_no)
-			            ai.application_no AS applicationNo,
-			            a.name AS documentName,
-			            ai.document_date AS date,
-			            ai.lok_sabha_session AS LSNo,
-			            ai.lok_sabha_session_number AS SSNo,
-			            ai.rajya_sabha_session AS RSSNo,
-			            CASE
-			                WHEN ai.current_status = 'Returned' THEN 'In Progress'
-			                ELSE ai.current_status
-			            END AS status,
-			            CASE
-			                WHEN ai.current_status = 'Approved' THEN NULL
-			                ELSE CONCAT(wh.pending_with_name)
-			            END AS pendingAt,
-			            ai.ref_id AS refId,
-			            ai.application_id AS applicationId,
-			            ai.id AS applicationinstanceId,
-			            'IN-PROCESS' AS taskName,
-			            wh.next_task_id AS taskId,
-			            'False' AS actionPerformed,
-			            a.form_url AS formUrl,
-			            wh.action_url AS actionUrl,
-			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl,
-			            ai.published_document_uuid_en as documentUUIDEn,
-			            ai.published_document_uuid_hi as documentUUIDHi
-			     FROM workflow.workflow_history wh
-			     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
-			     JOIN master.applications a ON ai.application_id = a.id
-			     JOIN authentication.base_user u ON u.id = wh.pending_with
-			     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
-			     JOIN authentication.roles r ON r.id = ur.role_id
-			     JOIN master.offices o ON o.id = ur.office_id
-			     WHERE wh.id IN (
-			         SELECT MAX(wh2.id)
-			         FROM workflow.workflow_history wh2
-			         WHERE wh2.application_instance_id IN (
-			             SELECT wh3.application_instance_id
-			             FROM workflow.workflow_history wh3
-			             WHERE wh3.pending_with IS NOT NULL
-			               AND wh3.action_taken_by = :userId
-			               AND wh3.application_instance_id NOT IN (
-			                   SELECT wh1.application_instance_id
-			                   FROM workflow.workflow_history wh1
-			                   WHERE wh1.action_taken_by IS NULL
-			                     AND wh1.pending_with = :userId
-			               )
-			         )
-			         GROUP BY wh2.application_instance_id
-			     )
+						     select
+				distinct on
+				(ai.application_no) ai.application_no as applicationNo,
+				a.name as documentName,
+				ai.document_date as date,
+				ai.lok_sabha_session as LSNo,
+				ai.lok_sabha_session_number as SSNo,
+				ai.rajya_sabha_session as RSSNo,
+				case
+					when ai.current_status = 'Returned' then 'In Progress'
+					else ai.current_status
+				end as status,
+				case
+					when ai.current_status = 'Approved' then null
+					else CONCAT(wh.pending_with_name)
+				end as pendingAt,
+				ai.ref_id as refId,
+				ai.application_id as applicationId,
+				ai.id as applicationinstanceId,
+				'IN-PROCESS' as taskName,
+				wh.next_task_id as taskId,
+				'False' as actionPerformed,
+				a.form_url as formUrl,
+				wh.action_url as actionUrl,
+				wh.draft_id as draftId,
+				a.published_url as publishedUrl,
+				ai.published_document_uuid_en as documentUUIDEn,
+				ai.published_document_uuid_hi as documentUUIDHi
+			from
+				(
+				select wh1.* from workflow.workflow_history wh1 where wh1.id in (
+				select max(id) from workflow.workflow_history wh2
+				where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
+				group by application_instance_id)
+				and wh1.pending_with != :userId
+				) wh
+			join master.application_instance ai on
+				wh.application_instance_id = ai.id
+			join master.applications a on
+				ai.application_id = a.id
+			join authentication.base_user u on
+				u.id = wh.pending_with
+			join authentication.user_roles ur on
+				ur.user_id = u.id
+				and ur.is_active = true
+			join authentication.roles r on
+				r.id = ur.role_id
+			join master.offices o on
+				o.id = ur.office_id
 
-			     UNION
 
-			     SELECT DISTINCT ON (ii.application_no)
-			            ii.application_no AS applicationNo,
-			            a.name AS documentName,
-			            ii.document_date AS date,
-			            ii.lok_sabha_session AS LSNo,
-			            ii.lok_sabha_session_number AS SSNo,
-			            ii.rajya_sabha_session AS RSSNo,
-			 			CASE
-			     		WHEN ii.application_instance_id IS NOT NULL
-			          	AND applicationInstance.id = ii.application_instance_id
-			          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
-			     		THEN applicationInstance.current_status
-			     		ELSE ii.current_status
-			 			END AS status,
-			 			ii.pending_at AS pendingAt,
-			            ii.ref_id AS refId,
-			            ii.application_id AS applicationId,
-			            ii.id AS applicationinstanceId,
-			            'IN-PROCESS' AS taskName,
-			            NULL AS taskId,
-			                   CASE
-			        	WHEN ii.current_status = 'Returned' THEN 'True'
-			        	ELSE 'False'
-			    		END AS actionPerformed,
-			            a.form_url AS formUrl,
-			            NULL AS actionUrl,
-			            NULL as draftId,
-			            a.published_url as publishedUrl,
-			            NULL as documentUUIDEn,
-			            NULL as documentUUIDHi
-			     FROM master.input_instance ii
-			     JOIN master.applications a ON a.id = ii.application_id
-			     JOIN authentication.base_user u ON u.id = ii.created_by
-			     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
-			     WHERE ii.created_by = :userId
+						     UNION
 
-			     UNION
+						     SELECT DISTINCT ON (ii.application_no)
+						            ii.application_no AS applicationNo,
+						            a.name AS documentName,
+						            ii.document_date AS date,
+						            ii.lok_sabha_session AS LSNo,
+						            ii.lok_sabha_session_number AS SSNo,
+						            ii.rajya_sabha_session AS RSSNo,
+						 			CASE
+						     		WHEN ii.application_instance_id IS NOT NULL
+						          	AND applicationInstance.id = ii.application_instance_id
+						          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
+						     		THEN applicationInstance.current_status
+						     		ELSE ii.current_status
+						 			END AS status,
+						 			ii.pending_at AS pendingAt,
+						            ii.ref_id AS refId,
+						            ii.application_id AS applicationId,
+						            ii.id AS applicationinstanceId,
+						            'IN-PROCESS' AS taskName,
+						            NULL AS taskId,
+						                   CASE
+						        	WHEN ii.current_status = 'Returned' THEN 'True'
+						        	ELSE 'False'
+						    		END AS actionPerformed,
+						            a.form_url AS formUrl,
+						            NULL AS actionUrl,
+						            NULL as draftId,
+						            a.published_url as publishedUrl,
+						            NULL as documentUUIDEn,
+						            NULL as documentUUIDHi
+						     FROM master.input_instance ii
+						     JOIN master.applications a ON a.id = ii.application_id
+						     JOIN authentication.base_user u ON u.id = ii.created_by
+						     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
+						     WHERE ii.created_by = :userId
 
-				 SELECT DISTINCT ON (dd.application_no)
-			            dd.application_no AS applicationNo,
-			            a.name AS documentName,
-			            NULL AS date,
-			            dd.lok_sabha_session AS LSNo,
-			            dd.lok_sabha_session_number AS SSNo,
-			            dd.rajya_sabha_session AS RSSNo,
-			            wh.status AS status,
-			            wh.pending_with_name AS pendingAt,
-			            NULL AS refId,
-			            dd.application_id AS applicationId,
-			            NULL AS applicationinstanceId,
-			            'IN-PROCESS' AS taskName,
-			            NULL AS taskId,
-			            'True' AS actionPerformed,
-			            a.form_url AS formUrl,
-			            NULL AS actionUrl,
-			            wh.draft_id as draftId,
-			            a.published_url as publishedUrl,
-			            NULL as documentUUIDEn,
-			            NULL as documentUUIDHi
-			     FROM workflow.workflow_history wh
-			     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
-			     LEFT JOIN master.applications a ON a.id = dd.application_id
-			     left JOIN authentication.base_user u ON u.id = wh.pending_with
-			     WHERE wh.pending_with = :userId
-			 ) A
-			 LEFT JOIN master.applications ma on ma.id = A.applicationId
-			""";
+						     UNION
+
+							 SELECT DISTINCT ON (dd.application_no)
+						            dd.application_no AS applicationNo,
+						            a.name AS documentName,
+						            NULL AS date,
+						            dd.lok_sabha_session AS LSNo,
+						            dd.lok_sabha_session_number AS SSNo,
+						            dd.rajya_sabha_session AS RSSNo,
+						            wh.status AS status,
+						            wh.pending_with_name AS pendingAt,
+						            NULL AS refId,
+						            dd.application_id AS applicationId,
+						            NULL AS applicationinstanceId,
+						            'IN-PROCESS' AS taskName,
+						            NULL AS taskId,
+						            'True' AS actionPerformed,
+						            a.form_url AS formUrl,
+						            NULL AS actionUrl,
+						            wh.draft_id as draftId,
+						            a.published_url as publishedUrl,
+						            NULL as documentUUIDEn,
+						            NULL as documentUUIDHi
+						     FROM workflow.workflow_history wh
+						     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
+						     LEFT JOIN master.applications a ON a.id = dd.application_id
+						     left JOIN authentication.base_user u ON u.id = wh.pending_with
+						     WHERE wh.pending_with = :userId
+						 ) A
+						 LEFT JOIN master.applications ma on ma.id = A.applicationId
+						""";
 
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
