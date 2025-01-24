@@ -180,4 +180,25 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			+ "ORDER BY ai.application_no, wh.action_taken_on DESC", nativeQuery = true)
 	List<Object[]> findAllApprovedDocumentsForUser(@Param("userId") Long userId);
 
+	/**
+	 * @param processInstanceId
+	 * @param applicationInstanceId
+	 * @param senderUserId
+	 * @param userName
+	 * @param actionTakenOn
+	 * @param status
+	 * @param statusKey
+	 * @param taskId
+	 */
+	@Modifying
+	@Transactional
+	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = NULL, pending_with_name = NULL "
+			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
+			+ "AND action_taken_by IS NULL", nativeQuery = true)
+	void updateWorkflowHistoryForFinalStepType(@Param("processInstanceId") String processInstanceId,
+			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
+			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
+			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId);
+
 }

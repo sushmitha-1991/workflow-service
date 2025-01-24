@@ -111,10 +111,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private HttpServletRequest httpRequest;
 
 	private final static String allDocumentsQuery = """
-						SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-						        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
-						FROM (
-						     SELECT DISTINCT ON (ai.application_no)
+									SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+									        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
+									FROM (
+									SELECT DISTINCT ON (ai.application_no)
 						            ai.application_no AS applicationNo,
 						            a.name AS documentName,
 						            ai.document_date AS date,
@@ -141,16 +141,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 						     FROM workflow.workflow_history wh
 						     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
 						     JOIN master.applications a ON ai.application_id = a.id
-						     JOIN authentication.base_user u ON u.id = wh.pending_with
-						     JOIN authentication.user_roles ur ON ur.user_id = u.id AND ur.is_active = true
-						     JOIN authentication.roles r ON r.id = ur.role_id
-						     JOIN master.offices o ON o.id = ur.office_id
 						     WHERE wh.pending_with = :userId
 						       AND wh.action_taken_by IS NULL
 
-						     UNION
+									     UNION
 
-						     select
+									     select
 				distinct on
 				(ai.application_no) ai.application_no as applicationNo,
 				a.name as documentName,
@@ -184,92 +180,82 @@ public class WorkflowServiceImpl implements WorkflowService {
 				select max(id) from workflow.workflow_history wh2
 				where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
 				group by application_instance_id)
-				and wh1.pending_with != :userId
+				and wh1.pending_with != :userId or wh1.pending_with is null
 				) wh
 			join master.application_instance ai on
 				wh.application_instance_id = ai.id
 			join master.applications a on
 				ai.application_id = a.id
-			join authentication.base_user u on
-				u.id = wh.pending_with
-			join authentication.user_roles ur on
-				ur.user_id = u.id
-				and ur.is_active = true
-			join authentication.roles r on
-				r.id = ur.role_id
-			join master.offices o on
-				o.id = ur.office_id
 
+									     UNION
 
-						     UNION
+									     SELECT DISTINCT ON (ii.application_no)
+									            ii.application_no AS applicationNo,
+									            a.name AS documentName,
+									            ii.document_date AS date,
+									            ii.lok_sabha_session AS LSNo,
+									            ii.lok_sabha_session_number AS SSNo,
+									            ii.rajya_sabha_session AS RSSNo,
+									 			CASE
+									     		WHEN ii.application_instance_id IS NOT NULL
+									          	AND applicationInstance.id = ii.application_instance_id
+									          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
+									     		THEN applicationInstance.current_status
+									     		ELSE ii.current_status
+									 			END AS status,
+									 			ii.pending_at AS pendingAt,
+									            ii.ref_id AS refId,
+									            ii.application_id AS applicationId,
+									            ii.id AS applicationinstanceId,
+									            'IN-PROCESS' AS taskName,
+									            NULL AS taskId,
+									                   CASE
+									        	WHEN ii.current_status = 'Returned' THEN 'True'
+									        	ELSE 'False'
+									    		END AS actionPerformed,
+									            a.form_url AS formUrl,
+									            NULL AS actionUrl,
+									            NULL as draftId,
+									            a.published_url as publishedUrl,
+									            NULL as documentUUIDEn,
+									            NULL as documentUUIDHi
+									     FROM master.input_instance ii
+									     JOIN master.applications a ON a.id = ii.application_id
+									     JOIN authentication.base_user u ON u.id = ii.created_by
+									     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
+									     WHERE ii.created_by = :userId
 
-						     SELECT DISTINCT ON (ii.application_no)
-						            ii.application_no AS applicationNo,
-						            a.name AS documentName,
-						            ii.document_date AS date,
-						            ii.lok_sabha_session AS LSNo,
-						            ii.lok_sabha_session_number AS SSNo,
-						            ii.rajya_sabha_session AS RSSNo,
-						 			CASE
-						     		WHEN ii.application_instance_id IS NOT NULL
-						          	AND applicationInstance.id = ii.application_instance_id
-						          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
-						     		THEN applicationInstance.current_status
-						     		ELSE ii.current_status
-						 			END AS status,
-						 			ii.pending_at AS pendingAt,
-						            ii.ref_id AS refId,
-						            ii.application_id AS applicationId,
-						            ii.id AS applicationinstanceId,
-						            'IN-PROCESS' AS taskName,
-						            NULL AS taskId,
-						                   CASE
-						        	WHEN ii.current_status = 'Returned' THEN 'True'
-						        	ELSE 'False'
-						    		END AS actionPerformed,
-						            a.form_url AS formUrl,
-						            NULL AS actionUrl,
-						            NULL as draftId,
-						            a.published_url as publishedUrl,
-						            NULL as documentUUIDEn,
-						            NULL as documentUUIDHi
-						     FROM master.input_instance ii
-						     JOIN master.applications a ON a.id = ii.application_id
-						     JOIN authentication.base_user u ON u.id = ii.created_by
-						     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
-						     WHERE ii.created_by = :userId
+									     UNION
 
-						     UNION
-
-							 SELECT DISTINCT ON (dd.application_no)
-						            dd.application_no AS applicationNo,
-						            a.name AS documentName,
-						            NULL AS date,
-						            dd.lok_sabha_session AS LSNo,
-						            dd.lok_sabha_session_number AS SSNo,
-						            dd.rajya_sabha_session AS RSSNo,
-						            wh.status AS status,
-						            wh.pending_with_name AS pendingAt,
-						            NULL AS refId,
-						            dd.application_id AS applicationId,
-						            NULL AS applicationinstanceId,
-						            'IN-PROCESS' AS taskName,
-						            NULL AS taskId,
-						            'True' AS actionPerformed,
-						            a.form_url AS formUrl,
-						            NULL AS actionUrl,
-						            wh.draft_id as draftId,
-						            a.published_url as publishedUrl,
-						            NULL as documentUUIDEn,
-						            NULL as documentUUIDHi
-						     FROM workflow.workflow_history wh
-						     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
-						     LEFT JOIN master.applications a ON a.id = dd.application_id
-						     left JOIN authentication.base_user u ON u.id = wh.pending_with
-						     WHERE wh.pending_with = :userId
-						 ) A
-						 LEFT JOIN master.applications ma on ma.id = A.applicationId
-						""";
+										 SELECT DISTINCT ON (dd.application_no)
+									            dd.application_no AS applicationNo,
+									            a.name AS documentName,
+									            NULL AS date,
+									            dd.lok_sabha_session AS LSNo,
+									            dd.lok_sabha_session_number AS SSNo,
+									            dd.rajya_sabha_session AS RSSNo,
+									            wh.status AS status,
+									            wh.pending_with_name AS pendingAt,
+									            NULL AS refId,
+									            dd.application_id AS applicationId,
+									            NULL AS applicationinstanceId,
+									            'IN-PROCESS' AS taskName,
+									            NULL AS taskId,
+									            'True' AS actionPerformed,
+									            a.form_url AS formUrl,
+									            NULL AS actionUrl,
+									            wh.draft_id as draftId,
+									            a.published_url as publishedUrl,
+									            NULL as documentUUIDEn,
+									            NULL as documentUUIDHi
+									     FROM workflow.workflow_history wh
+									     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
+									     LEFT JOIN master.applications a ON a.id = dd.application_id
+									     left JOIN authentication.base_user u ON u.id = wh.pending_with
+									     WHERE wh.pending_with = :userId
+									 ) A
+									 LEFT JOIN master.applications ma on ma.id = A.applicationId
+									""";
 
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
@@ -370,6 +356,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Execute the REST API call to complete the task
 			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
+			// Extract variables for further processing
 			String userName = utils.getUserFullNameFromAuthentication();
 			Long senderUserId = ((Number) variables.get("senderUserId")).longValue();
 			Long receiverUserId = ((Number) variables.get("receiverUserId")).longValue();
@@ -377,22 +364,22 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String processInstanceId = (String) variables.get("processInstanceId");
 			String application_no = (String) variables.get("application_no");
 			String actionTaken = (String) variables.get("actionTaken");
+			// String note = (String) variables.get("note");
 			String statusKey = application_no + "." + actionTaken + ".PRESTATUS";
 			String initalStatusKey = application_no + "." + actionTaken + ".POSTSTATUS";
 			String receiverUserName = (String) variables.get("receiverUserName");
 			String status = (String) variables.get("status");
 			LocalDateTime actionTakenOn = LocalDateTime.now(); // Assuming the action is taken now
 
-			// fetch next task id
+			// Fetch next task ID
 			String nextTaskId = fetchNextTaskId(processInstanceId);
 
 			// Check if the task was successfully completed
 			if (response.getStatusCode().is2xxSuccessful()) {
-
-				// Check if the stepType is "INIT"
+				// Determine step type
 				String stepType = (String) variables.get("stepType");
-				if ("INIT".equals(stepType)) {
 
+				if ("INIT".equals(stepType)) {
 					// Entry to Notesheet Table
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
@@ -406,7 +393,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.initalStatusKey(statusKey).note(note).currentTaskId(taskId).build();
 					workflowHistoryRepository.save(firstEntry);
 
-					// Second entry, if needed, for the next task or status
+					// Second entry, for the next task or status
 					WorkflowHistory secondEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 							.subModuleId(application_no).applicationInstanceId(applicationInstanceId).actionTaken(null)
 							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
@@ -415,7 +402,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
 					workflowHistoryRepository.save(secondEntry);
 
-				} else if ("INTER".equals(stepType) || "FINAL".equals(stepType)) {
+				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
 
 					// Entry to Notesheet Table
@@ -425,28 +412,35 @@ public class WorkflowServiceImpl implements WorkflowService {
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
-					// Run update query if stepType is INTER or FINAL
-					if ("INTER".equals(stepType)) {
+					WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
+							.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
+							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
+							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
+							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
+					workflowHistoryRepository.save(entry);
 
-						updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+				} else if ("FINAL".equals(stepType)) {
+					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
 
-						WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
-								.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
-								.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
-								.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
-								.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-								.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
-						workflowHistoryRepository.save(entry);
-					}
+					// Entry to Notesheet Table
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
+					notesheetRepository.save(notesheet);
+
+					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
+							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 				}
 
+				// Return next task ID or end message
 				if (nextTaskId == null) {
 					return "Workflow has ended";
 				}
 				return nextTaskId;
+
 			} else {
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
+
 		} catch (Exception e) {
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
