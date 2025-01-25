@@ -205,9 +205,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 									 			CASE
 									     		WHEN ii.application_instance_id IS NOT NULL
 									          	AND applicationInstance.id = ii.application_instance_id
-									          	AND applicationInstance.current_status IN ('Approved', 'Published')
-									     		THEN null
-									     		ELSE ii.pending_at
+									          	AND applicationInstance.current_status NOT IN ('Approved', 'Published')
+									     		THEN ii.pending_at
+									     		ELSE null
 									 			END AS pendingAt,
 									            ii.ref_id AS refId,
 									            ii.application_id AS applicationId,
