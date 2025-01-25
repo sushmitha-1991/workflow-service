@@ -147,49 +147,48 @@ public class WorkflowServiceImpl implements WorkflowService {
 									     UNION
 
 									     select
-				distinct on
-				(ai.application_no) ai.application_no as applicationNo,
-				a.name as documentName,
-				ai.document_date as date,
-				ai.lok_sabha_session as LSNo,
-				ai.lok_sabha_session_number as SSNo,
-				ai.rajya_sabha_session as RSSNo,
-				case
-					when ai.current_status = 'Returned' then 'In Progress'
-					else ai.current_status
-				end as status,
-				case
-					when ai.current_status = 'Approved' then null
-					else CONCAT(wh.pending_with_name)
-				end as pendingAt,
-				ai.ref_id as refId,
-				ai.application_id as applicationId,
-				ai.id as applicationinstanceId,
-				'IN-PROCESS' as taskName,
-				wh.next_task_id as taskId,
-				'False' as actionPerformed,
-				a.form_url as formUrl,
-				wh.action_url as actionUrl,
-				wh.draft_id as draftId,
-				a.published_url as publishedUrl,
-				ai.published_document_uuid_en as documentUUIDEn,
-				ai.published_document_uuid_hi as documentUUIDHi
-			from
-				(
-				select wh1.* from workflow.workflow_history wh1 where wh1.id in (
-				select max(id) from workflow.workflow_history wh2
-				where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
-				group by application_instance_id)
-				and wh1.pending_with != :userId or wh1.pending_with is null
-				) wh
-			join master.application_instance ai on
-				wh.application_instance_id = ai.id
-			join master.applications a on
-				ai.application_id = a.id
+										distinct on
+										(ai.application_no) ai.application_no as applicationNo,
+										a.name as documentName,
+										ai.document_date as date,
+										ai.lok_sabha_session as LSNo,
+										ai.lok_sabha_session_number as SSNo,
+										ai.rajya_sabha_session as RSSNo,
+										case
+											when ai.current_status = 'Returned' then 'In Progress'
+											else ai.current_status
+										end as status,
+										case
+											when ai.current_status = 'Approved' then null
+											else CONCAT(wh.pending_with_name)
+										end as pendingAt,
+										ai.ref_id as refId,
+										ai.application_id as applicationId,
+										ai.id as applicationinstanceId,
+										'IN-PROCESS' as taskName,
+										wh.next_task_id as taskId,
+										'False' as actionPerformed,
+										a.form_url as formUrl,
+										wh.action_url as actionUrl,
+										wh.draft_id as draftId,
+										a.published_url as publishedUrl,
+										ai.published_document_uuid_en as documentUUIDEn,
+										ai.published_document_uuid_hi as documentUUIDHi
+									from
+										(
+										select wh1.* from workflow.workflow_history wh1 where wh1.id in (
+										select max(id) from workflow.workflow_history wh2
+										where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
+										group by application_instance_id)
+										and wh1.pending_with != :userId or wh1.pending_with is null
+										) wh
+									join master.application_instance ai on
+										wh.application_instance_id = ai.id
+									join master.applications a on
+										ai.application_id = a.id
 
 									     UNION
-
-									     SELECT DISTINCT ON (ii.application_no)
+									    SELECT DISTINCT ON (ii.application_no)
 									            ii.application_no AS applicationNo,
 									            a.name AS documentName,
 									            ii.document_date AS date,
@@ -203,7 +202,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 									     		THEN applicationInstance.current_status
 									     		ELSE ii.current_status
 									 			END AS status,
-									 			ii.pending_at AS pendingAt,
+									 			CASE
+									     		WHEN ii.application_instance_id IS NOT NULL
+									          	AND applicationInstance.id = ii.application_instance_id
+									          	AND applicationInstance.current_status IN ('Approved', 'Published')
+									     		THEN null
+									     		ELSE ii.pending_at
+									 			END AS pendingAt,
 									            ii.ref_id AS refId,
 									            ii.application_id AS applicationId,
 									            ii.id AS applicationinstanceId,
@@ -260,17 +265,19 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
 			""";
-//	@Override
-//	public String startProcessInstance(String workflowId) {
-//		ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(workflowId);
-//		return processInstance.getProcessInstanceId();
-//	}
+	// @Override
+	// public String startProcessInstance(String workflowId) {
+	// ProcessInstance processInstance =
+	// runtimeService.startProcessInstanceByKey(workflowId);
+	// return processInstance.getProcessInstanceId();
+	// }
 
-//	@Override
-//	public String getTaskIdByProcessInstanceId(String processInstanceId) {
-//		Task task = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
-//		return (task != null) ? task.getId() : null;
-//	}
+	// @Override
+	// public String getTaskIdByProcessInstanceId(String processInstanceId) {
+	// Task task =
+	// taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
+	// return (task != null) ? task.getId() : null;
+	// }
 
 	@Override
 	public String startProcessInstance(String workflowId) {
@@ -307,35 +314,38 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return (tasks != null && !tasks.isEmpty()) ? tasks.get(0).get("id").toString() : null;
 	}
 
-//	@Transactional
-//	public String completeTask(String taskId, Map<String, Object> variables) {
-//		// Fetch the task
-//		Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-//		if (task != null) {
-//			// Complete the task
-//			taskService.complete(taskId, variables);
-//
-//			// Create a new Notesheet entity using the mapper
-//			Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
-//			notesheetRepository.save(notesheet);
-//			// Create and save ApplicationAuthority entity using the mapper
-//			ApplicationAuthority applicationAuthority = ApplicationAuthorityMapper.fromVariables(variables,
-//					notesheet.getApplicationHistoryId());
-//			applicationAuthorityRepository.save(applicationAuthority);
-//
-//			// Create and save ApplicationHistory entity using the mapper
-//			ApplicationHistory applicationHistory = ApplicationHistoryMapper.fromVariables(variables, taskId);
-//			applicationHistoryRepository.save(applicationHistory);
-//
-//			// Fetch the next task ID if available
-//			Task nextTask = taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
-//			String nextTaskId = (nextTask != null) ? nextTask.getId() : null;
-//
-//			return nextTaskId;
-//		} else {
-//			return null;
-//		}
-//	}
+	// @Transactional
+	// public String completeTask(String taskId, Map<String, Object> variables) {
+	// // Fetch the task
+	// Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+	// if (task != null) {
+	// // Complete the task
+	// taskService.complete(taskId, variables);
+	//
+	// // Create a new Notesheet entity using the mapper
+	// Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
+	// notesheetRepository.save(notesheet);
+	// // Create and save ApplicationAuthority entity using the mapper
+	// ApplicationAuthority applicationAuthority =
+	// ApplicationAuthorityMapper.fromVariables(variables,
+	// notesheet.getApplicationHistoryId());
+	// applicationAuthorityRepository.save(applicationAuthority);
+	//
+	// // Create and save ApplicationHistory entity using the mapper
+	// ApplicationHistory applicationHistory =
+	// ApplicationHistoryMapper.fromVariables(variables, taskId);
+	// applicationHistoryRepository.save(applicationHistory);
+	//
+	// // Fetch the next task ID if available
+	// Task nextTask =
+	// taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
+	// String nextTaskId = (nextTask != null) ? nextTask.getId() : null;
+	//
+	// return nextTaskId;
+	// } else {
+	// return null;
+	// }
+	// }
 
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables,
@@ -492,61 +502,71 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		return camundaVariables;
 	}
-//	public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
-//		try {
-//			// Step 1: Retrieve tasks filtered by receiverUserId
-//			String queryUrl = camundaRestUrl + "/task?processVariableName=receiverUserId&processVariableValue="
-//					+ receiverUserId;
-//			ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl, HttpMethod.GET, null,
-//					new ParameterizedTypeReference<List<TaskDto>>() {
-//					});
-//
-//			// Check if tasks were successfully retrieved
-//			if (response.getStatusCode().is2xxSuccessful()) {
-//				List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() : Collections.emptyList();
-//
-//				// Step 2: Filter tasks to include only those where receiverUserId matches
-//				List<TaskResponseDTO> filteredTasks = taskDtos.stream().filter(taskDto -> {
-//					// Retrieve the actual receiverUserId variable for the task
-//					String variableUrl = camundaRestUrl + "/task/" + taskDto.getId() + "/variables/receiverUserId";
-//					ResponseEntity<TaskVariableDto> variableResponse = restTemplate.getForEntity(variableUrl,
-//							TaskVariableDto.class);
-//
-//					// Verify that receiverUserId matches
-//					return variableResponse.getStatusCode().is2xxSuccessful() && variableResponse.getBody() != null
-//							&& receiverUserId.equals(variableResponse.getBody().getValue());
-//				}).map(taskDto -> {
-//					// Step 3: Fetch applicationInstanceId variable if receiverUserId matches
-//					String appInstanceUrl = camundaRestUrl + "/task/" + taskDto.getId()
-//							+ "/variables/applicationInstanceId";
-//					ResponseEntity<TaskVariableDto> appInstanceResponse = restTemplate.getForEntity(appInstanceUrl,
-//							TaskVariableDto.class);
-//
-//					Long applicationInstanceId = null;
-//					if (appInstanceResponse.getStatusCode().is2xxSuccessful()
-//							&& appInstanceResponse.getBody() != null) {
-//						applicationInstanceId = appInstanceResponse.getBody().getValue();
-//					}
-//
-//					return new TaskResponseDTO(taskDto.getId(), taskDto.getName(), applicationInstanceId);
-//				}).collect(Collectors.toList());
-//
-//				// Step 4: Check if any tasks were found; if not, throw a custom exception
-//				if (filteredTasks.isEmpty()) {
-//					throw new ResourceNotFoundException(
-//							"No pending tasks found for the provided receiverUserId: " + receiverUserId);
-//				}
-//
-//				return filteredTasks;
-//			} else {
-//				throw new ResourceNotFoundException("Failed to retrieve tasks: " + response.getStatusCode());
-//			}
-//		} catch (ResourceNotFoundException e) {
-//			throw e; // Preserve custom exception for resource not found
-//		} catch (Exception e) {
-//			throw new RuntimeException("An unexpected error occurred while retrieving tasks: " + e.getMessage(), e);
-//		}
-//	}
+	// public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
+	// try {
+	// // Step 1: Retrieve tasks filtered by receiverUserId
+	// String queryUrl = camundaRestUrl +
+	// "/task?processVariableName=receiverUserId&processVariableValue="
+	// + receiverUserId;
+	// ResponseEntity<List<TaskDto>> response = restTemplate.exchange(queryUrl,
+	// HttpMethod.GET, null,
+	// new ParameterizedTypeReference<List<TaskDto>>() {
+	// });
+	//
+	// // Check if tasks were successfully retrieved
+	// if (response.getStatusCode().is2xxSuccessful()) {
+	// List<TaskDto> taskDtos = response.getBody() != null ? response.getBody() :
+	// Collections.emptyList();
+	//
+	// // Step 2: Filter tasks to include only those where receiverUserId matches
+	// List<TaskResponseDTO> filteredTasks = taskDtos.stream().filter(taskDto -> {
+	// // Retrieve the actual receiverUserId variable for the task
+	// String variableUrl = camundaRestUrl + "/task/" + taskDto.getId() +
+	// "/variables/receiverUserId";
+	// ResponseEntity<TaskVariableDto> variableResponse =
+	// restTemplate.getForEntity(variableUrl,
+	// TaskVariableDto.class);
+	//
+	// // Verify that receiverUserId matches
+	// return variableResponse.getStatusCode().is2xxSuccessful() &&
+	// variableResponse.getBody() != null
+	// && receiverUserId.equals(variableResponse.getBody().getValue());
+	// }).map(taskDto -> {
+	// // Step 3: Fetch applicationInstanceId variable if receiverUserId matches
+	// String appInstanceUrl = camundaRestUrl + "/task/" + taskDto.getId()
+	// + "/variables/applicationInstanceId";
+	// ResponseEntity<TaskVariableDto> appInstanceResponse =
+	// restTemplate.getForEntity(appInstanceUrl,
+	// TaskVariableDto.class);
+	//
+	// Long applicationInstanceId = null;
+	// if (appInstanceResponse.getStatusCode().is2xxSuccessful()
+	// && appInstanceResponse.getBody() != null) {
+	// applicationInstanceId = appInstanceResponse.getBody().getValue();
+	// }
+	//
+	// return new TaskResponseDTO(taskDto.getId(), taskDto.getName(),
+	// applicationInstanceId);
+	// }).collect(Collectors.toList());
+	//
+	// // Step 4: Check if any tasks were found; if not, throw a custom exception
+	// if (filteredTasks.isEmpty()) {
+	// throw new ResourceNotFoundException(
+	// "No pending tasks found for the provided receiverUserId: " + receiverUserId);
+	// }
+	//
+	// return filteredTasks;
+	// } else {
+	// throw new ResourceNotFoundException("Failed to retrieve tasks: " +
+	// response.getStatusCode());
+	// }
+	// } catch (ResourceNotFoundException e) {
+	// throw e; // Preserve custom exception for resource not found
+	// } catch (Exception e) {
+	// throw new RuntimeException("An unexpected error occurred while retrieving
+	// tasks: " + e.getMessage(), e);
+	// }
+	// }
 
 	public List<TaskResponseDTO> getTasksByReceiverUserId(Long receiverUserId) {
 		try {
@@ -631,33 +651,35 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 	}
 
-//	private void logTaskHistory(String taskId, String processInstanceId, Map<String, Object> variables,
-//			String nextTaskId) {
-//		TaskHistory taskHistory = new TaskHistory();
-//		taskHistory.setTaskId(taskId);
-//		taskHistory.setProcessInstanceId(processInstanceId);
-//		taskHistory.setUserId((String) variables.get("userId"));
-//		taskHistory.setUserName((String) variables.get("userName"));
-//		taskHistory.setAction((String) variables.get("sendTo"));
-//		taskHistory.setComments((String) variables.get("comments"));
-////		taskHistory.setDocumentTitle((String) variables.get("documentTitle"));
-////		taskHistory.setDocDesc((String) variables.get("docDesc"));
-//		taskHistory.setTimestamp(new Date());
-//		taskHistory.setStatus("Completed");
-//		taskHistory.setNextTaskId(nextTaskId);
-//
-//		taskHistoryRepository.save(taskHistory);
-//	}
+	// private void logTaskHistory(String taskId, String processInstanceId,
+	// Map<String, Object> variables,
+	// String nextTaskId) {
+	// TaskHistory taskHistory = new TaskHistory();
+	// taskHistory.setTaskId(taskId);
+	// taskHistory.setProcessInstanceId(processInstanceId);
+	// taskHistory.setUserId((String) variables.get("userId"));
+	// taskHistory.setUserName((String) variables.get("userName"));
+	// taskHistory.setAction((String) variables.get("sendTo"));
+	// taskHistory.setComments((String) variables.get("comments"));
+	//// taskHistory.setDocumentTitle((String) variables.get("documentTitle"));
+	//// taskHistory.setDocDesc((String) variables.get("docDesc"));
+	// taskHistory.setTimestamp(new Date());
+	// taskHistory.setStatus("Completed");
+	// taskHistory.setNextTaskId(nextTaskId);
+	//
+	// taskHistoryRepository.save(taskHistory);
+	// }
 
-//	public List<HistoricTaskInstance> getHistoricTasksByTaskId(String taskId) {
-//		HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery();
-//
-//		if (taskId != null) {
-//			query.taskId(taskId);
-//		}
-//
-//		return query.list();
-//	}
+	// public List<HistoricTaskInstance> getHistoricTasksByTaskId(String taskId) {
+	// HistoricTaskInstanceQuery query =
+	// historyService.createHistoricTaskInstanceQuery();
+	//
+	// if (taskId != null) {
+	// query.taskId(taskId);
+	// }
+	//
+	// return query.list();
+	// }
 
 	public List<TaskHistoryDTO> getTasksByProcessInstanceId(String processInstanceId) {
 		try {
@@ -804,25 +826,28 @@ public class WorkflowServiceImpl implements WorkflowService {
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
 
 		if (queryDto.getApplicationId() != null) {
-//	            qry = qry.append(" and applicationNo = ").append(queryDto.getApplicationId());
+			// qry = qry.append(" and applicationNo =
+			// ").append(queryDto.getApplicationId());
 			qry = qry.append(" and applicationId = :applicationId ");
 			parameters.addValue("applicationId", queryDto.getApplicationId());
 		}
 
 		if (!Utils.isEmpty(queryDto.getLsNo())) {
-//	            qry = qry.append(" and LSNo = '").append(queryDto.getLsNo()).append("'");
+			// qry = qry.append(" and LSNo = '").append(queryDto.getLsNo()).append("'");
 			qry = qry.append(" and LSNo = :LsNo ");
 			parameters.addValue("LsNo", queryDto.getLsNo());
 		}
 
 		if (!Utils.isEmpty(queryDto.getLsSessionNo())) {
-//	            qry = qry.append(" and SSNo = '").append(queryDto.getLsSessionNo()).append("'");
+			// qry = qry.append(" and SSNo =
+			// '").append(queryDto.getLsSessionNo()).append("'");
 			qry = qry.append(" and SSNo = :LsSessionNo ");
 			parameters.addValue("LsSessionNo", queryDto.getLsSessionNo());
 		}
 
 		if (!Utils.isEmpty(queryDto.getRsSessionNo())) {
-//	            qry = qry.append(" and RSSNo = '").append(queryDto.getRsSessionNo()).append("'");
+			// qry = qry.append(" and RSSNo =
+			// '").append(queryDto.getRsSessionNo()).append("'");
 			qry = qry.append(" and RSSNo = :RsSessionNo ");
 			parameters.addValue("RsSessionNo", queryDto.getRsSessionNo());
 		}
