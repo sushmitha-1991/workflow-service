@@ -39,4 +39,6 @@ public class DocumentRowMapper {
 	String publishedUrl;
 	UUID documentUUIDEn;
 	UUID documentUUIDHi;
+	String htmlContentEn;
+	String htmlContentHi;
 }
