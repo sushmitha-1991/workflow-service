@@ -111,156 +111,164 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private HttpServletRequest httpRequest;
 
 	private final static String allDocumentsQuery = """
-									SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-									        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, ma.translate_flag, ma.download_flag
-									FROM (
-									SELECT DISTINCT ON (ai.application_no)
-						            ai.application_no AS applicationNo,
-						            a.name AS documentName,
-						            ai.document_date AS date,
-						            ai.lok_sabha_session AS LSNo,
-						            ai.lok_sabha_session_number AS SSNo,
-						            ai.rajya_sabha_session AS RSSNo,
-						            ai.current_status AS status,
-						            CASE
-						                WHEN ai.current_status = 'Approved' THEN NULL
-						                ELSE CONCAT(wh.pending_with_name)
-						            END AS pendingAt,
-						            ai.ref_id AS refId,
-						            ai.application_id AS applicationId,
-						            ai.id AS applicationinstanceId,
-						            'IN-PROCESS' AS taskName,
-						            wh.next_task_id AS taskId,
-						            'True' AS actionPerformed,
-						            a.form_url AS formUrl,
-						            wh.action_url AS actionUrl,
-						            wh.draft_id as draftId,
-						            a.published_url as publishedUrl,
-						            ai.published_document_uuid_en as documentUUIDEn,
-						            ai.published_document_uuid_hi as documentUUIDHi
-						     FROM workflow.workflow_history wh
-						     JOIN master.application_instance ai ON wh.application_instance_id = ai.id
-						     JOIN master.applications a ON ai.application_id = a.id
-						     WHERE wh.pending_with = :userId
-						       AND wh.action_taken_by IS NULL
+			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, ma.translate_flag, ma.download_flag
+			FROM (
+			SELECT DISTINCT ON (ai.application_no)
+			         ai.application_no AS applicationNo,
+			         a.name AS documentName,
+			         ai.document_date AS date,
+			         ai.lok_sabha_session AS LSNo,
+			         ai.lok_sabha_session_number AS SSNo,
+			         ai.rajya_sabha_session AS RSSNo,
+			         ai.current_status AS status,
+			         CASE
+			             WHEN ai.current_status = 'Approved' THEN NULL
+			             ELSE CONCAT(wh.pending_with_name)
+			         END AS pendingAt,
+			         ai.ref_id AS refId,
+			         ai.application_id AS applicationId,
+			         ai.id AS applicationinstanceId,
+			         'IN-PROCESS' AS taskName,
+			         wh.next_task_id AS taskId,
+			         'True' AS actionPerformed,
+			         a.form_url AS formUrl,
+			         wh.action_url AS actionUrl,
+			         wh.draft_id as draftId,
+			         a.published_url as publishedUrl,
+			         ai.published_document_uuid_en as documentUUIDEn,
+			         ai.published_document_uuid_hi as documentUUIDHi,
+			         ai.html_content_en as htmlContentEn,
+			         ai.html_content_hi as htmlContentHi
+			  FROM workflow.workflow_history wh
+			  JOIN master.application_instance ai ON wh.application_instance_id = ai.id
+			  JOIN master.applications a ON ai.application_id = a.id
+			  WHERE wh.pending_with = :userId
+			    AND wh.action_taken_by IS NULL
 
-									     UNION
+			     UNION
 
-									     select
-										distinct on
-										(ai.application_no) ai.application_no as applicationNo,
-										a.name as documentName,
-										ai.document_date as date,
-										ai.lok_sabha_session as LSNo,
-										ai.lok_sabha_session_number as SSNo,
-										ai.rajya_sabha_session as RSSNo,
-										case
-											when ai.current_status = 'Returned' then 'In Progress'
-											else ai.current_status
-										end as status,
-										case
-											when ai.current_status = 'Approved' then null
-											else CONCAT(wh.pending_with_name)
-										end as pendingAt,
-										ai.ref_id as refId,
-										ai.application_id as applicationId,
-										ai.id as applicationinstanceId,
-										'IN-PROCESS' as taskName,
-										wh.next_task_id as taskId,
-										'False' as actionPerformed,
-										a.form_url as formUrl,
-										wh.action_url as actionUrl,
-										wh.draft_id as draftId,
-										a.published_url as publishedUrl,
-										ai.published_document_uuid_en as documentUUIDEn,
-										ai.published_document_uuid_hi as documentUUIDHi
-									from
-										(
-										select wh1.* from workflow.workflow_history wh1 where wh1.id in (
-										select max(id) from workflow.workflow_history wh2
-										where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
-										group by application_instance_id)
-										and wh1.pending_with != :userId or wh1.pending_with is null
-										) wh
-									join master.application_instance ai on
-										wh.application_instance_id = ai.id
-									join master.applications a on
-										ai.application_id = a.id
+			     select
+				distinct on
+				(ai.application_no) ai.application_no as applicationNo,
+				a.name as documentName,
+				ai.document_date as date,
+				ai.lok_sabha_session as LSNo,
+				ai.lok_sabha_session_number as SSNo,
+				ai.rajya_sabha_session as RSSNo,
+				case
+					when ai.current_status = 'Returned' then 'In Progress'
+					else ai.current_status
+				end as status,
+				case
+					when ai.current_status = 'Approved' then null
+					else CONCAT(wh.pending_with_name)
+				end as pendingAt,
+				ai.ref_id as refId,
+				ai.application_id as applicationId,
+				ai.id as applicationinstanceId,
+				'IN-PROCESS' as taskName,
+				wh.next_task_id as taskId,
+				'False' as actionPerformed,
+				a.form_url as formUrl,
+				wh.action_url as actionUrl,
+				wh.draft_id as draftId,
+				a.published_url as publishedUrl,
+				ai.published_document_uuid_en as documentUUIDEn,
+				ai.published_document_uuid_hi as documentUUIDHi,
+				ai.html_content_en as htmlContentEn,
+				ai.html_content_hi as htmlContentHi
+			from
+				(
+				select wh1.* from workflow.workflow_history wh1 where wh1.id in (
+				select max(id) from workflow.workflow_history wh2
+				where wh2.application_instance_id in (select application_instance_id from workflow.workflow_history wh3 where wh3.action_taken_by = :userId)
+				group by application_instance_id)
+				and wh1.pending_with != :userId or wh1.pending_with is null
+				) wh
+			join master.application_instance ai on
+				wh.application_instance_id = ai.id
+			join master.applications a on
+				ai.application_id = a.id
 
-									     UNION
-									    SELECT DISTINCT ON (ii.application_no)
-									            ii.application_no AS applicationNo,
-									            a.name AS documentName,
-									            ii.document_date AS date,
-									            ii.lok_sabha_session AS LSNo,
-									            ii.lok_sabha_session_number AS SSNo,
-									            ii.rajya_sabha_session AS RSSNo,
-									 			CASE
-									     		WHEN ii.application_instance_id IS NOT NULL
-									          	AND applicationInstance.id = ii.application_instance_id
-									          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
-									     		THEN applicationInstance.current_status
-									     		ELSE ii.current_status
-									 			END AS status,
-									 			CASE
-									     		WHEN ii.application_instance_id IS NOT NULL
-									          	AND applicationInstance.id = ii.application_instance_id
-									          	AND applicationInstance.current_status IN ('Approved', 'Published')
-									     		THEN null
-									     		ELSE ii.pending_at
-									 			END AS pendingAt,
-									            ii.ref_id AS refId,
-									            ii.application_id AS applicationId,
-									            ii.id AS applicationinstanceId,
-									            'IN-PROCESS' AS taskName,
-									            NULL AS taskId,
-									                   CASE
-									        	WHEN ii.current_status = 'Returned' THEN 'True'
-									        	ELSE 'False'
-									    		END AS actionPerformed,
-									            a.form_url AS formUrl,
-									            NULL AS actionUrl,
-									            NULL as draftId,
-									            a.published_url as publishedUrl,
-									            NULL as documentUUIDEn,
-									            NULL as documentUUIDHi
-									     FROM master.input_instance ii
-									     JOIN master.applications a ON a.id = ii.application_id
-									     JOIN authentication.base_user u ON u.id = ii.created_by
-									     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
-									     WHERE ii.created_by = :userId
+			     UNION
+			    SELECT DISTINCT ON (ii.application_no)
+			            ii.application_no AS applicationNo,
+			            a.name AS documentName,
+			            ii.document_date AS date,
+			            ii.lok_sabha_session AS LSNo,
+			            ii.lok_sabha_session_number AS SSNo,
+			            ii.rajya_sabha_session AS RSSNo,
+			 			CASE
+			     		WHEN ii.application_instance_id IS NOT NULL
+			          	AND applicationInstance.id = ii.application_instance_id
+			          	AND applicationInstance.current_status NOT IN ('Returned', 'Draft')
+			     		THEN applicationInstance.current_status
+			     		ELSE ii.current_status
+			 			END AS status,
+			 			CASE
+			     		WHEN ii.application_instance_id IS NOT NULL
+			          	AND applicationInstance.id = ii.application_instance_id
+			          	AND applicationInstance.current_status IN ('Approved', 'Published')
+			     		THEN null
+			     		ELSE ii.pending_at
+			 			END AS pendingAt,
+			            ii.ref_id AS refId,
+			            ii.application_id AS applicationId,
+			            ii.id AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            NULL AS taskId,
+			                   CASE
+			        	WHEN ii.current_status = 'Returned' THEN 'True'
+			        	ELSE 'False'
+			    		END AS actionPerformed,
+			            a.form_url AS formUrl,
+			            NULL AS actionUrl,
+			            NULL as draftId,
+			            a.published_url as publishedUrl,
+			            NULL as documentUUIDEn,
+			            NULL as documentUUIDHi,
+			            ii.html_content_en as htmlContentEn,
+			            ii.html_content_hi as htmlContentHi
+			     FROM master.input_instance ii
+			     JOIN master.applications a ON a.id = ii.application_id
+			     JOIN authentication.base_user u ON u.id = ii.created_by
+			     LEFT JOIN master.application_instance applicationInstance ON applicationInstance.id = ii.application_instance_id
+			     WHERE ii.created_by = :userId
 
-									     UNION
+			     UNION
 
-										 SELECT DISTINCT ON (dd.application_no)
-									            dd.application_no AS applicationNo,
-									            a.name AS documentName,
-									            NULL AS date,
-									            dd.lok_sabha_session AS LSNo,
-									            dd.lok_sabha_session_number AS SSNo,
-									            dd.rajya_sabha_session AS RSSNo,
-									            wh.status AS status,
-									            wh.pending_with_name AS pendingAt,
-									            NULL AS refId,
-									            dd.application_id AS applicationId,
-									            NULL AS applicationinstanceId,
-									            'IN-PROCESS' AS taskName,
-									            NULL AS taskId,
-									            'True' AS actionPerformed,
-									            a.form_url AS formUrl,
-									            NULL AS actionUrl,
-									            wh.draft_id as draftId,
-									            a.published_url as publishedUrl,
-									            NULL as documentUUIDEn,
-									            NULL as documentUUIDHi
-									     FROM workflow.workflow_history wh
-									     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
-									     LEFT JOIN master.applications a ON a.id = dd.application_id
-									     left JOIN authentication.base_user u ON u.id = wh.pending_with
-									     WHERE wh.pending_with = :userId
-									 ) A
-									 LEFT JOIN master.applications ma on ma.id = A.applicationId
-									""";
+				 SELECT DISTINCT ON (dd.application_no)
+			            dd.application_no AS applicationNo,
+			            a.name AS documentName,
+			            NULL AS date,
+			            dd.lok_sabha_session AS LSNo,
+			            dd.lok_sabha_session_number AS SSNo,
+			            dd.rajya_sabha_session AS RSSNo,
+			            wh.status AS status,
+			            wh.pending_with_name AS pendingAt,
+			            NULL AS refId,
+			            dd.application_id AS applicationId,
+			            NULL AS applicationinstanceId,
+			            'IN-PROCESS' AS taskName,
+			            NULL AS taskId,
+			            'True' AS actionPerformed,
+			            a.form_url AS formUrl,
+			            NULL AS actionUrl,
+			            wh.draft_id as draftId,
+			            a.published_url as publishedUrl,
+			            NULL as documentUUIDEn,
+			            NULL as documentUUIDHi,
+			            NULL as htmlContentEn,
+			            NULL as htmlContentHi
+			     FROM workflow.workflow_history wh
+			     LEFT JOIN workflow.drafted_document dd ON dd.id = wh.draft_id
+			     LEFT JOIN master.applications a ON a.id = dd.application_id
+			     left JOIN authentication.base_user u ON u.id = wh.pending_with
+			     WHERE wh.pending_with = :userId
+			 ) A
+			 LEFT JOIN master.applications ma on ma.id = A.applicationId
+			""";
 
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
@@ -868,7 +876,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		qry.append(orderByClause);
 
-		System.out.println("### qry - " + qry);
 		List<DocumentRowMapper> results = jdbcTemplate.query(qry.toString(), parameters,
 				new BeanPropertyRowMapper<>(DocumentRowMapper.class));
 
@@ -894,6 +901,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("publishedUrl", row.getPublishedUrl());
 			rowMap.put("documentUUIDEn", row.getDocumentUUIDEn());
 			rowMap.put("documentUUIDHi", row.getDocumentUUIDHi());
+			rowMap.put("htmlContentEn", row.getHtmlContentEn());
+			rowMap.put("htmlContentHi", row.getHtmlContentHi());
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			return rowMap;
