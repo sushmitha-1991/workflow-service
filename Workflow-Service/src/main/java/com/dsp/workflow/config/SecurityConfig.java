@@ -59,7 +59,7 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests(
-				(authz) -> authz.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+				(authz) -> authz.requestMatchers("workflow/v3/api-docs/**", "workflow/swagger-ui/**", "workflow/swagger-ui.html",
 						"/workflow/**", "/camunda/**", "/notesheet/**").permitAll().anyRequest().authenticated())
 				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
