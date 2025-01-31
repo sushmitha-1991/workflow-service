@@ -914,6 +914,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
 		String userName = utils.getUserFullNameFromAuthentication();
 
+		String lokSabhaSession = null;
+		String lokSabhaSessionNumber = null;
+		String rajyaSabhaSession = null;
+
 		Long houseId = null;
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
@@ -924,9 +928,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 		serialNumberRequest.setAppId(draftDataDTO.getApplicationId());
 		if (houseId == 1) {
 			serialNumberRequest.setSessionId(draftDataDTO.getRajyaSabhaSession());
+			rajyaSabhaSession = workflowHistoryRepository.getRajyaSabhaSession(draftDataDTO.getRajyaSabhaSession());
 		}
 		if (houseId == 2) {
 			serialNumberRequest.setSessionId(draftDataDTO.getLokSabhaSessionNumber());
+			lokSabhaSession = workflowHistoryRepository.getLokSabhaSession(draftDataDTO.getLokSabhaSession());
+			lokSabhaSessionNumber = workflowHistoryRepository
+					.getLokSabhaSessionNumber(draftDataDTO.getLokSabhaSessionNumber());
+
 		}
 
 		JsonNode draftData = draftDataDTO.getData();
@@ -938,9 +947,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					() -> new IllegalArgumentException("Draft not found for ID: " + draftDataDTO.getDraftId()));
 
 			draftDocument.setDraftData(draftData);
-			draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
-			draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
-			draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+			draftDocument.setLokSabhaSession(lokSabhaSession);
+			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
+			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -953,9 +962,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setDraftData(draftData);
 			draftDocument.setApplicationId(draftDataDTO.getApplicationId());
 			draftDocument.setApplicationNo(applicationNo.getId());
-			draftDocument.setLokSabhaSession(String.valueOf(draftDataDTO.getLokSabhaSession()));
-			draftDocument.setLokSabhaSessionNumber(String.valueOf(draftDataDTO.getLokSabhaSessionNumber()));
-			draftDocument.setRajyaSabhaSession(String.valueOf(draftDataDTO.getRajyaSabhaSession()));
+			draftDocument.setLokSabhaSession(lokSabhaSession);
+			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
+			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 
 			// Save new draft document
 			draftDocumentRepository.save(draftDocument);
@@ -974,9 +983,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 		responseMap.put("id", draftDocument.getId());
 		responseMap.put("draftData", draftDocument.getDraftData());
 		responseMap.put("applicationId", draftDocument.getApplicationId());
-		responseMap.put("lokSabhaSession", draftDocument.getLokSabhaSession());
-		responseMap.put("rajyaSabhaSession", draftDocument.getRajyaSabhaSession());
-		responseMap.put("lokSabhaSessionNumber", draftDocument.getLokSabhaSessionNumber());
+		responseMap.put("lokSabhaSession", lokSabhaSession);
+		responseMap.put("rajyaSabhaSession", rajyaSabhaSession);
+		responseMap.put("lokSabhaSessionNumber", lokSabhaSessionNumber);
 
 		return responseMap;
 	}

@@ -201,4 +201,25 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
 			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId);
 
+	/**
+	 * @param lokSabhaSession
+	 * @return
+	 */
+	@Query(value = "SELECT lok_sabha_number from master.lok_sabha_masters where id = :lokSabhaSession", nativeQuery = true)
+	String getLokSabhaSession(Long lokSabhaSession);
+
+	/**
+	 * @param lokSabhaSessionNumber
+	 * @return
+	 */
+	@Query(value = "SELECT session_number from master.lok_sabha_session_masters where id = :lokSabhaSessionNumber", nativeQuery = true)
+	String getLokSabhaSessionNumber(Long lokSabhaSessionNumber);
+
+	/**
+	 * @param rajyaSabhaSession
+	 * @return
+	 */
+	@Query(value = "SELECT session_number from master.rajya_sabha_session_master where id = :rajyaSabhaSession", nativeQuery = true)
+	String getRajyaSabhaSession(Long rajyaSabhaSession);
+
 }
