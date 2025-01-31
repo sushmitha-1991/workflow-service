@@ -757,7 +757,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Override
 	public List<WorkflowHistory> getWorkflowHistoryByApplicationInstanceId(Long applicationInstanceId) {
-		return workflowHistoryRepository.findByApplicationInstanceId(applicationInstanceId);
+		return workflowHistoryRepository.findByApplicationInstanceIdOrderByCreatedAtDesc(applicationInstanceId);
 	}
 
 	public void updateApplicationInstance(NotesheetDTO notesheetDTO, String processInstanceId, String taskId) {

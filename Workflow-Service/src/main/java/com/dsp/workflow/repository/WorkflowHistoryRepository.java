@@ -222,4 +222,10 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Query(value = "SELECT session_number from master.rajya_sabha_session_master where id = :rajyaSabhaSession", nativeQuery = true)
 	String getRajyaSabhaSession(Long rajyaSabhaSession);
 
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	List<WorkflowHistory> findByApplicationInstanceIdOrderByCreatedAtDesc(Long applicationInstanceId);
+
 }
