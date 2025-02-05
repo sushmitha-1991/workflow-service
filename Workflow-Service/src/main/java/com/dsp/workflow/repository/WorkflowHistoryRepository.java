@@ -228,4 +228,11 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 */
 	List<WorkflowHistory> findByApplicationInstanceIdOrderByCreatedAtDesc(Long applicationInstanceId);
 
+
+	@Modifying
+    @Transactional
+    @Query(value = "DELETE from workflow.workflow_history where draft_id = :draftId", nativeQuery=true)    
+    void deleteByDraftId(Long draftId);
+
+
 }
