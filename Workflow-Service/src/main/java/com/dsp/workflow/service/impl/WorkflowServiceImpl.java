@@ -331,6 +331,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						authentication.user_roles
 					where
 						user_id = :userId)
+                        
 			) A
 			left join master.applications ma on
 				ma.id = A.applicationId
