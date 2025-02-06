@@ -200,12 +200,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 								wh3.action_taken_by = :userId)
 						group by
 							application_instance_id)
-						and wh1.pending_with != :userId
-						or wh1.pending_with is null ) wh
+						and (wh1.pending_with != :userId
+						or wh1.pending_with is null )) wh
 				join master.application_instance ai on
 					wh.application_instance_id = ai.id
 				join master.applications a on
 					ai.application_id = a.id
+					where (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			union
 				select
 					distinct on
