@@ -206,6 +206,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					wh.application_instance_id = ai.id
 				join master.applications a on
 					ai.application_id = a.id
+                    where (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			union
 				select
 					distinct on
