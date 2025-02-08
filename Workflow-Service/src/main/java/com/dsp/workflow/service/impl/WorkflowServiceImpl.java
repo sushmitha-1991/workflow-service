@@ -306,7 +306,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					ai.id as applicationinstanceId,
 					'IN-PROCESS' as taskName,
 					wh.next_task_id as taskId,
-					'True' as actionPerformed,
+					'False' as actionPerformed,
 					a.form_url as formUrl,
 					wh.action_url as actionUrl,
 					wh.draft_id as draftId,
