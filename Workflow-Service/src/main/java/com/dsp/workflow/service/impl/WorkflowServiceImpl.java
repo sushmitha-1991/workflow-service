@@ -206,7 +206,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					wh.application_instance_id = ai.id
 				join master.applications a on
 					ai.application_id = a.id
-					where (ai.current_status != 'Approved' and ai.current_status != 'Published')
+                    where (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			union
 				select
 					distinct on
@@ -306,7 +306,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					ai.id as applicationinstanceId,
 					'IN-PROCESS' as taskName,
 					wh.next_task_id as taskId,
-					'True' as actionPerformed,
+					'False' as actionPerformed,
 					a.form_url as formUrl,
 					wh.action_url as actionUrl,
 					wh.draft_id as draftId,
