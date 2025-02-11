@@ -472,7 +472,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                     WorkflowHistory firstEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
                             .subModuleId(application_no).applicationInstanceId(applicationInstanceId)
                             .actionTakenBy(senderUserId).actionTakenByName(userName).actionTaken(actionTaken)
-                            .actionTakenOn(LocalDateTime.now()).status(status).statusKey(statusKey)
+                            .actionTakenOn(LocalDateTime.now()).status(status).statusKey(statusKey).actionUrl(actionUrl)
                             .pendingWith(senderUserId).pendingWithName(userName).pendingStartDate(LocalDateTime.now())
                             .initalStatusKey(statusKey).note(note).currentTaskId(taskId).build();
                     workflowHistoryRepository.save(firstEntry);
