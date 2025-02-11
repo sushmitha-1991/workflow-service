@@ -290,6 +290,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					u.id = wh.pending_with
 				where
 					wh.pending_with = :userId
+					AND wh.draft_id IS NOT NULL
 			union
 				select
 					distinct on
