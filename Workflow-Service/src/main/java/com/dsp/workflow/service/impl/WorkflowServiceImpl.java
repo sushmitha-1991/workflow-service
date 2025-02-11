@@ -150,6 +150,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				where
 					wh.pending_with = :userId
 					and wh.action_taken_by is null
+                                        and (ai.current_status != 'Approved' and ai.current_status != 'Published')         
 			union
 				select
 					distinct on
