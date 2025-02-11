@@ -140,7 +140,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					ai.published_document_uuid_en as documentUUIDEn,
 					ai.published_document_uuid_hi as documentUUIDHi,
 					ai.html_content_en as htmlContentEn,
-					ai.html_content_hi as htmlContentHi
+					ai.html_content_hi as htmlContentHi 
 				from
 					workflow.workflow_history wh
 				join master.application_instance ai on
@@ -150,6 +150,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				where
 					wh.pending_with = :userId
 					and wh.action_taken_by is null
+                                        and (ai.current_status != 'Approved' and ai.current_status != 'Published')         
 			union
 				select
 					distinct on
