@@ -140,7 +140,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					ai.published_document_uuid_en as documentUUIDEn,
 					ai.published_document_uuid_hi as documentUUIDHi,
 					ai.html_content_en as htmlContentEn,
-					ai.html_content_hi as htmlContentHi
+					ai.html_content_hi as htmlContentHi 
 				from
 					workflow.workflow_history wh
 				join master.application_instance ai on
