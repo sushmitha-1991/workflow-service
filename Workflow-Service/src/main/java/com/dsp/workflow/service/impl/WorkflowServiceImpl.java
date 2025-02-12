@@ -332,7 +332,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					from
 						authentication.user_roles
 					where
-						user_id = :userId)
+						user_id = :userId) and wh.is_active = true and wh.is_deleted = false
 
 			) A
 			left join master.applications ma on
