@@ -496,7 +496,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					notesheetRepository.save(notesheet);
 
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
-							senderUserId, userName, actionTakenOn, status, statusKey, taskId);
+							senderUserId, userName, actionTakenOn, status, statusKey, taskId, receiverUserId,
+							receiverUserName);
 
 					WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 							.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
