@@ -17,7 +17,7 @@ public class TaskQueryDTO {
 	String lsSessionNo;
 	String rsSessionNo;
 	Long applicationId;
-	String pendingAt;
+	String keyword;
 	LocalDate fromDate;
-    LocalDate toDate;
+	LocalDate toDate;
 }

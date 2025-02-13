@@ -929,8 +929,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			parameters.addValue("RsSessionNo", queryDto.getRsSessionNo());
 		}
 
-		if (!Utils.isEmpty(queryDto.getPendingAt())) {
-			qry = qry.append(" and pendingAt like '%").append(queryDto.getPendingAt()).append("%'");
+		if (!Utils.isEmpty(queryDto.getKeyword())) {
+			qry = qry.append(" and pendingAt ILIKE '%").append(queryDto.getKeyword()).append("%'")
+					.append(" or applicationNo ILIKE '%").append(queryDto.getKeyword()).append("%'");
 		}
 
 		if (queryDto.getFromDate() != null) {
