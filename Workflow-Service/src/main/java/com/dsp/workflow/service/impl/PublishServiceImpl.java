@@ -68,6 +68,7 @@ public class PublishServiceImpl implements PublishService {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         spec = spec.and(hasForDate(date));
+        spec=spec.and(hasApplicationName(documentName));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys=repository.findAll(spec);
         PublishHistoryEntity entity=responseEntitys.get(0);
