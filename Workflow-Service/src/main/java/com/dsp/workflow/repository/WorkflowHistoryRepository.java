@@ -29,13 +29,14 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Modifying
 	@Transactional
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
-			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name = :receiverUserName, pending_start_date = :actionTakenOn "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
 			+ "AND action_taken_by IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForStepType(@Param("processInstanceId") String processInstanceId,
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
-			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId);
+			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId,
+			@Param("receiverUserId") Long receiverUserId, @Param("receiverUserName") String receiverUserName);
 
 	List<WorkflowHistory> findBySubModuleIdAndActionTakenBy(String subModuleId, Long UserId);
 
@@ -228,11 +229,9 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 */
 	List<WorkflowHistory> findByApplicationInstanceIdOrderByCreatedAtDesc(Long applicationInstanceId);
 
-
 	@Modifying
-    @Transactional
-    @Query(value = "DELETE from workflow.workflow_history where draft_id = :draftId", nativeQuery=true)    
-    void deleteByDraftId(Long draftId);
-
+	@Transactional
+	@Query(value = "DELETE from workflow.workflow_history where draft_id = :draftId", nativeQuery = true)
+	void deleteByDraftId(Long draftId);
 
 }
