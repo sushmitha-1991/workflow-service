@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.service.PublishService;
 
@@ -41,7 +42,7 @@ public class PublishController {
         return responseDto;
     }
     @PutMapping("/update/{id}")
-    public PublishHistoryDTO update(@PathVariable Long id,PublishHistoryDTO dto) {
+    public PublishHistoryDTO update(@PathVariable Long id,@RequestBody PublishHistoryDTO dto) {
         System.out.println("Id need to be unpublished"+id);
         if (id == null) {
             throw new RuntimeException("id is NULL");
@@ -50,12 +51,12 @@ public class PublishController {
         return responseDto;
     }
     @PutMapping("/unpublish/{id}")
-    public PublishHistoryDTO unpublishById(@PathVariable Long id) {
-        System.out.println("Id need to be unpublished"+id);
+    public PublishHistoryDTO unpublishById(@PathVariable Long id, @RequestBody UnPublishRequest request) {
+        System.out.println("Id need to be unpublished "+id);
         if (id == null) {
             throw new RuntimeException("id is NULL");
         }
-        PublishHistoryDTO responseDto = publishService.updateById(id);
+        PublishHistoryDTO responseDto = publishService.updateById(id,request);
         return responseDto;
     }
     @GetMapping("/getByApplicationNo/{applicationNo}")

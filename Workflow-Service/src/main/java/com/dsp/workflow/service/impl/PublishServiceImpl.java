@@ -14,7 +14,10 @@ import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.service.PublishService;
+
 import java.lang.reflect.Field;
+
+import com.dsp.workflow.dto.UnPublishRequest;
 
 
 @Service
@@ -110,11 +113,15 @@ public class PublishServiceImpl implements PublishService {
   
 
     @Override
-    public PublishHistoryDTO updateById(Long id) {
+    public PublishHistoryDTO updateById(Long id,UnPublishRequest request) {
         
         PublishHistoryEntity entity=repository.findById(id).get();
-        // entity.setUnpublishByUser();
-        // entity.setUnpublishDate();
+        entity.setUnpublishByUser(request.getUnpublishByUser());
+        if(request.getUnpublishDate()==null)
+        {
+            request.setUnpublishDate(LocalDate.now());
+        }
+        entity.setUnpublishDate(request.getUnpublishDate());
         entity.setPublishStatus(false);
         entity=repository.save(entity);
         
