@@ -29,7 +29,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Modifying
 	@Transactional
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
-			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name =:receiverUserName "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name = :receiverUserName, pending_start_date = :actionTakenOn "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
 			+ "AND action_taken_by IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForStepType(@Param("processInstanceId") String processInstanceId,
