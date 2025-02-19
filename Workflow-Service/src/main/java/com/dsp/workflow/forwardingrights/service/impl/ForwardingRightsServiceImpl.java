@@ -91,6 +91,7 @@ public class ForwardingRightsServiceImpl implements ForwardingRightsService {
 	 */
 	public List<Map<String, Object>> getUserDetails(Long applicationId, List<Long> senderRoleIds, Long actionId,
 			Long house, Long userId) {
+
 		// Query the repository for user details along with forwarding rights
 		List<Object[]> resultList = repository.findUserDetailsWithForwardingRights(applicationId, senderRoleIds,
 				actionId, house, userId);
