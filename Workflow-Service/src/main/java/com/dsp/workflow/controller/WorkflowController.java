@@ -25,12 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
+import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
+import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
 
@@ -48,8 +50,10 @@ public class WorkflowController {
 	@Autowired
 	private WorkflowService workflowService;
 
-	@Autowired
-	private Utils utils;
+    @Autowired
+    private PublishService publishService;
+    @Autowired
+    private Utils utils;
 
 	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
@@ -306,4 +310,12 @@ public class WorkflowController {
 		}
 		return ResponseEntity.ok(new GenericResponse<>(true, "Record Deleted", data, 200));
 	}
+    //Adding data into publish_history
+    @PostMapping("/publish/create")
+    public PublishHistoryDTO savePublish(@RequestBody PublishHistoryDTO publishHistoryDTO) {
+        // Call the service method to save the draft data
+        PublishHistoryDTO responseDTO = publishService.save(publishHistoryDTO);
+        return responseDTO;
+    }
+
 }
