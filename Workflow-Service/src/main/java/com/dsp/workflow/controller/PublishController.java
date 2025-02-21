@@ -47,6 +47,39 @@ public class PublishController {
         }
         return ResponseEntity.ok(responseDto);
     }
+    @PostMapping("/getAll/unpublishedDocs")
+    public ResponseEntity<List<UrlDto>> getAllUnpublished(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String locale) {
+        List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
+        if (responseDto.isEmpty()) {
+            return ResponseEntity.noContent().build(); // Returns 204 No Content if the list is empty
+        }
+        return ResponseEntity.ok(responseDto); // Returns 200 OK with the list
+    }
+    @PostMapping("/getAll/publishedDoc")
+    public UrlDto getByDateDoc(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String locale) {
+        UrlDto responseDto = publishService.getByDateDoc(date, applicationName, locale);
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build();
+        // }
+        return responseDto;
+    }
+    @PostMapping("/getAll/unpublishedDoc")
+    public UrlDto getAllUnpublishedDoc(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String locale) {
+        UrlDto responseDto = publishService.getAllUnpublishedDoc(date, applicationName, locale);
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build(); // Returns 204 No Content if the list is empty
+        // }
+        return responseDto; // Returns 200 OK with the list
+    }
 
     @PutMapping("/update/{id}")
     public PublishHistoryDTO update(@PathVariable Long id, @RequestBody PublishHistoryDTO dto) {
@@ -78,17 +111,6 @@ public class PublishController {
         return response;
     }
 
-    @PostMapping("/getAll/unpublishedDocs")
-    public ResponseEntity<List<UrlDto>> getAllUnpublished(
-            @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String applicationName,
-            @RequestParam(required = false) String locale) {
-        List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
-        if (responseDto.isEmpty()) {
-            return ResponseEntity.noContent().build(); // Returns 204 No Content if the list is empty
-        }
-        return ResponseEntity.ok(responseDto); // Returns 200 OK with the list
-    }
 
     @PostMapping("/getAll/docs")
     public List<UrlDto> getAllDocs(@RequestParam(required = false) LocalDate date,

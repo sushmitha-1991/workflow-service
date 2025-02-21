@@ -12,12 +12,15 @@ public interface PublishService {
     PublishHistoryDTO save(PublishHistoryDTO dto);
 
     List<UrlDto> getByDate(LocalDate date, String documentName, String locale);
+    UrlDto getByDateDoc(LocalDate date, String documentName, String locale);
+
     PublishHistoryDTO update(Long id,PublishHistoryDTO dto);
 
 
     PublishHistoryDTO updateById(Long id,UnPublishRequest request);
 
     PublishHistoryDTO getbyAppNo(String applicationNo);
+    UrlDto getAllUnpublishedDoc(LocalDate date, String applicationName, String locale);
 
     List<UrlDto> getAllUnpublished(LocalDate date, String applicationName, String locale);
     List<UrlDto> getAllDocs(LocalDate date, String applicationName, String locale);
