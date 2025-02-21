@@ -100,17 +100,24 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public List<UrlDto> getByDate(LocalDate date, String documentName, String locale) {
-        // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
+        List<UrlDto> urlDto = new ArrayList<>();
+        if (locale == null) {
+            locale = "en";
+        }
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         spec = spec.and(hasForDate(date));
         spec = spec.and(hasApplicationName(documentName));
+        spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        List<UrlDto> urlDto = new ArrayList<>();
-        for (PublishHistoryEntity entity : responseEntitys) {
-            UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
-                    .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
-            urlDto.add(responseDto);
+        System.out.println("response Entitys");
+        System.out.println(responseEntitys);
+        if (responseEntitys != null) {
+            for (PublishHistoryEntity entity : responseEntitys) {
+                UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
+                        .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                urlDto.add(responseDto);
+            }
         }
         return urlDto;
     }
@@ -118,47 +125,46 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public UrlDto getByDateDoc(LocalDate forDate, String applicationName, String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
-        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-        spec = spec.and(hasForDate(forDate));
-        spec = spec.and(hasApplicationName(applicationName));
-        Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,applicationName);
-            if (responseEntity != null) {
-                PublishHistoryEntity entity = responseEntity.get();
-                if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+        if (locale == null)
+            locale = "en";
+        Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
+                applicationName);
+        if (responseEntity != null) {
+            PublishHistoryEntity entity = responseEntity.get();
+
+            if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
                 UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
                         .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
                 return responseDto;
-                }
-                else {
-                    return new UrlDto();
-                }
             } else {
                 return new UrlDto();
             }
-        
+        } else {
+            return new UrlDto();
+        }
+
     }
 
     @Override
     public UrlDto getAllUnpublishedDoc(LocalDate forDate, String applicationName, String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
-        if(locale==null)
-        {
-            locale="en";
+        if (locale == null) {
+            locale = "en";
         }
-            Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,applicationName);
-            if (responseEntity != null) {
-                PublishHistoryEntity entity = responseEntity.get();
-                if (!entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
-                        UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
-                            .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
-                    return responseDto;
-                } else {
-                    return new UrlDto();
-                }
-            }else {
+        Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
+                applicationName);
+        if (responseEntity != null) {
+            PublishHistoryEntity entity = responseEntity.get();
+            if (!entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+                UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
+                        .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                return responseDto;
+            } else {
                 return new UrlDto();
             }
+        } else {
+            return new UrlDto();
+        }
     }
 
     @Override
@@ -214,18 +220,29 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public List<UrlDto> getAllUnpublished(LocalDate date, String applicationName, String locale) {
+        if (locale == null) {
+            locale = "en";
+        }
+        List<UrlDto> urlDto = new ArrayList<>();
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(false));
         spec = spec.and(hasForDate(date));
         spec = spec.and(hasApplicationName(applicationName));
+        spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        List<UrlDto> urlDto = new ArrayList<>();
-        for (PublishHistoryEntity entity : responseEntitys) {
-            UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
-                    .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
-            urlDto.add(responseDto);
+        System.out.println("response Entitys");
+        System.out.println(responseEntitys);
+        if (responseEntitys != null) {
+            for (PublishHistoryEntity entity : responseEntitys) {
+                UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
+                        .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                urlDto.add(responseDto);
+            }
         }
+        System.out.println("urlDTO");
+        System.out.println(urlDto);
         return urlDto;
+
     }
 
     // Specifications
@@ -252,6 +269,16 @@ public class PublishServiceImpl implements PublishService {
             if (applicationName != null) {
                 return criteriaBuilder.like(criteriaBuilder.lower(root.get("applicationName")),
                         "%" + applicationName.toLowerCase() + "%");
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
+    public static Specification<PublishHistoryEntity> hasLocale(String locale) {
+        return (root, query, criteriaBuilder) -> {
+            if (locale != null) {
+                return criteriaBuilder.like(criteriaBuilder.lower(root.get("locale")),
+                        "%" + locale.toLowerCase() + "%");
             }
             return criteriaBuilder.conjunction();
         };

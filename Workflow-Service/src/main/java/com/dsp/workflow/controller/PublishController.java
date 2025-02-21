@@ -42,9 +42,9 @@ public class PublishController {
             @RequestParam(required = false) String applicationName,
             @RequestParam(required = false) String locale) {
         List<UrlDto> responseDto = publishService.getByDate(date, applicationName, locale);
-        if (responseDto.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build();
+        // }
         return ResponseEntity.ok(responseDto);
     }
     @PostMapping("/getAll/unpublishedDocs")
@@ -53,9 +53,9 @@ public class PublishController {
             @RequestParam(required = false) String applicationName,
             @RequestParam(required = false) String locale) {
         List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
-        if (responseDto.isEmpty()) {
-            return ResponseEntity.noContent().build(); // Returns 204 No Content if the list is empty
-        }
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build(); // Returns 204 No Content if the list is empty
+        // }
         return ResponseEntity.ok(responseDto); // Returns 200 OK with the list
     }
     @PostMapping("/getAll/publishedDoc")
