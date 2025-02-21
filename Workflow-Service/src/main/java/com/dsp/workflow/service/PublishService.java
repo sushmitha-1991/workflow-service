@@ -1,6 +1,7 @@
 package com.dsp.workflow.service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.UnPublishRequest;
@@ -10,7 +11,7 @@ public interface PublishService {
 
     PublishHistoryDTO save(PublishHistoryDTO dto);
 
-    UrlDto getByDate(LocalDate date, String documentName, String locale);
+    List<UrlDto> getByDate(LocalDate date, String documentName, String locale);
     PublishHistoryDTO update(Long id,PublishHistoryDTO dto);
 
 
@@ -18,5 +19,9 @@ public interface PublishService {
 
     PublishHistoryDTO getbyAppNo(String applicationNo);
 
-    UrlDto getAllUnpublished(LocalDate date, String applicationName, String locale);
+    List<UrlDto> getAllUnpublished(LocalDate date, String applicationName, String locale);
+    List<UrlDto> getAllDocs(LocalDate date, String applicationName, String locale);
+    List<UrlDto> getAll();
+
+
 }

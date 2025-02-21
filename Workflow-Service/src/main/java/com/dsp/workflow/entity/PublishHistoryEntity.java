@@ -70,5 +70,8 @@ public class PublishHistoryEntity extends Auditable {
     @Column(nullable = false)
     private Long officeId;
 
+    @Column(nullable = false)
+    private String locale;
+
 }
 
