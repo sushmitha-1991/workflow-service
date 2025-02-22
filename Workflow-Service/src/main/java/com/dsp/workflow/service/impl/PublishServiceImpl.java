@@ -129,20 +129,16 @@ public class PublishServiceImpl implements PublishService {
             locale = "en";
         Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
                 applicationName);
-        if (responseEntity != null) {
+        if (responseEntity.isPresent()) {
             PublishHistoryEntity entity = responseEntity.get();
 
             if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
                 UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
                         .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
                 return responseDto;
-            } else {
-                return new UrlDto();
-            }
-        } else {
-            return new UrlDto();
-        }
-
+            } 
+        } 
+            return UrlDto.builder().build();
     }
 
     @Override
@@ -153,18 +149,16 @@ public class PublishServiceImpl implements PublishService {
         }
         Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
                 applicationName);
-        if (responseEntity != null) {
+        if (responseEntity.isPresent()) {
             PublishHistoryEntity entity = responseEntity.get();
             if (!entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
                 UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
                         .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+
                 return responseDto;
-            } else {
-                return new UrlDto();
-            }
-        } else {
-            return new UrlDto();
+            } 
         }
+        return UrlDto.builder().build();
     }
 
     @Override
