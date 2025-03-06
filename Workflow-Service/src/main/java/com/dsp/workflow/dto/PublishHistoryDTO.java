@@ -34,8 +34,8 @@ public class PublishHistoryDTO {
     private UUID publishUuid;
     private String publishUrl;
     private String fileType;
+    private String locale;
 
-    
     private LocalDate forDate;
     private Boolean publishStatus;
     
