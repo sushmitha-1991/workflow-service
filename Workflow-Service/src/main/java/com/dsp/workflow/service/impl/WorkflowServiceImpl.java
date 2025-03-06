@@ -346,7 +346,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 								lsm.lok_sabha_number as LSNo,
 			    				lssm.session_number as SSNo,
 								rssm.session_number as RSSNo,
-			    				'In Progess' as status,
+			    				'In Progress' as status,
 								null as pendingAt,
 								null as refId,
 								null as applicationId,
