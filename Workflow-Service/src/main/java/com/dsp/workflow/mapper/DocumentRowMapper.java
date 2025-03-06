@@ -41,4 +41,5 @@ public class DocumentRowMapper {
 	UUID documentUUIDHi;
 	String htmlContentEn;
 	String htmlContentHi;
+	String editorId;
 }
