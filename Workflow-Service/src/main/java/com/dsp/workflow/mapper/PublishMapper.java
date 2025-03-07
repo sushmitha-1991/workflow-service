@@ -24,6 +24,7 @@ public class PublishMapper {
                 .unpublishByUser(entity.getUnpublishByUser())
                 .unpublishDate(entity.getUnpublishDate())
                 .officeId(entity.getOfficeId())
+                .locale(entity.getLocale())
                 .build();
         return dto;
     }
@@ -47,6 +48,7 @@ public class PublishMapper {
                 .unpublishByUser(dto.getUnpublishByUser())
                 .unpublishDate(dto.getUnpublishDate())
                 .officeId(dto.getOfficeId())
+                .locale(dto.getLocale())
                 .build();
         return entity;
     }
