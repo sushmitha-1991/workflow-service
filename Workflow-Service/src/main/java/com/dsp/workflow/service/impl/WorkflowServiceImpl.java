@@ -1012,7 +1012,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("documentUUIDHi", row.getDocumentUUIDHi());
 			rowMap.put("htmlContentEn", row.getHtmlContentEn());
 			rowMap.put("htmlContentHi", row.getHtmlContentHi());
-			rowMap.put("editorId", row.getHtmlContentHi());
+			rowMap.put("editorId", row.getEditorId());
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			return rowMap;
