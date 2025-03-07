@@ -341,12 +341,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 							union
 								SELECT
 								null as applicationNo,
-								null as documentName,
+								'Synopsis Roaster' as documentName,
 								r.roster_date as date,
 								lsm.lok_sabha_number as LSNo,
 			    				lssm.session_number as SSNo,
 								rssm.session_number as RSSNo,
-			    				'In Progess' as status,
+			    				'In Progress' as status,
 								null as pendingAt,
 								null as refId,
 								null as applicationId,
