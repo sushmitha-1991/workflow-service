@@ -69,6 +69,20 @@ public class PublishController {
         // }
         return responseDto;
     }
+    @PostMapping("/getAll/docBySession")
+    public UrlDto getBySession(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String lsNo,
+            @RequestParam(required = false) String sessNo,
+            @RequestParam(required = false) String rsNo,
+            @RequestParam(required = false) String locale) {
+        UrlDto responseDto = publishService.getBySession(date,lsNo,sessNo,rsNo, applicationName, locale);
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build();
+        // }
+        return responseDto;
+    }
     @PostMapping("/getAll/unpublishedDoc")
     public UrlDto getAllUnpublishedDoc(
             @RequestParam(required = false) LocalDate date,

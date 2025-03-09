@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -127,18 +128,64 @@ public class PublishServiceImpl implements PublishService {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
         if (locale == null)
             locale = "en";
-        Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
-                applicationName);
-        if (responseEntity.isPresent()) {
-            PublishHistoryEntity entity = responseEntity.get();
+        System.out.println("SSSSSSSS");
+        if (Optional.ofNullable(forDate).isEmpty()) {
+            Optional<PublishHistoryEntity> responseEntity = repository.findByApplicationName(applicationName);
+            if (responseEntity.isPresent()) {
+                PublishHistoryEntity entity = responseEntity.get();
+                if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+                    UrlDto responseDto = UrlDto.builder().date("").name(entity.getApplicationName())
+                            .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                    return responseDto;
+                }
+            }
+        } else {
+            Optional<PublishHistoryEntity> responseEntity = repository.findByForDateAndApplicationName(forDate,
+                    applicationName);
+            if (responseEntity.isPresent()) {
+                PublishHistoryEntity entity = responseEntity.get();
+                if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+                    UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
+                            .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                    return responseDto;
+                }
+            }
+        }
 
-            if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
-                UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
-                        .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
-                return responseDto;
-            } 
-        } 
-            return UrlDto.builder().build();
+        return UrlDto.builder().build();
+    }
+
+    @Override
+    public UrlDto getBySession(LocalDate forDate, String lsNo, String sessNo, String rsNo, String applicationName,
+            String locale) {
+        // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
+        if (locale == null)
+            locale = "en";
+        if (sessNo == null) {
+            Optional<PublishHistoryEntity> responseEntity = repository
+                    .findByApplicationNameAndRajyaSabhaSessionNo(applicationName, rsNo);
+            if (responseEntity.isPresent()) {
+                PublishHistoryEntity entity = responseEntity.get();
+                if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+                    UrlDto responseDto = UrlDto.builder().date(forDate.toString()).name(entity.getApplicationName())
+                            .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                    return responseDto;
+                }
+            }
+        } else {
+            Optional<PublishHistoryEntity> responseEntity = repository
+                    .findByApplicationNameAndLokSabhaSessionNo(applicationName, sessNo);
+            if (responseEntity.isPresent()) {
+                PublishHistoryEntity entity = responseEntity.get();
+                if (entity.getPublishStatus() && locale.equalsIgnoreCase(entity.getLocale())) {
+                    UrlDto responseDto = UrlDto.builder().date("").name(entity.getApplicationName())
+                            .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                    return responseDto;
+                }
+            }
+        }
+
+        return UrlDto.builder().build();
     }
 
     @Override
@@ -156,7 +203,7 @@ public class PublishServiceImpl implements PublishService {
                         .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
 
                 return responseDto;
-            } 
+            }
         }
         return UrlDto.builder().build();
     }

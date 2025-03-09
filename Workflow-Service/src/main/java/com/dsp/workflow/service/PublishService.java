@@ -20,11 +20,23 @@ public interface PublishService {
     PublishHistoryDTO updateById(Long id,UnPublishRequest request);
 
     PublishHistoryDTO getbyAppNo(String applicationNo);
+
     UrlDto getAllUnpublishedDoc(LocalDate date, String applicationName, String locale);
 
     List<UrlDto> getAllUnpublished(LocalDate date, String applicationName, String locale);
+
     List<UrlDto> getAllDocs(LocalDate date, String applicationName, String locale);
+
     List<UrlDto> getAll();
+
+    UrlDto getBySession(LocalDate forDate,String lsNo,String sessNo,
+    String rsNo, String applicationName, String locale);
 
 
 }
+
+
+
+
+
+

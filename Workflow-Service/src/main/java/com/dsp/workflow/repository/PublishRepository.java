@@ -18,5 +18,12 @@ public interface PublishRepository extends JpaRepository<PublishHistoryEntity,Lo
 
     Optional<PublishHistoryEntity> findByForDateAndApplicationName(LocalDate forDate, String applicationName);
 
+    Optional<PublishHistoryEntity> findByApplicationNameAndRajyaSabhaSessionNo(String applicationName, String rsNo);
+
+    Optional<PublishHistoryEntity> findByApplicationNameAndLokSabhaSessionNo(String applicationName, String sessNo);
+
+    Optional<PublishHistoryEntity> findByApplicationName(String applicationName);
+
+
 
 }
