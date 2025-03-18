@@ -133,4 +133,10 @@ public class PublishController {
         List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
         return responseDto;
     }
+    @PostMapping("/uploadDocDSP2")
+    public ResponseEntity<List<String>> uploadToDsp2() {
+        System.out.println("Received in Controller: ");
+        List<String> uuidString = publishService.uploadToDsp2();
+        return ResponseEntity.ok(uuidString);
+    }
 }

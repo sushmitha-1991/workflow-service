@@ -32,6 +32,8 @@ public interface PublishService {
     UrlDto getBySession(LocalDate forDate,String lsNo,String sessNo,
     String rsNo, String applicationName, String locale);
 
+    List<String> uploadToDsp2();
+
 
 }
 
