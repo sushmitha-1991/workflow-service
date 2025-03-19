@@ -69,6 +69,20 @@ public class PublishController {
         // }
         return responseDto;
     }
+    @PostMapping("/getAll/docBySession")
+    public UrlDto getBySession(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String lsNo,
+            @RequestParam(required = false) String sessNo,
+            @RequestParam(required = false) String rsNo,
+            @RequestParam(required = false) String locale) {
+        UrlDto responseDto = publishService.getBySession(date,lsNo,sessNo,rsNo, applicationName, locale);
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build();
+        // }
+        return responseDto;
+    }
     @PostMapping("/getAll/unpublishedDoc")
     public UrlDto getAllUnpublishedDoc(
             @RequestParam(required = false) LocalDate date,
@@ -118,5 +132,11 @@ public class PublishController {
             @RequestParam(required = false) String locale) {
         List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
         return responseDto;
+    }
+    @PostMapping("/uploadDocDSP2")
+    public ResponseEntity<List<String>> uploadToDsp2() {
+        System.out.println("Received in Controller: ");
+        List<String> uuidString = publishService.uploadToDsp2();
+        return ResponseEntity.ok(uuidString);
     }
 }
