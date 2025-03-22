@@ -69,7 +69,7 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "pending_with_name", nullable = true)
 	private String pendingWithName;
 
-	@Column(name = "note", nullable = true)
+	@Column(name = "note", nullable = true,columnDefinition="text")
 	private String note;
 
 	@Column(name = "pending_start_date", nullable = true)

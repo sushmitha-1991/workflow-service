@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.service.PublishService;
+import com.dsp.workflow.util.Utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -52,7 +54,8 @@ public class PublishServiceImpl implements PublishService {
     private RestTemplate restTemplate;
     @Value("${openKM.service.url}")
     private String openKmUrl;
-
+    @Autowired
+    private Utils utils;
     @Autowired
     private PublishDocumentTempRepo tempRepo;
     private static final Logger logger = LoggerFactory.getLogger(PublishServiceImpl.class);
@@ -62,8 +65,7 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
-        System.out.println("DTO");
-        System.out.println(dto);
+    
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
@@ -87,8 +89,7 @@ public class PublishServiceImpl implements PublishService {
             System.out.println("application no  " + entity.getApplicationNo());
             entity = repository.save(entity);
         }
-        System.out.println("@@@@@@@@@");
-        System.out.println(entity);
+      
         return PublishMapper.toDTO(entity);
     }
 
@@ -113,14 +114,26 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<UrlDto> getAllDocs(LocalDate date, String documentName, String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
-        Specification<PublishHistoryEntity> spec = Specification.where(null);
-        spec = spec.and(hasForDate(date));
-        spec = spec.and(hasApplicationName(documentName));
-        Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
+
+        if (locale == null)
+            locale = "en";
+        
+        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
+        if (date != null)
+            spec = spec.and(hasForDate(date));
+        if (documentName != null)
+            spec = spec.and(hasApplicationName(documentName));
+        if (locale != null)
+            spec = spec.and(hasLocale(locale));
+        // Sort sort = Sort.by(Sort.Order.desc("forDate"));
+        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        List<PublishHistoryEntity> responseEntitysAll = repository.findAll();
+       
         List<UrlDto> urlDto = new ArrayList<>();
         for (PublishHistoryEntity entity : responseEntitys) {
-            UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
+           
+           
+            UrlDto responseDto = UrlDto.builder().date(entity.getForDate().toString()).name(entity.getApplicationName())
                     .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
             urlDto.add(responseDto);
         }
@@ -134,17 +147,22 @@ public class PublishServiceImpl implements PublishService {
             locale = "en";
         }
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-        spec = spec.and(hasForDate(date));
-        spec = spec.and(hasApplicationName(documentName));
+        if (date != null)
+            spec = spec.and(hasForDate(date));
+        if (documentName != null)
+            spec = spec.and(hasApplicationName(documentName));
         spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        System.out.println("response Entitys");
-        System.out.println(responseEntitys);
+        // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        List<PublishHistoryEntity> responseEntitys = repository.findAll();
+       
+        List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
+                .collect(Collectors.toList());
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
-                UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
-                        .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
+                UrlDto responseDto = UrlDto.builder().date(entity.getForDate().toString())
+                        .name(entity.getApplicationName()).fileType(entity.getFileType()).url(entity.getPublishUrl())
+                        .build();
                 urlDto.add(responseDto);
             }
         }
@@ -280,10 +298,9 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public PublishHistoryDTO getbyAppNo(String applicationNo) {
-        System.out.println("@@@@@@@@");
-        System.out.println(applicationNo);
+        
         PublishHistoryEntity entity = repository.findByApplicationNo(applicationNo);
-        System.out.println(entity);
+        System.out.println("entity in getby appno  "+entity);
         return PublishMapper.toDTO(entity);
     }
 
@@ -299,8 +316,7 @@ public class PublishServiceImpl implements PublishService {
         spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        System.out.println("response Entitys");
-        System.out.println(responseEntitys);
+        
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
                 UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
@@ -308,8 +324,7 @@ public class PublishServiceImpl implements PublishService {
                 urlDto.add(responseDto);
             }
         }
-        System.out.println("urlDTO");
-        System.out.println(urlDto);
+      
         return urlDto;
 
     }
@@ -322,7 +337,6 @@ public class PublishServiceImpl implements PublishService {
             return uploadedUuids;
         }
         try {
-
             for (PublishDocumentTemp response : urlList) {
                 logger.info("Processing document: {}", response);
                 byte[] fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
@@ -344,13 +358,12 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
-
     public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
         try {
             String uploadUrl = openKmUrl + "/document/upload";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-    
+
             // Set Authorization Token
             String token = getTokenFromRequest();
             if (token == null || token.isEmpty()) {
@@ -358,20 +371,20 @@ public class PublishServiceImpl implements PublishService {
                 return "";
             }
             headers.set("Authorization", "Bearer " + token);
-    
+
             // Extract filename and ensure .pdf extension
-            String originalFileName = response.getUrl(); 
+            String originalFileName = response.getUrl();
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
-            String updatedFileName = fileNameWithoutExt + ".pdf"; 
-    
+            String updatedFileName = fileNameWithoutExt + ".pdf";
+
             // Create a temporary file
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
             }
-    
+
             // Create file resource
             ByteArrayResource resource = new ByteArrayResource(fileData) {
                 @Override
@@ -379,7 +392,7 @@ public class PublishServiceImpl implements PublishService {
                     return updatedFileName;
                 }
             };
-    
+
             // Prepare request body
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
@@ -389,36 +402,36 @@ public class PublishServiceImpl implements PublishService {
             body.add("applicationNo", response.getApplicationId());
             body.add("referenceId", 1);
             body.add("referenceType", "ApplicationInstance");
-    
+
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
-                    requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
-    
+                    requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
+                    });
+
             logger.info("Response from OpenKM: {}", responseEntity);
-    
+
             // Check response status
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 Map<String, Object> responseBody = responseEntity.getBody();
                 logger.info("Response Body: {}", responseBody);
-    
+
                 // Extract "data"
                 Object dataObject = responseBody.get("data");
                 if (dataObject instanceof Map) {
                     Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-                    
+
                     // Extract "documentUuid"
                     Object generatedUuid = dataMap.get("documentUuid");
                     logger.info("Extracted documentUuid: {}", generatedUuid);
-    
+
                     if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
                         String uuidString = generatedUuid.toString().trim();
-                        
+
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            Optional<PublishDocumentTemp> entity=tempRepo.findById(response.getId());
-                            if(entity.isPresent())
-                            {
-                                PublishDocumentTemp temp=tempRepo.save(entity.get());
+                            Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
+                            if (entity.isPresent()) {
+                                PublishDocumentTemp temp = tempRepo.save(entity.get());
                             }
                             logger.info("entity after saving");
                             // repository.saveUuidById(uuid, response.getId());
@@ -442,125 +455,8 @@ public class PublishServiceImpl implements PublishService {
         }
         return "";
     }
-    
 
-    // public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
-    //     try {
-    //         String uploadUrl = openKmUrl + "/document/upload";
-    //         HttpHeaders headers = new HttpHeaders();
-    //         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-    //         // Set Authorization Token
-    //         String token = getTokenFromRequest();
-    //         if (token == null || token.isEmpty()) {
-    //             logger.error("Authorization token is missing. Cannot upload file.");
-    //             return "";
-    //         }
-    //         headers.set("Authorization", "Bearer " + token);
-    //         // Extract filename (remove extension if present)
-    //         String originalFileName = response.getUrl(); // e.g., "05042022.pdf"
-    //         int lastDotIndex = originalFileName.lastIndexOf(".");
-    //         String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
-    //                 : originalFileName.substring(0, lastDotIndex);
-    //         String updatedFileName = fileNameWithoutExt + ".pdf"; // Always add .pdf extension
-
-    //         // Create temporary file with the correct filename
-    //         File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
-    //         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-    //             fos.write(fileData);
-    //         }
-
-    //         // Create ByteArrayResource for file upload
-    //         ByteArrayResource resource = new ByteArrayResource(fileData) {
-    //             @Override
-    //             public String getFilename() {
-    //                 return updatedFileName; // Ensure correct filename is sent in request
-    //             }
-    //         };
-
-    //         // Prepare request body
-    //         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-    //         body.add("file", resource);
-    //         body.add("folderPath", "/okm:root/PC");
-    //         body.add("documentName", updatedFileName); // Updated filename with .pdf
-    //         body.add("masterId", 231);
-    //         body.add("applicationNo", response.getApplicationId());
-    //         body.add("referenceId", 1);
-    //         body.add("referenceType", "ApplicationInstance");
-
-    //         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-    //         ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
-    //                 requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
-    //                 });
-    //         System.out.println("%%%%%%");
-    //         System.out.println(responseEntity);
-    //         if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-    //             Map<String, Object> responseBody = responseEntity.getBody();
-    //             System.out.println("@@@@@@@@@");
-    //             System.out.println(responseBody);
-                
-    //             try {
-    //                 // Extract "data" from responseBody
-    //                 Object dataObject = responseBody.get("data");
-    //                 if (dataObject instanceof Map) {
-    //                     Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-                        
-    //                     // Now extract "documentUuid" from "data"
-    //                     Object generatedUuid = dataMap.get("documentUuid");
-    //                     System.out.println("*********");
-    //                     System.out.println(generatedUuid);
-                        
-    //                     if (generatedUuid != null && !generatedUuid.toString().isEmpty()) {
-    //                         System.out.println("#######");
-    //                         System.out.println(generatedUuid);
-    //                         String uuidString = generatedUuid.toString();
-                            
-    //                         // Save UUID to the repository
-    //                         repository.saveUuidById(UUID.fromString(uuidString), response.getId());
-                            
-    //                         return uuidString;
-    //                     }
-    //                 }
-    //             } catch (IllegalArgumentException ex) {
-    //                 logger.error("Invalid UUID format received from OpenKM: {}", responseBody, ex);
-    //             }
-    //         }
-    //         // Process response
-    //         // if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-    //         //     Map<String, Object> uuid = responseEntity.getBody();
-    //         //     // Map<String,Object> documentUuid=new ArrayList(uuid);
-    //         //     System.out.println("@@@@@@@@@");
-    //         //     System.out.println(uuid);
-    //         //     try {
-                    
-    //         //         Object generatedUuid = uuid.get("documentUuid");
-    //         //         System.out.println("*********");
-    //         //         System.out.println(generatedUuid);
-    //         //         if (generatedUuid != null && !generatedUuid.toString().isEmpty()) {
-    //         //             System.out.println("#######");
-    //         //             System.out.println(generatedUuid);
-    //         //             String uuidString = generatedUuid.toString();
-    //         //             logger.info("Generated UUID: {}", uuidString);
-    //         //             // Save only if UUID is valid
-    //         //             repository.saveUuidById(UUID.fromString(uuidString), response.getId());
-    //         //             return uuidString;
-    //         //         } else {
-    //         //             logger.warn("Received empty or null UUID from OpenKM: {}", uuid);
-    //         //         }
-    //         //     } catch (IllegalArgumentException ex) {
-    //         //         logger.error("Invalid UUID format received from OpenKM: {}", uuid, ex);
-    //         //     }
-    //         //     return "";
-    //         // } else {
-    //         //     logger.error("Failed to upload document. HTTP Status: {}", responseEntity.getStatusCode());
-    //         // }
-    //     } catch (IOException e) {
-    //         logger.error("Error writing temp file: ", e);
-    //     } catch (Exception e) {
-    //         logger.error("Error uploading file: ", e);
-    //     }
-    //     return "";
-    // }
 
     public String getTokenFromRequest() {
 
@@ -608,6 +504,38 @@ public class PublishServiceImpl implements PublishService {
             }
             return criteriaBuilder.conjunction();
         };
+    }
+
+    @Override
+    public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
+        if (locale == null) {
+        locale = "en";
+        }
+        Specification<PublishHistoryEntity> spec =
+        Specification.where(isPublishStatus(true));
+        if (date != null) {
+        spec = spec.and(hasForDate(date));
+        }
+        if (applicationName != null) {
+        spec = spec.and(hasApplicationName(applicationName));
+        }
+        spec = spec.and(hasLocale(locale));
+        Sort sort = Sort.by(Sort.Order.desc("forDate"));
+        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
+       
+
+        Long houseId = utils.getHouseIdFromAuthentication();
+        for (PublishHistoryEntity entity : responseEntitys) {
+            if (houseId == 1 && entity.getRajyaSabhaSessionNo()!=null) {
+                listOfDTOs.add(PublishMapper.toDTO(entity));
+            } else if (houseId == 2 && entity.getLokSabhaSessionNo()!=null) {
+                listOfDTOs.add(PublishMapper.toDTO(entity));
+            }
+        }
+        
+        return listOfDTOs;
     }
 
 }
