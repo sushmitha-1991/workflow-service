@@ -34,6 +34,8 @@ public interface PublishService {
 
     List<String> uploadToDsp2();
 
+    List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale);
+
 
 }
 

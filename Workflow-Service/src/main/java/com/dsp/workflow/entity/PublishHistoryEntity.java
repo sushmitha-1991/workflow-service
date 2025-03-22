@@ -1,4 +1,5 @@
- package com.dsp.workflow.entity;
+package com.dsp.workflow.entity;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,9 +27,9 @@ public class PublishHistoryEntity extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "publish_history_seq")
-	@SequenceGenerator(name = "publish_history_seq", sequenceName = "publish_history_seq", allocationSize = 1)
+    @SequenceGenerator(name = "publish_history_seq", sequenceName = "publish_history_seq", allocationSize = 1)
     private Long id;
-    
+
     private String lokSabhaNo;
     private String lokSabhaSessionNo;
     private String rajyaSabhaSessionNo;
@@ -44,12 +45,11 @@ public class PublishHistoryEntity extends Auditable {
 
     @Column(nullable = false)
     private UUID publishUuid;
-        @Column(nullable = false)
+    @Column(nullable = false)
 
-        private String fileType;
+    private String fileType;
 
-
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, columnDefinition = "text")
     private String publishUrl;
 
     @Column(nullable = false)
@@ -74,4 +74,3 @@ public class PublishHistoryEntity extends Auditable {
     private String locale;
 
 }
-

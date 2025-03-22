@@ -36,6 +36,17 @@ public class PublishController {
         return responseDto;
     }
 
+    @PostMapping("/get-published-docs")
+    public ResponseEntity<List<PublishHistoryDTO>> getpublishedDocs(
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String locale) {
+        List<PublishHistoryDTO> responseDto = publishService.getPublishedDocs(date, applicationName, locale);
+        // if (responseDto.isEmpty()) {
+        //     return ResponseEntity.noContent().build();
+        // }
+        return ResponseEntity.ok(responseDto);
+    }
     @PostMapping("/getAll/publishedDocs")
     public ResponseEntity<List<UrlDto>> getByDate(
             @RequestParam(required = false) LocalDate date,
