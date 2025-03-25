@@ -111,13 +111,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private HttpServletRequest httpRequest;
 
 	private final static String allDocumentsQuery = """
-												SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+																SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 									        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag
 									FROM (
 									select
 								distinct on
 								(ai.application_no) ai.application_no as applicationNo,
-								a.name as documentName,
+								coalesce(a.document_display_name, a."name") as documentName,
 								ai.document_date as date,
 								ai.lok_sabha_session as LSNo,
 								ai.lok_sabha_session_number as SSNo,
@@ -214,7 +214,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							select
 								distinct on
 								(ii.application_no) ii.application_no as applicationNo,
-								a.name as documentName,
+								coalesce(a.document_display_name, a."name") as documentName,
 								ii.document_date as date,
 								ii.lok_sabha_session as LSNo,
 								ii.lok_sabha_session_number as SSNo,
@@ -263,7 +263,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							select
 								distinct on
 								(dd.application_no) dd.application_no as applicationNo,
-								a.name as documentName,
+								coalesce(a.document_display_name, a."name") as documentName,
 								null as date,
 								dd.lok_sabha_session as LSNo,
 								dd.lok_sabha_session_number as SSNo,
@@ -300,7 +300,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							select
 								distinct on
 								(ai.application_no) ai.application_no as applicationNo,
-								a.name as documentName,
+								coalesce(a.document_display_name, a."name") as documentName,
 								ai.document_date as date,
 								ai.lok_sabha_session as LSNo,
 								ai.lok_sabha_session_number as SSNo,
@@ -376,6 +376,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						) A
 						left join master.applications ma on
 							ma.id = A.applicationId
+
 												""";
 
 	private final static String orderByClause = """
