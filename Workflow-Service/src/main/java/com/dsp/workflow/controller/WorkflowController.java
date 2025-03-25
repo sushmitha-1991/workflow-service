@@ -50,10 +50,10 @@ public class WorkflowController {
 	@Autowired
 	private WorkflowService workflowService;
 
-    @Autowired
-    private PublishService publishService;
-    @Autowired
-    private Utils utils;
+	@Autowired
+	private PublishService publishService;
+	@Autowired
+	private Utils utils;
 
 	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
@@ -75,42 +75,54 @@ public class WorkflowController {
 		return new GenericResponse<>(true, "Workflow started successfully", responseData, HttpStatus.OK.value());
 	}
 
-//	@Operation(summary = "Complete Assigned Task", description = "Completes a specific task in the workflow with the provided task details.")
-//	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task completed successfully"),
-//			@ApiResponse(responseCode = "400", description = "Failed to complete task due to invalid data"),
-//			@ApiResponse(responseCode = "500", description = "Error completing task") })
-//	@PostMapping("/completeTask")
-//	public GenericResponse<String> completeTask(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
-//		String taskId = completeTaskRequestDTO.getTaskId();
-//		Map<String, Object> variables = new HashMap<>();
-//		variables.put("processInstanceId", completeTaskRequestDTO.getProcessInstanceId());
-//		variables.put("note", completeTaskRequestDTO.getNote());
-//		variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
-//		variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
-//		variables.put("receiverUserName", completeTaskRequestDTO.getReceiverUserName());
-//		variables.put("senderRoleId", utils.getRoleIdByUserId());
-//		variables.put("senderUserId", utils.getUserIdFromAuthentication());
-//		variables.put("historyId", taskId);
-//		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
-//		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
-//		variables.put("sendTo",
-//				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
-//		variables.put("officeId", completeTaskRequestDTO.getOfficeId());
-//		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
-//		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
-//		variables.put("stepType", completeTaskRequestDTO.getStepType());
-//		variables.put("status", completeTaskRequestDTO.getStatus());
-//		// variables.put("document", completeTaskRequestDTO.getDocument());
-//
-//		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
-//				completeTaskRequestDTO.getActionUrl());
-//
-//		if (newTaskId != null) {
-//			return new GenericResponse<>(true, "Task completed successfully", newTaskId, HttpStatus.OK.value());
-//		} else {
-//			return new GenericResponse<>(false, "Failed to complete task", taskId, HttpStatus.BAD_REQUEST.value());
-//		}
-//	}
+	// @Operation(summary = "Complete Assigned Task", description = "Completes a
+	// specific task in the workflow with the provided task details.")
+	// @ApiResponses({ @ApiResponse(responseCode = "200", description = "Task
+	// completed successfully"),
+	// @ApiResponse(responseCode = "400", description = "Failed to complete task due
+	// to invalid data"),
+	// @ApiResponse(responseCode = "500", description = "Error completing task") })
+	// @PostMapping("/completeTask")
+	// public GenericResponse<String> completeTask(@Valid @RequestBody
+	// CompleteTaskRequestDTO completeTaskRequestDTO) {
+	// String taskId = completeTaskRequestDTO.getTaskId();
+	// Map<String, Object> variables = new HashMap<>();
+	// variables.put("processInstanceId",
+	// completeTaskRequestDTO.getProcessInstanceId());
+	// variables.put("note", completeTaskRequestDTO.getNote());
+	// variables.put("receiverRoleId", completeTaskRequestDTO.getReceiverRoleId());
+	// variables.put("receiverUserId", completeTaskRequestDTO.getReceiverUserId());
+	// variables.put("receiverUserName",
+	// completeTaskRequestDTO.getReceiverUserName());
+	// variables.put("senderRoleId", utils.getRoleIdByUserId());
+	// variables.put("senderUserId", utils.getUserIdFromAuthentication());
+	// variables.put("historyId", taskId);
+	// variables.put("applicationInstanceId",
+	// completeTaskRequestDTO.getApplicationInstanceId());
+	// variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
+	// variables.put("sendTo",
+	// completeTaskRequestDTO.getSendTo() != null ?
+	// completeTaskRequestDTO.getSendTo().name() : null);
+	// variables.put("officeId", completeTaskRequestDTO.getOfficeId());
+	// variables.put("application_no", completeTaskRequestDTO.getApplication_no());
+	// variables.put("additional_details",
+	// completeTaskRequestDTO.getAdditional_details());
+	// variables.put("stepType", completeTaskRequestDTO.getStepType());
+	// variables.put("status", completeTaskRequestDTO.getStatus());
+	// // variables.put("document", completeTaskRequestDTO.getDocument());
+	//
+	// String newTaskId = workflowService.completeTask(taskId, variables,
+	// completeTaskRequestDTO.getDocument(),
+	// completeTaskRequestDTO.getActionUrl());
+	//
+	// if (newTaskId != null) {
+	// return new GenericResponse<>(true, "Task completed successfully", newTaskId,
+	// HttpStatus.OK.value());
+	// } else {
+	// return new GenericResponse<>(false, "Failed to complete task", taskId,
+	// HttpStatus.BAD_REQUEST.value());
+	// }
+	// }
 	@Operation(summary = "Get Pending Tasks", description = "Retrieves a list of pending tasks for a given receiver user ID.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Pending tasks retrieved successfully"),
 			@ApiResponse(responseCode = "404", description = "No pending tasks found") })
@@ -310,12 +322,26 @@ public class WorkflowController {
 		}
 		return ResponseEntity.ok(new GenericResponse<>(true, "Record Deleted", data, 200));
 	}
-    //Adding data into publish_history
-    @PostMapping("/publish/create")
-    public PublishHistoryDTO savePublish(@RequestBody PublishHistoryDTO publishHistoryDTO) {
-        // Call the service method to save the draft data
-        PublishHistoryDTO responseDTO = publishService.save(publishHistoryDTO);
-        return responseDTO;
-    }
+
+	@GetMapping("/getDraftByAppId/{applicationId}")
+	public ResponseEntity<GenericResponse<List<DraftDataDTO>>> getDraftByAppId(
+			@PathVariable("applicationId") Long applicationId) {
+		// Call the service method to fetch the draft data
+		System.out.println("######-" + applicationId);
+		List<DraftDataDTO> data = workflowService.getDraftByAppId(applicationId);
+		// Return appropriate response based on whether data is found
+		if (data.isEmpty()) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No record found", null, 200));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Record found", data, 200));
+	}
+
+	// Adding data into publish_history
+	@PostMapping("/publish/create")
+	public PublishHistoryDTO savePublish(@RequestBody PublishHistoryDTO publishHistoryDTO) {
+		// Call the service method to save the draft data
+		PublishHistoryDTO responseDTO = publishService.save(publishHistoryDTO);
+		return responseDTO;
+	}
 
 }

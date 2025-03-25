@@ -129,7 +129,8 @@ public interface WorkflowService {
 	 */
 	Map<String, Object> getSaveAsDraft(Long draftId);
 
-
 	String deleteDraftedData(String applicationNo);
+
+    List<DraftDataDTO> getDraftByAppId(Long applicationId);
 
 }
