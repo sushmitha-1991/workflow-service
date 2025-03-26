@@ -1024,17 +1024,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Transactional
 	public Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO) {
 		String userName = utils.getUserFullNameFromAuthentication();
-
 		String lokSabhaSession = null;
 		String lokSabhaSessionNumber = null;
 		String rajyaSabhaSession = null;
-
 		Long houseId = null;
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
 			houseId = ((UserDetailsDTO) principal).getHouseId();
 		}
-
 		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
 		serialNumberRequest.setAppId(draftDataDTO.getApplicationId());
 		if (houseId == 1) {
@@ -1168,6 +1165,29 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// e.printStackTrace();
 			throw e;
 		}
+	}
+
+	@Override
+	public List<DraftDataDTO> getDraftByAppId(Long applicationId) {
+		// TODO Auto-generated method stub
+		// List<DraftDocument> draftDataList=draftDocumentRepository
+		// .findByApplicationIdAndCreatedBy(applicationId,utils.getUserIdFromAuthentication().longValue());
+		Long userId=utils.getUserIdFromAuthentication().longValue();
+		List<Object[]> draftDataList=draftDocumentRepository
+		.findByApplicationIdAndCreatedBy(applicationId,userId);		
+		System.out.println("SSSSSSSSSSS");
+		System.out.println(draftDataList);
+		List<DraftDataDTO> responseDtos =new ArrayList<>();
+		for(Object[] draftData: draftDataList)
+		{
+			responseDtos.add(DraftDataDTO.builder()
+			.data((JsonNode) draftData[0])
+			.applicationNo((String) draftData[1])
+			.draftId((Long) draftData[5])
+			.applicationId((Long) draftData[6])
+			.build());
+		}
+			return responseDtos;
 	}
 
 }
