@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
+import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.PublishService;
 
 @RestController
@@ -36,16 +39,22 @@ public class PublishController {
         return responseDto;
     }
 
-    @PostMapping("/get-published-docs")
-    public ResponseEntity<List<PublishHistoryDTO>> getpublishedDocs(
-            @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String applicationName,
-            @RequestParam(required = false) String locale) {
+    @GetMapping("/get-published-docs")
+    public ResponseEntity<GenericResponse<List<PublishHistoryDTO>>> getPublishedDocs(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false, defaultValue = "") String applicationName,
+            @RequestParam(required = false, defaultValue = "en") String locale) {
+
         List<PublishHistoryDTO> responseDto = publishService.getPublishedDocs(date, applicationName, locale);
-        // if (responseDto.isEmpty()) {
-        //     return ResponseEntity.noContent().build();
-        // }
-        return ResponseEntity.ok(responseDto);
+
+        if (responseDto.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        GenericResponse<List<PublishHistoryDTO>> response = new GenericResponse<>(
+                true, "Record found", responseDto, HttpStatus.OK.value()
+        );
+
+        return ResponseEntity.ok(response);
     }
     @PostMapping("/getAll/publishedDocs")
     public ResponseEntity<List<UrlDto>> getByDate(
