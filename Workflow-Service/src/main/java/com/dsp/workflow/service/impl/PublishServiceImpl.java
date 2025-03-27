@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,9 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
     
+
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
+        
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
             System.out.println("application no exists  " + alreadyExists.getApplicationNo());
@@ -84,8 +87,12 @@ public class PublishServiceImpl implements PublishService {
                     throw new RuntimeException("Error updating field: " + field.getName(), e);
                 }
             }
+            if(StringUtils.isBlank(alreadyExists.getPublishUrl()))
+            alreadyExists.setPublishUrl(openKmUrl+"/downloads/"+alreadyExists.getPublishUuid());
             entity = repository.save(alreadyExists);
         } else {
+            if(StringUtils.isBlank(entity.getPublishUrl()))
+            entity.setPublishUrl(openKmUrl+"/downloads/"+entity.getPublishUuid());
             System.out.println("application no  " + entity.getApplicationNo());
             entity = repository.save(entity);
         }
