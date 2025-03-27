@@ -347,7 +347,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			    				lssm.session_number as SSNo,
 								rssm.session_number as RSSNo,
 			    				'In Progress' as status,
-								null as pendingAt,
+								concat(bu.first_name, ' ', bu.last_name) as pendingAt,
 								null as refId,
 								null as applicationId,
 								null as applicationinstanceId,
@@ -368,10 +368,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
 			left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
+			left join authentication.base_user bu on bu.id = rd.editor_id
 			WHERE rd.editor_id = :userId
 			AND r.roster_date IS NOT NULL
 			AND r.roster_type = 'Daily'
-			GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number
+			GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,bu.first_name, bu.last_name
 
 						) A
 						left join master.applications ma on
