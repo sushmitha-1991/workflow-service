@@ -1174,7 +1174,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 		// .findByApplicationIdAndCreatedBy(applicationId,utils.getUserIdFromAuthentication().longValue());
 		Long userId = utils.getUserIdFromAuthentication().longValue();
 		List<Object[]> draftDataList = draftDocumentRepository.findByApplicationIdAndCreatedBy(applicationId, userId);
-		System.out.println("SSSSSSSSSSS");
 		System.out.println(draftDataList);
 		List<DraftDataDTO> responseDtos = new ArrayList<>();
 		for (Object[] draftData : draftDataList) {
