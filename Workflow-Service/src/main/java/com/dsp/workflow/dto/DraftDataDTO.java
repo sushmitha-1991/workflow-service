@@ -30,7 +30,7 @@ public class DraftDataDTO {
 	private Long rajyaSabhaSession;
 	private Long lokSabhaSessionNumber;
 	private Long lokSabhaSession;
+	private String actionUrl;
 	private String applicationNo;
-    
 
 }

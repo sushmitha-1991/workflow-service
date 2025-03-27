@@ -1081,7 +1081,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			WorkflowHistory workflowHistory = WorkflowHistory.builder()
 					.subModuleId(draftDataDTO.getApplicationId().toString()).pendingWith(userId)
 					.pendingWithName(userName).draftDocument(draftDocument) // Use the draftDocument entity directly
-					.status("Draft").build();
+					.status("Draft").actionUrl(draftDataDTO.getActionUrl()).build();
 
 			workflowHistoryRepository.save(workflowHistory);
 		}
@@ -1094,7 +1094,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		responseMap.put("lokSabhaSession", lokSabhaSession);
 		responseMap.put("rajyaSabhaSession", rajyaSabhaSession);
 		responseMap.put("lokSabhaSessionNumber", lokSabhaSessionNumber);
-		// changes
+		responseMap.put("actionUrl", draftDataDTO.getActionUrl());
 		responseMap.put("applicationNo", draftDocument.getApplicationNo());
 
 		return responseMap;
@@ -1172,22 +1172,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 		// TODO Auto-generated method stub
 		// List<DraftDocument> draftDataList=draftDocumentRepository
 		// .findByApplicationIdAndCreatedBy(applicationId,utils.getUserIdFromAuthentication().longValue());
-		Long userId=utils.getUserIdFromAuthentication().longValue();
-		List<Object[]> draftDataList=draftDocumentRepository
-		.findByApplicationIdAndCreatedBy(applicationId,userId);		
-		System.out.println("SSSSSSSSSSS");
+		Long userId = utils.getUserIdFromAuthentication().longValue();
+		List<Object[]> draftDataList = draftDocumentRepository.findByApplicationIdAndCreatedBy(applicationId, userId);
 		System.out.println(draftDataList);
-		List<DraftDataDTO> responseDtos =new ArrayList<>();
-		for(Object[] draftData: draftDataList)
-		{
-			responseDtos.add(DraftDataDTO.builder()
-			.data((JsonNode) draftData[0])
-			.applicationNo((String) draftData[1])
-			.draftId((Long) draftData[5])
-			.applicationId((Long) draftData[6])
-			.build());
+		List<DraftDataDTO> responseDtos = new ArrayList<>();
+		for (Object[] draftData : draftDataList) {
+			responseDtos.add(DraftDataDTO.builder().data((JsonNode) draftData[0]).applicationNo((String) draftData[1])
+					.draftId((Long) draftData[5]).applicationId((Long) draftData[6]).build());
 		}
-			return responseDtos;
+		return responseDtos;
 	}
 
 }
