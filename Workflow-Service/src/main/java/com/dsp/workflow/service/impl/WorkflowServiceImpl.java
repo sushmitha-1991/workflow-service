@@ -370,7 +370,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
 			WHERE rd.editor_id = :userId
 			AND r.roster_date IS NOT NULL
-			AND r.roster_type = 'daily'
+			AND r.roster_type = 'Daily'
 			GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number
 
 						) A
