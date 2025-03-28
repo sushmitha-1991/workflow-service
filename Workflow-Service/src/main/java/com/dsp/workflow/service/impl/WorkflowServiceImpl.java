@@ -277,7 +277,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 								null as taskId,
 								'True' as actionPerformed,
 								a.form_url as formUrl,
-								null as actionUrl,
+								wh.action_url as actionUrl,
 								wh.draft_id as draftId,
 								a.published_url as publishedUrl,
 								null as documentUUIDEn,
