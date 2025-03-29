@@ -42,4 +42,5 @@ public class DocumentRowMapper {
 	String htmlContentEn;
 	String htmlContentHi;
 	String editorId;
+        String saveAsDraftUrl;
 }
