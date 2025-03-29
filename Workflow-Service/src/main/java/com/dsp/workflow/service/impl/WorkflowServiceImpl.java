@@ -112,7 +112,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 																SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-									        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag
+									        applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url
 									FROM (
 									select
 								distinct on
@@ -1017,6 +1017,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("editorId", row.getEditorId());
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
+                        rowMap.put("saveAsDraftUrl", row.getSaveAsDraftUrl());
 			return rowMap;
 		}).collect(Collectors.toList());
 
