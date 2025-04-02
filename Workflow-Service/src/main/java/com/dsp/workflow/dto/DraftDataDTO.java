@@ -5,6 +5,9 @@
  */
 package com.dsp.workflow.dto;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.AllArgsConstructor;
@@ -32,5 +35,9 @@ public class DraftDataDTO {
 	private Long lokSabhaSession;
 	private String actionUrl;
 	private String applicationNo;
+	private Long createdById;
+    private LocalDateTime createdAt;
+    private LocalDate createdAtWithoutTime;
+    private String createdBy;
 
 }

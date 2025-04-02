@@ -96,7 +96,6 @@ public class PublishServiceImpl implements PublishService {
             System.out.println("application no  " + entity.getApplicationNo());
             entity = repository.save(entity);
         }
-      
         return PublishMapper.toDTO(entity);
     }
 

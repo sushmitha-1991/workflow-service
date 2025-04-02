@@ -31,7 +31,6 @@ public class WorkflowMapper {
 				.taskName(taskInstance.getName()).assignee(taskInstance.getAssignee()).startTime(startTimeIst)
 				.endTime(endTimeIst).build();
 	}
-
 	// New method for HistoricTaskInstanceDto
 	public TaskHistoryDTO mapToTaskHistoryDTO(HistoricTaskInstanceDto taskInstanceDto) {
 		String startTimeIst = (taskInstanceDto.getStartTime() != null)
