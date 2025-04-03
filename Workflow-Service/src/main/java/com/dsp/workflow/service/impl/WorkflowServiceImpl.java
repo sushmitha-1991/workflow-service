@@ -1184,7 +1184,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 		for (Object[] draftData : draftDataList) {
 			Long createbById=(Long)draftData[8];
 			Optional<BaseUser> user=userRepository.findById(createbById);
-
 			responseDtos.add(DraftDataDTO.builder()
 			.data((JsonNode) draftData[0])
 			.applicationNo((String) draftData[1])
