@@ -337,17 +337,20 @@ public class WorkflowServiceImpl implements WorkflowService {
 								from
 									authentication.user_roles
 								where
-									user_id = :userId) and wh.is_active = true and wh.is_deleted = false
+									user_id = :userId and is_active = true and is_deleted = false) and wh.is_active = true and wh.is_deleted = false
+									
 							union
 								SELECT
 								null as applicationNo,
-								'Synopsis of Debates' as documentName,
+								case when rd.supplementary_flag is false then 'Synopsis of Debates' 
+								 when rd.supplementary_flag is true then 'Supplementary Synopsis of Debates'
+								end as documentName,
 								r.roster_date as date,
 								lsm.lok_sabha_number as LSNo,
 			    				lssm.session_number as SSNo,
 								rssm.session_number as RSSNo,
 			    				'In Progress' as status,
-								concat(bu.first_name, ' ', bu.last_name) as pendingAt,
+								null as pendingAt,
 								null as refId,
 								null as applicationId,
 								null as applicationinstanceId,
@@ -368,13 +371,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
 			left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
-			left join authentication.base_user bu on bu.id = rd.editor_id
 			WHERE rd.editor_id = :userId
 			AND r.roster_date IS NOT NULL
-			AND r.roster_type = 'Daily'
-			GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,bu.first_name, bu.last_name
+			AND r.roster_type = 'daily'
+			GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number, rd.supplementary_flag
 
-						) A
+									
+						) A 
 						left join master.applications ma on
 							ma.id = A.applicationId
 
