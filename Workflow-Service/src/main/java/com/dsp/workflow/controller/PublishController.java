@@ -126,13 +126,21 @@ public class PublishController {
     }
 
     @PutMapping("/unpublish/{id}")
-    public PublishHistoryDTO unpublishById(@PathVariable Long id, @RequestBody UnPublishRequest request) {
+    public ResponseEntity<GenericResponse<PublishHistoryDTO>> unpublishById(@PathVariable Long id, @RequestBody UnPublishRequest request) {
         System.out.println("Id need to be unpublished " + id);
         if (id == null) {
             throw new RuntimeException("id is NULL");
         }
         PublishHistoryDTO responseDto = publishService.updateById(id, request);
-        return responseDto;
+        if (responseDto==null) {
+            return ResponseEntity.noContent().build();
+        }
+        GenericResponse<PublishHistoryDTO> response = new GenericResponse<>(
+                true, "Record unpublished", responseDto, HttpStatus.OK.value()
+        );
+
+        return ResponseEntity.ok(response);
+        // return responseDto;
     }
 
     @GetMapping("/getByApplicationNo/{applicationNo}")

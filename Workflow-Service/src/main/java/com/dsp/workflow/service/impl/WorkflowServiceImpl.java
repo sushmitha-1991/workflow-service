@@ -38,6 +38,7 @@ import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.dto.TaskVariableDto;
 import com.dsp.workflow.dto.UserDetailsDTO;
 import com.dsp.workflow.entity.ApplicationInstance;
+import com.dsp.workflow.entity.BaseUser;
 import com.dsp.workflow.entity.DraftDocument;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
@@ -51,6 +52,7 @@ import com.dsp.workflow.notesheet.mapper.NotesheetMapper;
 import com.dsp.workflow.notesheet.repository.NotesheetRepository;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.DraftDocumentRepository;
+import com.dsp.workflow.repository.MyUserRepository;
 import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
@@ -98,7 +100,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private RestTemplate restTemplate;
-
+	@Autowired
+	private MyUserRepository userRepository;
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -1178,12 +1181,22 @@ public class WorkflowServiceImpl implements WorkflowService {
 		// List<DraftDocument> draftDataList=draftDocumentRepository
 		// .findByApplicationIdAndCreatedBy(applicationId,utils.getUserIdFromAuthentication().longValue());
 		Long userId = utils.getUserIdFromAuthentication().longValue();
-		List<Object[]> draftDataList = draftDocumentRepository.findByApplicationIdAndCreatedBy(applicationId, userId);
+		List<Object[]> draftDataList = draftDocumentRepository.findByApplicationIdAndCreatedByData(applicationId, userId);
 		System.out.println(draftDataList);
 		List<DraftDataDTO> responseDtos = new ArrayList<>();
 		for (Object[] draftData : draftDataList) {
-			responseDtos.add(DraftDataDTO.builder().data((JsonNode) draftData[0]).applicationNo((String) draftData[1])
-					.draftId((Long) draftData[5]).applicationId((Long) draftData[6]).build());
+			Long createbById=(Long)draftData[8];
+			Optional<BaseUser> user=userRepository.findById(createbById);
+			responseDtos.add(DraftDataDTO.builder()
+			.data((JsonNode) draftData[0])
+			.applicationNo((String) draftData[1])
+			.draftId((Long) draftData[5])
+			.applicationId((Long) draftData[6])
+			.createdAt((LocalDateTime)draftData[7])
+			.createdAtWithoutTime(((LocalDateTime)draftData[7]).toLocalDate())
+			.createdById((Long)draftData[8])
+			.createdBy(user.get().getFirstName()+" "+user.get().getLastName())
+			.build());
 		}
 		return responseDtos;
 	}
