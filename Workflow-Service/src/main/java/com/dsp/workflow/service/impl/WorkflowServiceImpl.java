@@ -156,8 +156,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     								wh.pending_with = :userId
     								and wh.action_taken_by is null
     						        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
-    						        and a.id != (select a.id from master.applications a, master.modules m 
-    						        				where a.module_id = m.id and a.abbr='SYN' and m.house_id = :houseId)
+    						        and a.id not in (select a.id from master.applications a, master.modules m 
+    						        				where a.module_id = m.id and a.abbr in ('SYN', 'SYM') and m.house_id = :houseId)
     						union
     							select
     								distinct on
@@ -216,8 +216,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     							join master.applications a on
     								ai.application_id = a.id
     						                 where (ai.current_status != 'Approved' and ai.current_status != 'Published')
-    						                 and a.id != (select a.id from master.applications a, master.modules m 
-    						        				where a.module_id = m.id and a.abbr='SYN'  and m.house_id = :houseId)
+    						                 and a.id not in (select a.id from master.applications a, master.modules m 
+    						        		where a.module_id = m.id and a.abbr in ('SYN', 'SYM')  and m.house_id = :houseId)
     						union
     							select
     								distinct on
@@ -391,8 +391,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     
     			select
     			distinct on
-    			(ai.document_date) ai.application_no as applicationNo,
-    			coalesce(a.document_display_name, a."name") as documentName,
+			(ai.document_date, ai.application_id) ai.application_no as applicationNo,    			coalesce(a.document_display_name, a."name") as documentName,
     			ai.document_date as date,
     			ai.lok_sabha_session as LSNo,
     			ai.lok_sabha_session_number as SSNo,
@@ -427,8 +426,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     			wh.pending_with = :userId
     			and wh.action_taken_by is null
     	        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
-    	        and a.id = (select a.id from master.applications a, master.modules m 
-                                where a.module_id = m.id and a.abbr='SYN')
+    	         and a.id in (select a.id from master.applications a, master.modules m 
+                    where a.module_id = m.id and a.abbr in ('SYN', 'SYM'))
     						) A 
     						left join master.applications ma on
     							ma.id = A.applicationId
