@@ -349,7 +349,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     									
     union
     	SELECT
-    			null as applicationNo,
+    			r.ref_no as applicationNo,
     			case when rd.supplementary_flag is false then 'Synopsis of Debates' 
     			 when rd.supplementary_flag is true then 'Supplementary Synopsis of Debates'
     			end as documentName,
@@ -384,7 +384,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     	AND r.roster_date IS NOT NULL
     	AND r.roster_type = 'Daily'
     	and rd.task_status <> 'Complete'
-    	GROUP BY r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
+    	GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
     	rd.supplementary_flag, bu.first_name, bu.last_name
     	
     	union
