@@ -350,9 +350,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     union
     	SELECT
     			r.ref_no as applicationNo,
-    			case when rd.supplementary_flag is false then 'Synopsis of Debates' 
-    			 when rd.supplementary_flag is true then 'Supplementary Synopsis of Debates'
-    			end as documentName,
+    			'Synopsis of Debates' as documentName,
     			r.roster_date as date,
     			lsm.lok_sabha_number as LSNo,
     			lssm.session_number as SSNo,
