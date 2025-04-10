@@ -157,7 +157,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     								and wh.action_taken_by is null
     						        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
     						        and a.id not in (select a.id from master.applications a, master.modules m 
-    						        				where a.module_id = m.id and a.abbr in ('SYN', 'SYM') and m.house_id = :houseId)
+    						        				where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId)
     						union
     							select
     								distinct on
@@ -217,7 +217,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     								ai.application_id = a.id
     						                 where (ai.current_status != 'Approved' and ai.current_status != 'Published')
     						                 and a.id not in (select a.id from master.applications a, master.modules m 
-    						        		where a.module_id = m.id and a.abbr in ('SYN', 'SYM')  and m.house_id = :houseId)
+    						        		where a.module_id = m.id and a.abbr in ('SYN')  and m.house_id = :houseId)
     						union
     							select
     								distinct on
@@ -428,7 +428,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                 and wh.action_taken_by is null
         and (ai.current_status != 'Approved' and ai.current_status != 'Published')
          and a.id in (select a.id from master.applications a, master.modules m 
-        where a.module_id = m.id and a.abbr in ('SYN', 'SYM')) 
+        where a.module_id = m.id and a.abbr in ('SYN')) 
 
     						) A 
     						left join master.applications ma on
