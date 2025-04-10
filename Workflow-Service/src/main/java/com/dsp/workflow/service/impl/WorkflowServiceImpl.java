@@ -162,7 +162,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     							select
     								distinct on
     								(ai.application_no) ai.application_no as applicationNo,
-    								a.name as documentName,
+    								coalesce(a.document_display_name, a."name") as documentName,
     								ai.document_date as date,
     								ai.lok_sabha_session as LSNo,
     								ai.lok_sabha_session_number as SSNo,
