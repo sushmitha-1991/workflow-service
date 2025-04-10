@@ -350,9 +350,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     union
     	SELECT
     			r.ref_no as applicationNo,
-    			case when rd.supplementary_flag is false then 'Synopsis of Debates' 
-    			 when rd.supplementary_flag is true then 'Supplementary Synopsis of Debates'
-    			end as documentName,
+    			'Synopsis of Debates' as documentName,
     			r.roster_date as date,
     			lsm.lok_sabha_number as LSNo,
     			lssm.session_number as SSNo,
@@ -383,51 +381,55 @@ public class WorkflowServiceImpl implements WorkflowService {
     	WHERE rd.editor_id = :userId
     	AND r.roster_date IS NOT NULL
     	AND r.roster_type = 'Daily'
-    	and rd.task_status <> 'Complete'
+    	and rd.task_status <> 'Completed'
     	GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
     	rd.supplementary_flag, bu.first_name, bu.last_name
     	
     	union
     
-    			select
-    			distinct on
-			(ai.document_date, ai.application_id) ai.application_no as applicationNo,    			coalesce(a.document_display_name, a."name") as documentName,
-    			ai.document_date as date,
-    			ai.lok_sabha_session as LSNo,
-    			ai.lok_sabha_session_number as SSNo,
-    			ai.rajya_sabha_session as RSSNo,
-    			ai.current_status as status,
-    			case
-    				when ai.current_status = 'Approved' then null
-    				else CONCAT(wh.pending_with_name)
-    			end as pendingAt,
-    			ai.ref_id as refId,
-    			ai.application_id as applicationId,
-    			ai.id as applicationinstanceId,
-    			'IN-PROCESS' as taskName,
-    			wh.next_task_id as taskId,
-    			'True' as actionPerformed,
-    			a.form_url as formUrl,
-    			wh.action_url as actionUrl,
-    			wh.draft_id as draftId,
-    			a.published_url as publishedUrl,
-    			ai.published_document_uuid_en as documentUUIDEn,
-    			ai.published_document_uuid_hi as documentUUIDHi,
-    			ai.html_content_en as htmlContentEn,
-    			ai.html_content_hi as htmlContentHi,
-    			null as editorId
-    		from
-    			workflow.workflow_history wh
-    		join master.application_instance ai on
-    			wh.application_instance_id = ai.id
-    		join master.applications a on
-    			ai.application_id = a.id
-    		where
-    			wh.pending_with = :userId
-    			and wh.action_taken_by is null
-    	        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
-    	         and a.id in (select a.id from master.applications a, master.modules m 
-                    where a.module_id = m.id and a.abbr in ('SYN', 'SYM'))
+                select
+                distinct on
+        (ai.document_date, ai.application_id, rd.document_type) ai.application_no as applicationNo,    			
+                rd.document_type as documentName,
+                ai.document_date as date,
+                ai.lok_sabha_session as LSNo,
+                ai.lok_sabha_session_number as SSNo,
+                ai.rajya_sabha_session as RSSNo,
+                ai.current_status as status,
+                case
+                        when ai.current_status = 'Approved' then null
+                        else CONCAT(wh.pending_with_name)
+                end as pendingAt,
+                ai.ref_id as refId,
+                ai.application_id as applicationId,
+                ai.id as applicationinstanceId,
+                'IN-PROCESS' as taskName,
+                wh.next_task_id as taskId,
+                'True' as actionPerformed,
+                a.form_url as formUrl,
+                wh.action_url as actionUrl,
+                wh.draft_id as draftId,
+                a.published_url as publishedUrl,
+                ai.published_document_uuid_en as documentUUIDEn,
+                ai.published_document_uuid_hi as documentUUIDHi,
+                ai.html_content_en as htmlContentEn,
+                ai.html_content_hi as htmlContentHi,
+                null as editorId
+        from
+                workflow.workflow_history wh
+        join master.application_instance ai on
+                wh.application_instance_id = ai.id
+        join master.applications a on
+                ai.application_id = a.id
+        join synopsis.synopsis s on s.id = ai.id 	
+        join synopsis.roster_detail rd on rd.id = s.roster_detail_id	
+        where
+                wh.pending_with = :userId
+                and wh.action_taken_by is null
+        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
+         and a.id in (select a.id from master.applications a, master.modules m 
+        where a.module_id = m.id and a.abbr in ('SYN', 'SYM')) 
+
     						) A 
     						left join master.applications ma on
     							ma.id = A.applicationId
