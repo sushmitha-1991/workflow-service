@@ -43,4 +43,5 @@ public class DocumentRowMapper {
 	String htmlContentHi;
 	String editorId;
         String saveAsDraftUrl;
+        UUID uploadedDocumentUUID;
 }
