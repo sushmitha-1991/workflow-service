@@ -334,7 +334,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                                 ai.html_content_en as htmlContentEn,
                                 ai.html_content_hi as htmlContentHi,
                                 null as editorId,
-                                null as uploaded_document_uuid	
+                                ai.uploaded_document_uuid as uploaded_document_uuid	
                         from
                                 workflow.workflow_history wh
                         join master.application_instance ai on
