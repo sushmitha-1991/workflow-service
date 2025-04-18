@@ -367,7 +367,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                                 null as applicationinstanceId,
                                 'IN-PROCESS' as taskName,
                                 null as taskId,
-                                null as actionPerformed,
+                                'True' as actionPerformed,
                                 '/synopsis/synopsis-create' as formUrl,
                                 '/synopsis/synopsis-create' as actionUrl,
                                 null as draftId,
@@ -377,7 +377,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                                 null as htmlContentEn,
                                 null as htmlContentHi,
                                 CAST(rd.editor_id AS VARCHAR) as editorId,
-                                        null as uploaded_document_uuid				
+                                null as uploaded_document_uuid				
                 FROM synopsis.roster_detail rd
                 JOIN synopsis.roster r ON rd.roster_id = r.id
                 left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
