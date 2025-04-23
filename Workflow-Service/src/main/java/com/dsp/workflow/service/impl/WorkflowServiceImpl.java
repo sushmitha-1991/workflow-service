@@ -426,9 +426,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                   left join authentication.base_user bu on bu.id = ah.sent_to_user_id
                   WHERE ah.sent_to_user_id = :userId
                   AND inp.document_date IS NOT NULL
-                  GROUP BY inp.document_date, ah.sent_to_user_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
-                  bu.first_name, bu.last_name, ma.document_display_name
-
+                                                 
                 union
 
                         select
