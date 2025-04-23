@@ -391,6 +391,44 @@ public class WorkflowServiceImpl implements WorkflowService {
                 GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
                 rd.supplementary_flag, bu.first_name, bu.last_name
 
+        union
+                                SELECT
+                         'XXXX' as applicationNo,
+                          ma.document_display_name as documentName,
+                          inp.document_date as date,
+                          lsm.lok_sabha_number as LSNo,
+                          lssm.session_number as SSNo,
+                          rssm.session_number as RSSNo,
+                          'In Progress' as status,
+                          CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+                          null as refId,
+                          null as applicationId,
+                          null as applicationinstanceId,
+                          'IN-PROCESS' as taskName,
+                          null as taskId,
+                          'True' as actionPerformed,
+                          '/translation-of-papers/createTranslation' as formUrl,
+                          '/translation-of-papers/createTranslation' as actionUrl,
+                          null as draftId,
+                          null as publishedUrl,
+                          null as documentUUIDEn,
+                          null as documentUUIDHi,
+                          null as htmlContentEn,
+                          null as htmlContentHi,
+                          CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
+                          null as uploaded_document_uuid				
+                  FROM translation.translation_input inp
+                  JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id 
+                  left join master.applications ma on ma.id = inp.document_type_id
+                  left join master.lok_sabha_session_masters lssm on lssm.id = inp.lok_sabha_session_no
+                  left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
+                  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
+                  left join authentication.base_user bu on bu.id = ah.sent_to_user_id
+                  WHERE ah.sent_to_user_id = :userId
+                  AND inp.document_date IS NOT NULL
+                  GROUP BY inp.document_date, ah.sent_to_user_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
+                  bu.first_name, bu.last_name, ma.document_display_name
+
                 union
 
                         select
