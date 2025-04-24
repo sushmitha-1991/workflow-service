@@ -124,7 +124,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                                case 
                                     when ai.additional_details = 'Supplementary Synopsis' then 'Supplementary Synopsis'
                                     else coalesce(a.document_display_name, a."name")
-                                end                                                         
+                                end                                                            
                                 as documentName,        
                                 ai.document_date as date,
                                 ai.lok_sabha_session as LSNo,
