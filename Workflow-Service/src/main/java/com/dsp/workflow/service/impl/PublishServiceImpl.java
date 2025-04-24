@@ -66,10 +66,9 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
-    
 
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
-        
+
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
             System.out.println("application no exists  " + alreadyExists.getApplicationNo());
@@ -87,12 +86,12 @@ public class PublishServiceImpl implements PublishService {
                     throw new RuntimeException("Error updating field: " + field.getName(), e);
                 }
             }
-            if(StringUtils.isBlank(alreadyExists.getPublishUrl()))
-            alreadyExists.setPublishUrl(openKmUrl+"/downloads/"+alreadyExists.getPublishUuid());
+            if (StringUtils.isBlank(alreadyExists.getPublishUrl()))
+                alreadyExists.setPublishUrl(openKmUrl + "/downloads/" + alreadyExists.getPublishUuid());
             entity = repository.save(alreadyExists);
         } else {
-            if(StringUtils.isBlank(entity.getPublishUrl()))
-            entity.setPublishUrl(openKmUrl+"/downloads/"+entity.getPublishUuid());
+            if (StringUtils.isBlank(entity.getPublishUrl()))
+                entity.setPublishUrl(openKmUrl + "/downloads/" + entity.getPublishUuid());
             System.out.println("application no  " + entity.getApplicationNo());
             entity = repository.save(entity);
         }
@@ -123,7 +122,7 @@ public class PublishServiceImpl implements PublishService {
 
         if (locale == null)
             locale = "en";
-        
+
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null)
             spec = spec.and(hasForDate(date));
@@ -134,11 +133,10 @@ public class PublishServiceImpl implements PublishService {
         // Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         List<PublishHistoryEntity> responseEntitysAll = repository.findAll();
-       
+
         List<UrlDto> urlDto = new ArrayList<>();
         for (PublishHistoryEntity entity : responseEntitys) {
-           
-           
+
             UrlDto responseDto = UrlDto.builder().date(entity.getForDate().toString()).name(entity.getApplicationName())
                     .fileType(entity.getFileType()).url(entity.getPublishUrl()).build();
             urlDto.add(responseDto);
@@ -161,7 +159,7 @@ public class PublishServiceImpl implements PublishService {
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         List<PublishHistoryEntity> responseEntitys = repository.findAll();
-       
+
         List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
                 .collect(Collectors.toList());
         if (responseEntitys != null) {
@@ -304,9 +302,9 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public PublishHistoryDTO getbyAppNo(String applicationNo) {
-        
+
         PublishHistoryEntity entity = repository.findByApplicationNo(applicationNo);
-        System.out.println("entity in getby appno  "+entity);
+        System.out.println("entity in getby appno  " + entity);
         return PublishMapper.toDTO(entity);
     }
 
@@ -322,7 +320,7 @@ public class PublishServiceImpl implements PublishService {
         spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        
+
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
                 UrlDto responseDto = UrlDto.builder().date(date.toString()).name(entity.getApplicationName())
@@ -330,7 +328,7 @@ public class PublishServiceImpl implements PublishService {
                 urlDto.add(responseDto);
             }
         }
-      
+
         return urlDto;
 
     }
@@ -462,8 +460,6 @@ public class PublishServiceImpl implements PublishService {
         return "";
     }
 
-
-
     public String getTokenFromRequest() {
 
         String authorizationHeader = httpRequest.getHeader("Authorization");
@@ -515,32 +511,37 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
         if (locale == null) {
-        locale = "en";
+            locale = "en";
         }
-        Specification<PublishHistoryEntity> spec =
-        Specification.where(isPublishStatus(true));
+        Long userId = utils.getUserIdFromAuthentication();
+        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null) {
-        spec = spec.and(hasForDate(date));
+            spec = spec.and(hasForDate(date));
         }
         if (applicationName != null) {
-        spec = spec.and(hasApplicationName(applicationName));
+            spec = spec.and(hasApplicationName(applicationName));
         }
         spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
         List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
-       
-
         Long houseId = utils.getHouseIdFromAuthentication();
         for (PublishHistoryEntity entity : responseEntitys) {
-            if (houseId == 1 && entity.getRajyaSabhaSessionNo()!=null) {
-                listOfDTOs.add(PublishMapper.toDTO(entity));
-            } else if (houseId == 2 && entity.getLokSabhaSessionNo()!=null) {
-                listOfDTOs.add(PublishMapper.toDTO(entity));
+            System.out.println("entity   "+entity);
+            System.out.println("userId "+userId);
+
+            Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
+            if (exists!=null && exists) {
+                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
+
+                    listOfDTOs.add(PublishMapper.toDTO(entity));
+                } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
+                    listOfDTOs.add(PublishMapper.toDTO(entity));
+                }
             }
         }
-        
+
         return listOfDTOs;
     }
 
