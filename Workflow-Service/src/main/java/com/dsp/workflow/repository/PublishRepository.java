@@ -29,17 +29,8 @@ public interface PublishRepository
 
     Optional<PublishHistoryEntity> findByApplicationName(String applicationName);
 
-    // @Query("SELECT pt FROM PublishDocumentTemp pt")
-    // List<PublishDocumentTemp> findUrlAndId();
-
-    // @Modifying
-    // @Query(value = "UPDATE migration.publish_document_temp SET publish_uuid = :uuid WHERE id = :id", nativeQuery = true)
-    // void saveUuidById( @Param("uuid") UUID uuid,@Param("id") Long id);
-
-    // PublishDocumentTemp saveTemp(PublishDocumentTemp publishDocumentTemp);
-
-    // @Query(value = "SELECT pt.id, pt.text FROM migration.publish_text_temp pt",
-    // nativeQuery = true)
-    // List<ResponseIdandText> findTextAndId();
+    @Query(value = "select a.primary_office_id in ( select office_id from authentication.user_roles where user_id = :userId and is_active = true and is_deleted = false) from master.applications a where a.id=:appId", nativeQuery = true)
+    Boolean findOfficeIdByUserId(@Param("userId") Long userId,
+            @Param("appId") Long appId);
 
 }
