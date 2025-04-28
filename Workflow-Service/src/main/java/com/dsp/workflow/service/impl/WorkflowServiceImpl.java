@@ -397,7 +397,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
         union
                                 SELECT
-                         'XXXX' as applicationNo,
+                          ah.ref_no as applicationNo,
                           ma.document_display_name as documentName,
                           inp.document_date as date,
                           lsm.lok_sabha_number as LSNo,
