@@ -430,10 +430,44 @@ public class WorkflowServiceImpl implements WorkflowService {
                   left join authentication.base_user bu on bu.id = ah.sent_to_user_id
                   WHERE ah.sent_to_user_id = :userId
                   AND inp.document_date IS NOT NULL
-                                                 
+                 
                 union
 
-                        select
+            SELECT
+                        'XXX' as applicationNo, 
+                        'Corrected Debates' as documentName,
+                        da.debate_date as date,
+                        lsm.lok_sabha_number as LSNo,
+                        lssm.session_number as SSNo,
+                        rssm.session_number as RSSNo,
+                        'In Progress' as status,
+                        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+                        null as refId,
+                        null as applicationId,
+                        null as applicationinstanceId,
+                        'IN-PROCESS' as taskName,
+                        null as taskId,
+                        'True' as actionPerformed,
+                        '/corrected-debate-allocation/correct-debate-creation' as formUrl,
+                        '/corrected-debate-allocation/correct-debate-creation' as actionUrl,
+                        null as draftId,
+                        null as publishedUrl,
+                        null as documentUUIDEn,
+                        null as documentUUIDHi,
+                        null as htmlContentEn,
+                        null as htmlContentHi,
+                        CAST(da.allocateto AS VARCHAR) as editorId,
+                        null as uploaded_document_uuid				
+                FROM corrected_debate.allocation da
+                left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
+                left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
+                left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
+                left join authentication.base_user bu on bu.id = da.allocateto
+                WHERE da.allocateto = :userId
+                and da.status <> 'Completed'                                                                                                  
+
+            union
+                  select
                         distinct on
                 (ai.document_date, ai.application_id, rd.document_type) ai.application_no as applicationNo,    			
                         rd.document_type as documentName,
