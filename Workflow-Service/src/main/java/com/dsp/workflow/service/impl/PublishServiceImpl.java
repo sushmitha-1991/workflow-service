@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -364,6 +367,9 @@ public class PublishServiceImpl implements PublishService {
 
     public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
         try {
+            String folderPath = "/okm:root/PC";
+            String folderCheckUrl = openKmUrl + "/folder/getPath?path="
+                    + URLEncoder.encode(folderPath, StandardCharsets.UTF_8);
             String uploadUrl = openKmUrl + "/document/upload";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -375,20 +381,52 @@ public class PublishServiceImpl implements PublishService {
                 return "";
             }
             headers.set("Authorization", "Bearer " + token);
-
             // Extract filename and ensure .pdf extension
+
+            // adding specific folders
+            try {
+                HttpEntity<String> checkEntity = new HttpEntity<>(headers);
+                restTemplate.exchange(folderCheckUrl, HttpMethod.GET, checkEntity, String.class);
+                logger.info("Folder exists: {}", folderPath);
+            } catch (HttpClientErrorException.NotFound ex) {
+                // Folder does not exist - create it
+                logger.info("Folder not found, creating: {}", folderPath);
+
+                String createFolderUrl = openKmUrl + "/folder/createSimple";
+
+                MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
+                createFolderBody.add("parentPath", "/okm:root");
+                createFolderBody.add("name", "PC");
+
+                HttpEntity<MultiValueMap<String, String>> createFolderEntity = new HttpEntity<>(createFolderBody,
+                        headers);
+
+                ResponseEntity<String> createFolderResponse = restTemplate.postForEntity(createFolderUrl,
+                        createFolderEntity, String.class);
+                if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
+                    logger.info("Folder created successfully: {}", folderPath);
+                } else {
+                    logger.error("Failed to create folder: {}", createFolderResponse.getStatusCode());
+                    return "";
+                }
+            } catch (Exception e) {
+                logger.error("Error while checking or creating folder: ", e);
+                return "";
+            }
+            //
+            //
+            
+
             String originalFileName = response.getUrl();
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
             String updatedFileName = fileNameWithoutExt + ".pdf";
-
             // Create a temporary file
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
             }
-
             // Create file resource
             ByteArrayResource resource = new ByteArrayResource(fileData) {
                 @Override
@@ -396,11 +434,10 @@ public class PublishServiceImpl implements PublishService {
                     return updatedFileName;
                 }
             };
-
             // Prepare request body
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
-            body.add("folderPath", "/okm:root/PC");
+            body.add("folderPath", folderPath);
             body.add("documentName", updatedFileName);
             body.add("masterId", 231);
             body.add("applicationNo", response.getApplicationId());
@@ -418,19 +455,15 @@ public class PublishServiceImpl implements PublishService {
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 Map<String, Object> responseBody = responseEntity.getBody();
                 logger.info("Response Body: {}", responseBody);
-
                 // Extract "data"
                 Object dataObject = responseBody.get("data");
                 if (dataObject instanceof Map) {
                     Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-
                     // Extract "documentUuid"
                     Object generatedUuid = dataMap.get("documentUuid");
                     logger.info("Extracted documentUuid: {}", generatedUuid);
-
                     if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
                         String uuidString = generatedUuid.toString().trim();
-
                         try {
                             UUID uuid = UUID.fromString(uuidString);
                             Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
@@ -528,11 +561,11 @@ public class PublishServiceImpl implements PublishService {
         List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
         for (PublishHistoryEntity entity : responseEntitys) {
-            System.out.println("entity   "+entity);
-            System.out.println("userId "+userId);
+            System.out.println("entity   " + entity);
+            System.out.println("userId " + userId);
 
             Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
-            if (exists!=null && exists) {
+            if (exists != null && exists) {
                 if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
 
                     listOfDTOs.add(PublishMapper.toDTO(entity));
