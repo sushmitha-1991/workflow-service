@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TranslationInputDTO {
 	private Long lokSabhaNo;
-	private String lokSabhaSessionNo;
+	private Long lokSabhaSessionNo;
 	private Long rajyaSabhaSessionNo;
 	private Long documentTypeId;
 	private LocalDate documentDate;

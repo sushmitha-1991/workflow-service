@@ -699,18 +699,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
 					workflowHistoryRepository.save(secondEntry);
 
-					// Calling Translation Input Endpoint
-
-//					if (translationFlag) {
-//						callTranslationAPI(translationInputDTO);
-//					}
-
-//					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
-//					System.out.println("### translationInputDTO - " + translationInputDTO);
-//					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
-//						// Proceed with translation API call or further logic
-//						callTranslationAPI(translationInputDTO);
-//					}
+					// Entry to Translation Inputs
+					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+						System.out.println("### Calling this");
+						callTranslationAPI(translationInputDTO);
+					}
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -741,9 +735,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
 							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
-//					if (translationFlag) {
-//						callTranslationAPI(translationInputDTO);
-//					}
+					// Entry to Translation Inputs
+					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+						callTranslationAPI(translationInputDTO);
+					}
 
 				}
 
@@ -763,7 +759,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
-		System.out.println("### applicationInstanceId - " + applicationInstanceId);
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
 
@@ -771,18 +766,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			return null;
 		}
 
-		
 		Object[] row = result.get(0);
-		System.out.println(">>> row[4] (documentDate) = " + row[4] + ", type: "
-				+ (row[4] != null ? row[4].getClass().getName() : "null"));
-		
-		System.out.println(">>> Full row:");
-		for (int i = 0; i < row.length; i++) {
-		    System.out.println("Index " + i + ": " + row[i] + " (type: " + (row[i] != null ? row[i].getClass().getName() : "null") + ")");
-		}
 
-
-		return TranslationInputDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo((String) row[1])
+		return TranslationInputDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null).build();
