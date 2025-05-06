@@ -260,8 +260,7 @@ public class WorkflowController {
 
 		// Complete the task with provided variables and document list
 		String newTaskId = workflowService.completeTask(taskId, variables, completeTaskRequestDTO.getDocument(),
-				completeTaskRequestDTO.getActionUrl(), completeTaskRequestDTO.getNote(),
-				completeTaskRequestDTO.getTranslateFlag(), completeTaskRequestDTO.getTranslationInputDTO());
+				completeTaskRequestDTO.getActionUrl(), completeTaskRequestDTO.getNote());
 
 		// Return success or failure based on the completion of the task
 		if (newTaskId != null) {
