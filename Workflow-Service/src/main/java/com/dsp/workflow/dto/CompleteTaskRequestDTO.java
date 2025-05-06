@@ -35,6 +35,11 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	private List<ProcessStepwiseDocumentsDTO> document;
 	private String actionUrl;
 
+	private Boolean translateFlag;
+
+	// Translation Input DTO
+	private TranslationInputDTO translationInputDTO;
+
 	/**
 	 * A static key representing the action to be sent to the reviewer. Key:
 	 * sendToReviewer
