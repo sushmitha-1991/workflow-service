@@ -8,7 +8,6 @@ import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
-import com.dsp.workflow.dto.TranslationInputDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 
@@ -26,18 +25,18 @@ public interface WorkflowService {
 	/**
 	 * Completes a task with the given task ID and variables.
 	 * 
-	 * @param taskId       The ID of the task to complete.
-	 * @param variables    The variables to pass for task completion.
+	 * @param taskId              The ID of the task to complete.
+	 * @param variables           The variables to pass for task completion.
 	 * @param list
 	 * @param actionUrl
 	 * @param note
-	 * @param translationInputDTO 
-	 * @param translationFlag 
+	 * @param translationInputDTO
+	 * @param translationFlag
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
 	String completeTask(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list,
-			String actionUrl, String note, Boolean translationFlag, TranslationInputDTO translationInputDTO);
+			String actionUrl, String note);
 
 	/**
 	 * Retrieves a task ID by process instance ID.
@@ -134,6 +133,6 @@ public interface WorkflowService {
 
 	String deleteDraftedData(String applicationNo);
 
-    List<DraftDataDTO> getDraftByAppId(Long applicationId);
+	List<DraftDataDTO> getDraftByAppId(Long applicationId);
 
 }

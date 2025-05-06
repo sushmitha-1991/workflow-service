@@ -1,6 +1,8 @@
 package com.dsp.workflow.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -435,38 +437,38 @@ public class WorkflowServiceImpl implements WorkflowService {
 			          AND inp.document_date IS NOT NULL
 
 			        union
-            SELECT
-                        da.ref_no as applicationNo, 
-                        'Corrected Debates' as documentName,
-                        da.debate_date as date,
-                        lsm.lok_sabha_number as LSNo,
-                        lssm.session_number as SSNo,
-                        rssm.session_number as RSSNo,
-                        'In Progress' as status,
-                        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-                        null as refId,
-                        null as applicationId,
-                        null as applicationinstanceId,
-                        'IN-PROCESS' as taskName,
-                        null as taskId,
-                        'True' as actionPerformed,
-                        '/corrected-debate-allocation/correct-debate-creation' as formUrl,
-                        '/corrected-debate-allocation/correct-debate-creation' as actionUrl,
-                        null as draftId,
-                        null as publishedUrl,
-                        null as documentUUIDEn,
-                        null as documentUUIDHi,
-                        null as htmlContentEn,
-                        null as htmlContentHi,
-                        CAST(da.allocateto AS VARCHAR) as editorId,
-                        null as uploaded_document_uuid				
-                FROM corrected_debate.allocation da
-                left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
-                left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
-                left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
-                left join authentication.base_user bu on bu.id = da.allocateto
-                WHERE da.allocateto = :userId
-                and da.status <> 'Completed'                                                                                                  
+			         SELECT
+			                     da.ref_no as applicationNo,
+			                     'Corrected Debates' as documentName,
+			                     da.debate_date as date,
+			                     lsm.lok_sabha_number as LSNo,
+			                     lssm.session_number as SSNo,
+			                     rssm.session_number as RSSNo,
+			                     'In Progress' as status,
+			                     CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+			                     null as refId,
+			                     null as applicationId,
+			                     null as applicationinstanceId,
+			                     'IN-PROCESS' as taskName,
+			                     null as taskId,
+			                     'True' as actionPerformed,
+			                     '/corrected-debate-allocation/correct-debate-creation' as formUrl,
+			                     '/corrected-debate-allocation/correct-debate-creation' as actionUrl,
+			                     null as draftId,
+			                     null as publishedUrl,
+			                     null as documentUUIDEn,
+			                     null as documentUUIDHi,
+			                     null as htmlContentEn,
+			                     null as htmlContentHi,
+			                     CAST(da.allocateto AS VARCHAR) as editorId,
+			                     null as uploaded_document_uuid
+			             FROM corrected_debate.allocation da
+			             left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
+			             left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
+			             left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
+			             left join authentication.base_user bu on bu.id = da.allocateto
+			             WHERE da.allocateto = :userId
+			             and da.status <> 'Completed'
 			    SELECT
 			                'XXX' as applicationNo,
 			                'Corrected Debates' as documentName,
@@ -633,8 +635,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	// }
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables,
-			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note, Boolean translationFlag,
-			TranslationInputDTO translationInputDTO) {
+			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note) {
 		try {
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
@@ -700,9 +701,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					// Calling Translation Input Endpoint
 
-					if (translationFlag) {
-						callTranslationAPI(translationInputDTO);
-					}
+//					if (translationFlag) {
+//						callTranslationAPI(translationInputDTO);
+//					}
+
+//					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+//					System.out.println("### translationInputDTO - " + translationInputDTO);
+//					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+//						// Proceed with translation API call or further logic
+//						callTranslationAPI(translationInputDTO);
+//					}
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -733,9 +741,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
 							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
-					if (translationFlag) {
-						callTranslationAPI(translationInputDTO);
-					}
+//					if (translationFlag) {
+//						callTranslationAPI(translationInputDTO);
+//					}
 
 				}
 
@@ -754,6 +762,58 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 	}
 
+	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
+		System.out.println("### applicationInstanceId - " + applicationInstanceId);
+		List<Object[]> result = applicationInstanceRepository
+				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
+
+		if (result.isEmpty()) {
+			return null;
+		}
+
+		
+		Object[] row = result.get(0);
+		System.out.println(">>> row[4] (documentDate) = " + row[4] + ", type: "
+				+ (row[4] != null ? row[4].getClass().getName() : "null"));
+		
+		System.out.println(">>> Full row:");
+		for (int i = 0; i < row.length; i++) {
+		    System.out.println("Index " + i + ": " + row[i] + " (type: " + (row[i] != null ? row[i].getClass().getName() : "null") + ")");
+		}
+
+
+		return TranslationInputDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo((String) row[1])
+				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
+				.documentDate(convertToLocalDate(row[4])) // updated line
+				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null).build();
+	}
+
+	private LocalDate convertToLocalDate(Object dateObj) {
+		if (dateObj instanceof java.sql.Date) {
+			return ((java.sql.Date) dateObj).toLocalDate();
+		} else if (dateObj instanceof java.util.Date) {
+			return ((java.util.Date) dateObj).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+		} else if (dateObj instanceof LocalDate) {
+			return (LocalDate) dateObj;
+		} else {
+			return null;
+		}
+	}
+
+	private Long convertToLong(Object obj) {
+		if (obj instanceof Number) {
+			return ((Number) obj).longValue();
+		}
+		if (obj instanceof String) {
+			try {
+				return Long.parseLong((String) obj);
+			} catch (NumberFormatException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+
 	public void callTranslationAPI(TranslationInputDTO translationInputDTO) {
 		try {
 			// Rebuild DTO (optional, or you can skip this if already fully formed)
@@ -769,6 +829,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			HttpHeaders headers = new HttpHeaders();
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.set("Authorization", "Bearer " + token);
+
+			System.out.println("### translationInputDTO for calling - " + translationInputDTO);
 
 			HttpEntity<TranslationInputDTO> requestEntity = new HttpEntity<>(translationInputDTO, headers);
 

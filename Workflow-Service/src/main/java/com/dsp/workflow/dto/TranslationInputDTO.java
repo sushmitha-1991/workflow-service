@@ -21,10 +21,13 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TranslationInputDTO {
 	private Long lokSabhaNo;
-	private Long lokSabhaSessionNo;
+	private String lokSabhaSessionNo;
 	private Long rajyaSabhaSessionNo;
 	private Long documentTypeId;
 	private LocalDate documentDate;
 	private String inputContent;
+
+	//
+	private Boolean translationFlag;
 
 }
