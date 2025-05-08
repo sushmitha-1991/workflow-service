@@ -46,5 +46,7 @@ public class PublishHistoryDTO {
     private LocalDate unpublishDate;
     
     private Long officeId;
- 
+    private Integer year;
+	private Integer month;
+    private String fileTypeName;
 }

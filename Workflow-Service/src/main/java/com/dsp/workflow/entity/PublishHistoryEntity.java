@@ -46,9 +46,10 @@ public class PublishHistoryEntity extends Auditable {
     @Column(nullable = false)
     private UUID publishUuid;
     @Column(nullable = false)
-
+    private Integer year;
+	private Integer month;
     private String fileType;
-
+    
     @Column(nullable = false, columnDefinition = "text")
     private String publishUrl;
 
@@ -72,5 +73,6 @@ public class PublishHistoryEntity extends Auditable {
 
     @Column(nullable = false)
     private String locale;
+    private String fileTypeName;
 
 }
