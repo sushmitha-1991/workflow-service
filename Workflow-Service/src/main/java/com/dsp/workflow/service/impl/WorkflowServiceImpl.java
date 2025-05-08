@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
@@ -27,6 +28,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -60,14 +63,14 @@ import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import spinjar.com.fasterxml.jackson.core.JsonProcessingException;
-import spinjar.com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
@@ -772,29 +775,57 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	public void callTranslationAPI(TranslationInputDTO translationInputDTO) {
 		try {
-			// Rebuild DTO (optional, or you can skip this if already fully formed)
-			translationInputDTO = TranslationInputDTO.builder().lokSabhaNo(translationInputDTO.getLokSabhaNo())
-					.lokSabhaSessionNo(translationInputDTO.getLokSabhaSessionNo())
-					.rajyaSabhaSessionNo(translationInputDTO.getRajyaSabhaSessionNo())
-					.documentTypeId(translationInputDTO.getDocumentTypeId())
-					.documentDate(translationInputDTO.getDocumentDate())
-					.inputContent(translationInputDTO.getInputContent()).build();
+			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
-			String token = getTokenFromRequest(); // Ensure this method is available in the same class
+			// Step 1: Call upload-html-english API
+			HttpHeaders formHeaders = new HttpHeaders();
+			formHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			formHeaders.setBearerAuth(token);
 
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
-			headers.set("Authorization", "Bearer " + token);
+			// Check if startingPageNo is null, if so set to "1"
+			String startingPageNo = (translationInputDTO.getStartingPageNo() != null)
+					? translationInputDTO.getStartingPageNo().toString()
+					: "1";
 
-			System.out.println("### translationInputDTO for calling - " + translationInputDTO);
+			MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
+			formParams.add("htmlContentEn", translationInputDTO.getInputContent());
+			formParams.add("startingPageNo", startingPageNo);
+			formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
 
-			HttpEntity<TranslationInputDTO> requestEntity = new HttpEntity<>(translationInputDTO, headers);
+			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-			restTemplate.postForEntity(translationInputUrl, requestEntity, String.class);
+			ResponseEntity<String> uploadResponse = restTemplate
+					.postForEntity("https://dspstg.sansad.in/template/upload-html-english", formRequest, String.class);
+
+			// Parse documentUuid from response
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
+
+			if (!responseJson.has("documentUuid") || responseJson.get("documentUuid").isNull()) {
+				throw new RuntimeException("documentUuid not found in upload-html-english response");
+			}
+
+			UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
+
+			translationInputDTO.setContentUUID(documentUuid); // directly set it
+
+			// Step 2: Call translation API
+			HttpHeaders jsonHeaders = new HttpHeaders();
+			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+			jsonHeaders.setBearerAuth(token);
+
+			HttpEntity<TranslationInputDTO> jsonRequest = new HttpEntity<>(translationInputDTO, jsonHeaders);
+			ResponseEntity<String> translationResponse = restTemplate.postForEntity(translationInputUrl, jsonRequest,
+					String.class);
+
+			System.out.println("### Translation API Response: " + translationResponse.getBody());
 
 		} catch (HttpClientErrorException e) {
-			throw new RuntimeException("Error calling Translation API: " + e.getStatusCode());
+			System.err.println("HTTP error during Translation API call: " + e.getResponseBodyAsString());
+			throw new RuntimeException("Error calling Translation API: " + e.getStatusCode(), e);
 		} catch (Exception e) {
+			System.err.println("Unexpected error during translation process.");
+			e.printStackTrace();
 			throw new RuntimeException("Translation API call failed.", e);
 		}
 	}
