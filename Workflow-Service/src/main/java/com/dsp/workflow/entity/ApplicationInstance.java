@@ -27,7 +27,7 @@ public class ApplicationInstance extends Auditable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "application_Instance_seq")
-	@SequenceGenerator(name = "application_instance_seq", sequenceName = "application_instance_seq", allocationSize = 1)
+	@SequenceGenerator(name = "application_instance_seq", sequenceName = "master.application_instance_seq", allocationSize = 1)
 	private Long id;
 
 	@Column(name = "application_id", nullable = false)

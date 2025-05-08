@@ -52,6 +52,8 @@ public class PublishHistoryEntity extends Auditable {
     
     @Column(nullable = false, columnDefinition = "text")
     private String publishUrl;
+    @Column(nullable = false, columnDefinition = "text")
+    private String title;
 
     @Column(nullable = false)
     private LocalDate forDate;
