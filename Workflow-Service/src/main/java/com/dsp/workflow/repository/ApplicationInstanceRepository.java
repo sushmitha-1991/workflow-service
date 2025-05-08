@@ -28,7 +28,8 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			    ai.application_id AS documentTypeId,
 			CAST(ai.document_date AS DATE) AS documentDate,
 			    ai.html_content_en AS inputContent,
-			    a.translate_flag AS translateFlag
+			    a.translate_flag AS translateFlag,
+			    ai.starting_page_no as startingPageNo
 			FROM master.application_instance ai
 			LEFT JOIN master.applications a ON a.id = ai.application_id
 			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session

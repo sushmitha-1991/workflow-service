@@ -6,6 +6,7 @@
 package com.dsp.workflow.dto;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,8 @@ public class TranslationInputDTO {
 	private Long documentTypeId;
 	private LocalDate documentDate;
 	private String inputContent;
+	private Long startingPageNo;
+	private UUID contentUUID;
 
 	//
 	private Boolean translationFlag;
