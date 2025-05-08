@@ -25,11 +25,13 @@ public interface WorkflowService {
 	/**
 	 * Completes a task with the given task ID and variables.
 	 * 
-	 * @param taskId       The ID of the task to complete.
-	 * @param variables    The variables to pass for task completion.
+	 * @param taskId              The ID of the task to complete.
+	 * @param variables           The variables to pass for task completion.
 	 * @param list
 	 * @param actionUrl
 	 * @param note
+	 * @param translationInputDTO
+	 * @param translationFlag
 	 * @param senderRoleId
 	 * @return The new task ID, or null if no new task is created.
 	 */
@@ -131,6 +133,6 @@ public interface WorkflowService {
 
 	String deleteDraftedData(String applicationNo);
 
-    List<DraftDataDTO> getDraftByAppId(Long applicationId);
+	List<DraftDataDTO> getDraftByAppId(Long applicationId);
 
 }

@@ -148,7 +148,9 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public List<UrlDto> getByDate(LocalDate date, String documentName, String locale) {
+    public List<UrlDto> getByDate(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
+            String rssNo) {
+
         List<UrlDto> urlDto = new ArrayList<>();
         if (locale == null) {
             locale = "en";
@@ -158,21 +160,43 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasForDate(date));
         if (documentName != null)
             spec = spec.and(hasApplicationName(documentName));
+        if (lsNo != null)
+            spec = spec.and(hasLokSabhaNo(lsNo));
+        if (sesNo != null)
+            spec = spec.and(hasLokSabhaSessionNo(sesNo));
+        if (rssNo != null)
+            spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
         spec = spec.and(hasLocale(locale));
+
+        System.out.println("date "+date);
+        System.out.println("documentName "+documentName);
+        System.out.println("locale "+locale);
+        System.out.println("lsNo "+lsNo);
+        System.out.println("sesNo "+sesNo);
+        System.out.println("rssNo "+rssNo);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        System.out.println("responseEntitys "+responseEntitys);
 
         List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
                 .collect(Collectors.toList());
+
+        System.out.println("list of Docs "+listOfDTOs);
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
-                UrlDto responseDto = UrlDto.builder().date(entity.getForDate().toString())
+                UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
                         .name(entity.getApplicationName()).fileType(entity.getFileType()).url(entity.getPublishUrl())
                         .build();
+                        if(entity.getForDate()!=null)
+                        {
+                            responseDto.setDate(entity.getForDate().toString());
+                        }
                 urlDto.add(responseDto);
             }
         }
+        System.out.println("list of urlDto"+urlDto);
+
         return urlDto;
     }
 
@@ -415,7 +439,6 @@ public class PublishServiceImpl implements PublishService {
             }
             //
             //
-            
 
             String originalFileName = response.getUrl();
             int lastDotIndex = originalFileName.lastIndexOf(".");
@@ -524,18 +547,84 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasApplicationName(String applicationName) {
         return (root, query, criteriaBuilder) -> {
             if (applicationName != null) {
-                return criteriaBuilder.like(criteriaBuilder.lower(root.get("applicationName")),
-                        "%" + applicationName.toLowerCase() + "%");
+                return criteriaBuilder.equal(root.get("applicationName"),
+                         applicationName);
             }
             return criteriaBuilder.conjunction();
         };
     }
 
+    public static Specification<PublishHistoryEntity> hasLokSabhaNo(String lsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (lsNo != null) {
+                return criteriaBuilder.equal(root.get("lokSabhaNo"),
+                        lsNo);
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
+    public static Specification<PublishHistoryEntity> hasLokSabhaSessionNo(String sessNo) {
+        String sess = "";
+        if (!isRoman(sessNo)) {
+            System.out.println("is Roman false "+sessNo);
+            return (root, query, criteriaBuilder) -> {
+                if (sessNo != null) {
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
+                            toRoman(Integer.parseInt(sessNo)));
+                }
+                return criteriaBuilder.conjunction();
+            };
+        } else {
+            System.out.println("is Roman true "+sessNo);
+
+            return (root, query, criteriaBuilder) -> {
+                if (sessNo != null) {
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
+                            sessNo);
+                }
+                return criteriaBuilder.conjunction();
+            };
+        }
+    }
+
+    public static Specification<PublishHistoryEntity> hasRajyaSabhaSessionNo(String rsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (rsNo != null) {
+                return criteriaBuilder.equal(root.get("rajyaSabhaSessionNo"),
+                        rsNo);
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
+    public static boolean isRoman(String input) {
+        String ROMAN_REGEX = "^(?i)(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+
+        return input.matches(ROMAN_REGEX);
+    }
+
+    public static String toRoman(Integer number) {
+        if (number <= 0 || number > 50) {
+            throw new IllegalArgumentException("Number must be between 1 and 50");
+        }
+        int[] values = { 50, 40, 10, 9, 5, 4, 1 };
+        String[] symbols = { "L", "XL", "X", "IX", "V", "IV", "I" };
+        StringBuilder roman = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            while (number >= values[i]) {
+                number -= values[i];
+                roman.append(symbols[i]);
+            }
+        }
+        return roman.toString();
+    }
+
     public static Specification<PublishHistoryEntity> hasLocale(String locale) {
         return (root, query, criteriaBuilder) -> {
             if (locale != null) {
-                return criteriaBuilder.like(criteriaBuilder.lower(root.get("locale")),
-                        "%" + locale.toLowerCase() + "%");
+                return criteriaBuilder.equal(criteriaBuilder.lower(root.get("locale")),
+                        locale.toLowerCase());
             }
             return criteriaBuilder.conjunction();
         };
