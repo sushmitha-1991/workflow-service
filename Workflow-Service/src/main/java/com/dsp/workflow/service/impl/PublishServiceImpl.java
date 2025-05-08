@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -145,7 +148,9 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public List<UrlDto> getByDate(LocalDate date, String documentName, String locale) {
+    public List<UrlDto> getByDate(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
+            String rssNo) {
+
         List<UrlDto> urlDto = new ArrayList<>();
         if (locale == null) {
             locale = "en";
@@ -155,21 +160,43 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasForDate(date));
         if (documentName != null)
             spec = spec.and(hasApplicationName(documentName));
+        if (lsNo != null)
+            spec = spec.and(hasLokSabhaNo(lsNo));
+        if (sesNo != null)
+            spec = spec.and(hasLokSabhaSessionNo(sesNo));
+        if (rssNo != null)
+            spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
         spec = spec.and(hasLocale(locale));
+
+        System.out.println("date "+date);
+        System.out.println("documentName "+documentName);
+        System.out.println("locale "+locale);
+        System.out.println("lsNo "+lsNo);
+        System.out.println("sesNo "+sesNo);
+        System.out.println("rssNo "+rssNo);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        System.out.println("responseEntitys "+responseEntitys);
 
         List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
                 .collect(Collectors.toList());
+
+        System.out.println("list of Docs "+listOfDTOs);
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
-                UrlDto responseDto = UrlDto.builder().date(entity.getForDate().toString())
+                UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
                         .name(entity.getApplicationName()).fileType(entity.getFileType()).url(entity.getPublishUrl())
                         .build();
+                        if(entity.getForDate()!=null)
+                        {
+                            responseDto.setDate(entity.getForDate().toString());
+                        }
                 urlDto.add(responseDto);
             }
         }
+        System.out.println("list of urlDto"+urlDto);
+
         return urlDto;
     }
 
@@ -364,6 +391,9 @@ public class PublishServiceImpl implements PublishService {
 
     public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
         try {
+            String folderPath = "/okm:root/PC";
+            String folderCheckUrl = openKmUrl + "/folder/getPath?path="
+                    + URLEncoder.encode(folderPath, StandardCharsets.UTF_8);
             String uploadUrl = openKmUrl + "/document/upload";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -375,20 +405,51 @@ public class PublishServiceImpl implements PublishService {
                 return "";
             }
             headers.set("Authorization", "Bearer " + token);
-
             // Extract filename and ensure .pdf extension
+
+            // adding specific folders
+            try {
+                HttpEntity<String> checkEntity = new HttpEntity<>(headers);
+                restTemplate.exchange(folderCheckUrl, HttpMethod.GET, checkEntity, String.class);
+                logger.info("Folder exists: {}", folderPath);
+            } catch (HttpClientErrorException.NotFound ex) {
+                // Folder does not exist - create it
+                logger.info("Folder not found, creating: {}", folderPath);
+
+                String createFolderUrl = openKmUrl + "/folder/createSimple";
+
+                MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
+                createFolderBody.add("parentPath", "/okm:root");
+                createFolderBody.add("name", "PC");
+
+                HttpEntity<MultiValueMap<String, String>> createFolderEntity = new HttpEntity<>(createFolderBody,
+                        headers);
+
+                ResponseEntity<String> createFolderResponse = restTemplate.postForEntity(createFolderUrl,
+                        createFolderEntity, String.class);
+                if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
+                    logger.info("Folder created successfully: {}", folderPath);
+                } else {
+                    logger.error("Failed to create folder: {}", createFolderResponse.getStatusCode());
+                    return "";
+                }
+            } catch (Exception e) {
+                logger.error("Error while checking or creating folder: ", e);
+                return "";
+            }
+            //
+            //
+
             String originalFileName = response.getUrl();
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
             String updatedFileName = fileNameWithoutExt + ".pdf";
-
             // Create a temporary file
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
             }
-
             // Create file resource
             ByteArrayResource resource = new ByteArrayResource(fileData) {
                 @Override
@@ -396,11 +457,10 @@ public class PublishServiceImpl implements PublishService {
                     return updatedFileName;
                 }
             };
-
             // Prepare request body
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
-            body.add("folderPath", "/okm:root/PC");
+            body.add("folderPath", folderPath);
             body.add("documentName", updatedFileName);
             body.add("masterId", 231);
             body.add("applicationNo", response.getApplicationId());
@@ -418,19 +478,15 @@ public class PublishServiceImpl implements PublishService {
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 Map<String, Object> responseBody = responseEntity.getBody();
                 logger.info("Response Body: {}", responseBody);
-
                 // Extract "data"
                 Object dataObject = responseBody.get("data");
                 if (dataObject instanceof Map) {
                     Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-
                     // Extract "documentUuid"
                     Object generatedUuid = dataMap.get("documentUuid");
                     logger.info("Extracted documentUuid: {}", generatedUuid);
-
                     if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
                         String uuidString = generatedUuid.toString().trim();
-
                         try {
                             UUID uuid = UUID.fromString(uuidString);
                             Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
@@ -491,18 +547,84 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasApplicationName(String applicationName) {
         return (root, query, criteriaBuilder) -> {
             if (applicationName != null) {
-                return criteriaBuilder.like(criteriaBuilder.lower(root.get("applicationName")),
-                        "%" + applicationName.toLowerCase() + "%");
+                return criteriaBuilder.equal(root.get("applicationName"),
+                         applicationName);
             }
             return criteriaBuilder.conjunction();
         };
     }
 
+    public static Specification<PublishHistoryEntity> hasLokSabhaNo(String lsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (lsNo != null) {
+                return criteriaBuilder.equal(root.get("lokSabhaNo"),
+                        lsNo);
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
+    public static Specification<PublishHistoryEntity> hasLokSabhaSessionNo(String sessNo) {
+        String sess = "";
+        if (!isRoman(sessNo)) {
+            System.out.println("is Roman false "+sessNo);
+            return (root, query, criteriaBuilder) -> {
+                if (sessNo != null) {
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
+                            toRoman(Integer.parseInt(sessNo)));
+                }
+                return criteriaBuilder.conjunction();
+            };
+        } else {
+            System.out.println("is Roman true "+sessNo);
+
+            return (root, query, criteriaBuilder) -> {
+                if (sessNo != null) {
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
+                            sessNo);
+                }
+                return criteriaBuilder.conjunction();
+            };
+        }
+    }
+
+    public static Specification<PublishHistoryEntity> hasRajyaSabhaSessionNo(String rsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (rsNo != null) {
+                return criteriaBuilder.equal(root.get("rajyaSabhaSessionNo"),
+                        rsNo);
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
+    public static boolean isRoman(String input) {
+        String ROMAN_REGEX = "^(?i)(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$";
+
+        return input.matches(ROMAN_REGEX);
+    }
+
+    public static String toRoman(Integer number) {
+        if (number <= 0 || number > 50) {
+            throw new IllegalArgumentException("Number must be between 1 and 50");
+        }
+        int[] values = { 50, 40, 10, 9, 5, 4, 1 };
+        String[] symbols = { "L", "XL", "X", "IX", "V", "IV", "I" };
+        StringBuilder roman = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            while (number >= values[i]) {
+                number -= values[i];
+                roman.append(symbols[i]);
+            }
+        }
+        return roman.toString();
+    }
+
     public static Specification<PublishHistoryEntity> hasLocale(String locale) {
         return (root, query, criteriaBuilder) -> {
             if (locale != null) {
-                return criteriaBuilder.like(criteriaBuilder.lower(root.get("locale")),
-                        "%" + locale.toLowerCase() + "%");
+                return criteriaBuilder.equal(criteriaBuilder.lower(root.get("locale")),
+                        locale.toLowerCase());
             }
             return criteriaBuilder.conjunction();
         };
@@ -528,11 +650,11 @@ public class PublishServiceImpl implements PublishService {
         List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
         for (PublishHistoryEntity entity : responseEntitys) {
-            System.out.println("entity   "+entity);
-            System.out.println("userId "+userId);
+            System.out.println("entity   " + entity);
+            System.out.println("userId " + userId);
 
             Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
-            if (exists!=null && exists) {
+            if (exists != null && exists) {
                 if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
 
                     listOfDTOs.add(PublishMapper.toDTO(entity));

@@ -20,5 +20,6 @@ public class UrlDto {
     private String date;
     private String url;
     private String fileType;
+    private String fileName;
 
 }
