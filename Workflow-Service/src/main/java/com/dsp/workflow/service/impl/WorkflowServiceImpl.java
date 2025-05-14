@@ -757,9 +757,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					String correctedDebatesAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
-					CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
-
 					if (correctedDebatesAbbr.equals(CORRECTED_DEBATES_ABBR)) {
+						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						callCorrectedDebatesAPI(correctedDebatedDTO);
 					}
 				}
