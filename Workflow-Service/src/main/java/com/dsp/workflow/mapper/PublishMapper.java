@@ -28,6 +28,7 @@ public class PublishMapper {
                 .month(entity.getMonth())
                 .year(entity.getYear())
                 .fileTypeName(entity.getFileTypeName())
+                .title(entity.getTitle())
                 .build();
         return dto;
     }
@@ -55,6 +56,7 @@ public class PublishMapper {
                 .month(dto.getMonth())
                 .year(dto.getYear())
                 .fileTypeName(dto.getFileTypeName())
+                .title(dto.getTitle())
                 .build();
         return entity;
     }
