@@ -21,5 +21,6 @@ public class UrlDto {
     private String url;
     private String fileType;
     private String fileName;
+    private String title;
 
 }
