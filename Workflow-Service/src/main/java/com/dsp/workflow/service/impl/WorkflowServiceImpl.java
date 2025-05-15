@@ -794,8 +794,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		Object[] row = result.get(0);
 
-		return CorrectedDebatedDTO.builder().loksbhano(convertToLong(row[0])).loksbhanosession(convertToLong(row[1]))
-				.rajyasbhanosession(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
+		return CorrectedDebatedDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
+				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
 	}
