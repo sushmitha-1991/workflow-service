@@ -22,11 +22,11 @@ import lombok.NoArgsConstructor;
 public class CorrectedDebatedDTO {
 	private Long id;
 
-	private Long loksbhano;
+	private Long lokSabhaNo;
 
-	private Long loksbhanosession;
+	private Long lokSabhaSessionNo;
 
-	private Long rajyasbhanosession;
+	private Long rajyaSabhaSessionNo;
 
 	private Long documentTypeId;
 
@@ -36,5 +36,5 @@ public class CorrectedDebatedDTO {
 
 	private String inputContent;
 
-	private String contentUuid;
+	private String contentUUID;
 }

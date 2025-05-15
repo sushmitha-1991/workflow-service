@@ -758,7 +758,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					String correctedDebatesAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
 					if (correctedDebatesAbbr.equals(CORRECTED_DEBATES_ABBR)) {
+						System.out.println("### correctedDebatesAbbr - " + correctedDebatesAbbr);
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
+						System.out.println("### correctedDebatedDTO - " + correctedDebatedDTO);
 						callCorrectedDebatesAPI(correctedDebatedDTO);
 					}
 				}
@@ -799,6 +801,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
+		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
 
@@ -929,13 +932,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
 
-			correctedDebatedDTO.setContentUuid(documentUuid.toString()); // directly set it
+			correctedDebatedDTO.setContentUUID(documentUuid.toString()); // directly set it
 
 			// Step 2: Call translation API
 			HttpHeaders jsonHeaders = new HttpHeaders();
 			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
 			jsonHeaders.setBearerAuth(token);
-
+			System.out.println("### correctedDebateUrl - " + correctedDebateUrl);
 			HttpEntity<CorrectedDebatedDTO> jsonRequest = new HttpEntity<>(correctedDebatedDTO, jsonHeaders);
 			ResponseEntity<String> correctedResponse = restTemplate.postForEntity(correctedDebateUrl, jsonRequest,
 					String.class);
