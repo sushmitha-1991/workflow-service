@@ -380,7 +380,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                        lssm.session_number as SSNo,
 			                        rssm.session_number as RSSNo,
 			                        'In Progress' as status,
-			                        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+			                  		CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			                        null as refId,
 			                        null as applicationId,
 			                        null as applicationinstanceId,
@@ -403,15 +403,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
 			        left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
 			        left join authentication.base_user bu on bu.id = rd.editor_id
+			        
+			        left join master.designations d on bu.designation_id = d.id
+			        	left join authentication.user_roles ur on bu.id = ur.user_id 
+						LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
+						LEFT JOIN master.offices o ON o.id = ur.office_id
+			        
 			        WHERE rd.editor_id = :userId
 			        AND r.roster_date IS NOT NULL
 			        AND r.roster_type = 'Daily'
 			        and rd.task_status <> 'Completed'
-			        GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
-			        rd.supplementary_flag, bu.first_name, bu.last_name
+			         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
+			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
 
 			union
-			                        SELECT
+                        SELECT
 			                  ah.ref_no as applicationNo,
 			                  ma.document_display_name as documentName,
 			                  inp.document_date as date,
@@ -419,7 +425,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                  lssm.session_number as SSNo,
 			                  rssm.session_number as RSSNo,
 			                  'In Progress' as status,
-			                  CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+			                  CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			                  null as refId,
 			                  null as applicationId,
 			                  null as applicationinstanceId,
@@ -443,6 +449,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 			          left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
 			          left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
 			          left join authentication.base_user bu on bu.id = ah.sent_to_user_id
+			          
+			          	left join master.designations d on bu.designation_id = d.id
+			        	left join authentication.user_roles ur on bu.id = ur.user_id 
+						LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
+						LEFT JOIN master.offices o ON o.id = ur.office_id
+			
 			          WHERE ah.sent_to_user_id = :userId
 			          AND inp.document_date IS NOT NULL
 
