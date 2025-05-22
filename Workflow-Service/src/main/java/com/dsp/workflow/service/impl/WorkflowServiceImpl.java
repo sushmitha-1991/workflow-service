@@ -510,8 +510,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            'IN-PROCESS' as taskName,
 			            null as taskId,
 			            'True' as actionPerformed,
-			            '/corrected-debate-translation/createTranslation' as formUrl,
-			            '/corrected-debate-translation/createTranslation' as actionUrl,
+						case 
+			           		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			           		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			            end as formUrl,
+			            case 
+			           		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			           		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			            end as actionUrl,
 			            null as draftId,
 			            null as publishedUrl,
 			            null as documentUUIDEn,
@@ -521,7 +527,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            CAST(da.sent_to_user_id AS VARCHAR) as editorId,
 			            null as uploaded_document_uuid
 			        FROM corrected_debate.allocation_history da
-			        left join corrected_debate."input" i on i.id = da.translation_input_id
+			        left join corrected_debate.translation_input i on i.id = da.translation_input_id
 			        left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
 			        left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
 			        left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
