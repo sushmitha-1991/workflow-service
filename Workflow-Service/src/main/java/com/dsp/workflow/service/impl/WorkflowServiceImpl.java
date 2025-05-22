@@ -509,7 +509,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            null as applicationinstanceId,
 			            'IN-PROCESS' as taskName,
 			            null as taskId,
-			            'True' as actionPerformed,
+			            'True' as actionPerformed, 
 						case 
 			           		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
 			           		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
