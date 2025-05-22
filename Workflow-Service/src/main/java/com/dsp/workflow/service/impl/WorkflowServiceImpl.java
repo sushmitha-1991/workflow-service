@@ -509,9 +509,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 			            null as applicationinstanceId,
 			            'IN-PROCESS' as taskName,
 			            null as taskId,
-			            'True' as actionPerformed,
-			            '/corrected-debate-translation/createTranslation' as formUrl,
-			            '/corrected-debate-translation/createTranslation' as actionUrl,
+			            'True' as actionPerformed, 
+						case 
+			           		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			           		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			            end as formUrl,
+			            case 
+			           		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			           		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			            end as actionUrl,
 			            null as draftId,
 			            null as publishedUrl,
 			            null as documentUUIDEn,
