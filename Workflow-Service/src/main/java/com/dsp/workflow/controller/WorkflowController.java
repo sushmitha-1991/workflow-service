@@ -344,4 +344,24 @@ public class WorkflowController {
 		return responseDTO;
 	}
 
+	@PostMapping("/send-to-translation")
+	public ResponseEntity<GenericResponse<String>> processTranslation(
+			@RequestParam("appInstId") Long applicationInstanceId) {
+		try {
+			boolean result = workflowService.processTranslation(applicationInstanceId);
+
+			if (result) {
+				return ResponseEntity.ok(new GenericResponse<>(true, "Translation processed successfully.", null,
+						HttpStatus.OK.value()));
+			} else {
+				return ResponseEntity.ok(new GenericResponse<>(true, "Translation flag is false or no data found.",
+						null, HttpStatus.OK.value()));
+			}
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new GenericResponse<>(false, "Translation processing failed: " + e.getMessage(), null,
+							HttpStatus.INTERNAL_SERVER_ERROR.value()));
+		}
+	}
+
 }
