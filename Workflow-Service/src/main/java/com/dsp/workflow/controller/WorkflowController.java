@@ -43,7 +43,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/workflow")
+@RequestMapping()
 @Tag(name = "Workflow APIs", description = "APIs related to Camunda Workflow Engine management")
 public class WorkflowController {
 
