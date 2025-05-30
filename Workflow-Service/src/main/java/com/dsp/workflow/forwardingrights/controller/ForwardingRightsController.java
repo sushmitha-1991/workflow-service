@@ -30,7 +30,7 @@ import com.dsp.workflow.util.Utils;
  * 
  */
 @RestController
-@RequestMapping("/workflow/forwarding-rights")
+@RequestMapping("/forwarding-rights")
 public class ForwardingRightsController {
 
 	@Autowired
