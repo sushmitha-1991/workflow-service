@@ -6,6 +6,8 @@
 package com.dsp.workflow.repository;
 
 import java.util.List;
+import java.util.Map;
+
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -61,5 +63,10 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 
 						""", nativeQuery = true)
 	List<Object[]> getCorrectedDebatesByApplicationInstanceId(Long applicationInstanceId);
+
+		@Query(value = " select ai.html_content_en as enContent,ai.html_content_hi as hiContent from master.application_instance ai "+
+		"where ai.application_id =:applicationId and ai.application_no =:applicationNo", nativeQuery = true)
+    Map<String,Object> getByApplicationIdAndApplicationNo(@Param("applicationId") Long applicationId,
+	@Param("applicationNo") String applicationNo);
 
 }

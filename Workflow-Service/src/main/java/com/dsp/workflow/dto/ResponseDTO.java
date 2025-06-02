@@ -19,4 +19,5 @@ public class ResponseDTO {
     private Long appId;
     private String lsNo;
     private String sessNo;
+    private String text;
 }

@@ -1,8 +1,11 @@
 package com.dsp.workflow.service.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +43,13 @@ import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
+import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.util.Utils;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
 
 @Service
 public class PublishServiceImpl implements PublishService {
@@ -66,12 +68,13 @@ public class PublishServiceImpl implements PublishService {
 
     @Autowired
     private HttpServletRequest httpRequest;
+    @Autowired 
+    private ApplicationInstanceRepository applicationInstanceRepository;
 
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
 
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
-
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
             System.out.println("application no exists  " + alreadyExists.getApplicationNo());
@@ -387,6 +390,7 @@ public class PublishServiceImpl implements PublishService {
                     logger.warn("File data is null for URL: {}", response.getCompleteUrl());
                     continue;
                 }
+                System.out.println("data "+fileData);
                 String uuid = uploadAndReturnUuid(response, fileData);
                 if (uuid.isEmpty()) {
                     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
@@ -678,9 +682,22 @@ public class PublishServiceImpl implements PublishService {
             String sesNo, LocalDate fromDate, LocalDate toDate) {
         List<ResponseDTO> responseList = new ArrayList<>();
         List<PublishHistoryEntity> responseEntitysAll = new ArrayList<>();
-        if (StringUtils.isBlank(lsNo)) {
+        Long houseId= utils.getHouseIdFromAuthentication();
+        if (houseId==1) {
+            if(sesNo==null)
+            {
+                sesNo=repository.findLatestRS();
+                
+            }
             responseEntitysAll = repository.findByApplicationIdAndRajyaSabhaSessionNo(appId, sesNo);
         } else {
+            if(sesNo==null)
+              {
+                Map<String,Object> obj=repository.findLatestLS();
+lsNo=obj.get("lsNo").toString();
+sesNo=obj.get("sesNo").toString();
+              }
+
             responseEntitysAll = repository.findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(appId, lsNo, sesNo);
         }
         if (responseEntitysAll.isEmpty()) {
@@ -692,22 +709,28 @@ public class PublishServiceImpl implements PublishService {
                 LocalDate forDate = entity.getForDate();
                 System.out.println("(fromDate!=null && (forDate.isEqual(fromDate)||forDate.isAfter(fromDate)))");
                 System.out.println((fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate))));
-
                 if (!(fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate)))) {
                     addRes = false;
                     continue;
                 }
                 System.out.println("(toDate!=null && (forDate.isEqual(toDate)||forDate.isBefore(toDate)))");
                 System.out.println((toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate))));
-
                 if (!(toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate)))) {
                     addRes = false;
                     continue;
                 }
-
             }
 			System.out.println("add to dto "+addRes);
             if (addRes) {
+                String text="";
+                Map<String,Object> applicationInstance=applicationInstanceRepository
+                .getByApplicationIdAndApplicationNo(entity.getApplicationId(),entity.getApplicationNo());
+                System.out.println("instance "+applicationInstance);
+                if(applicationInstance!=null || !applicationInstance.isEmpty())
+                    {
+                        text+=applicationInstance.get("enContent")+"<br/> "+ applicationInstance.get("hiContent");
+                    }
+                    System.out.println("text "+text);
                 responseList.add(
                         ResponseDTO.builder()
                                 .appId(entity.getApplicationId())
@@ -715,6 +738,7 @@ public class PublishServiceImpl implements PublishService {
                                 .lsNo(entity.getLokSabhaNo())
                                 .sessNo(sesNo)
                                 .url(entity.getPublishUrl())
+                                .text(removeExtraTags(text))
                                 .build()
                                 );
             }
@@ -724,4 +748,16 @@ public class PublishServiceImpl implements PublishService {
 
         return responseList;
     }
+    
+    private static String removeExtraTags(String input) {
+        String cleaned = input
+                .replace("\n", "")
+                .replace("\t", "")
+                .replace("\r", "")
+                .replace("\\\"", "\"")
+                .replace("\\", "");
+        // System.out.println("Cleaned: " + cleaned);
+        return cleaned;
+    }
+
 }
