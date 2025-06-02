@@ -74,15 +74,14 @@ public class ForwardingRightsController {
 	@GetMapping("/user-details")
 	public ResponseEntity<GenericResponse<List<Map<String, Object>>>> getUserDetails(
 			@RequestParam(name = "applicationId") Long applicationId, @RequestParam(name = "actionId") Long actionId,
-			@RequestParam(name = "houseId", required = false) Long houseId) {
+			@RequestParam(name = "houseId", required = false) String houseIdStr) {
 
 		List<Long> senderRoleIds = utils.getRoleIdsByUserId();
 		Long userId = utils.getUserIdFromAuthentication();
 
-		// If houseId is not provided, get it from the authenticated token
-		if (houseId == null) {
-			houseId = utils.getHouseIdFromAuthentication();
-		}
+		Long houseId = (houseIdStr == null || houseIdStr.equals("undefined") || houseIdStr.isBlank())
+				? utils.getHouseIdFromAuthentication()
+				: Long.parseLong(houseIdStr);
 
 		List<Map<String, Object>> userDetails = forwardingRightsService.getUserDetails(applicationId, senderRoleIds,
 				actionId, houseId, userId);
