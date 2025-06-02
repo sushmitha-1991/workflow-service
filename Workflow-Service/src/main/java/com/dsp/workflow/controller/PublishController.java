@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.ResponseDTO;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.response.GenericResponse;
@@ -53,6 +54,26 @@ public class PublishController {
 		GenericResponse<List<PublishHistoryDTO>> response = new GenericResponse<>(true, "Record found", responseDto,
 				HttpStatus.OK.value());
 
+		return ResponseEntity.ok(response);
+	}
+
+	
+	@GetMapping("/get-docs")
+	public ResponseEntity<GenericResponse<List<ResponseDTO>>> getPublishedDocsByAppId(
+			@RequestParam(required=false) Long appId,
+			@RequestParam(required=false) String abbr,
+			@RequestParam(required=false) String lsNo,
+			@RequestParam(required=false) String sesNo,
+			@RequestParam(required=false) LocalDate fromDate,
+			@RequestParam(required=false) LocalDate toDate
+			) {
+		List<ResponseDTO> responseDto = publishService.getDocsByAppId(appId,abbr,lsNo,sesNo,fromDate,toDate);
+
+		if (responseDto.isEmpty()) {
+			return ResponseEntity.noContent().build();
+		}
+		GenericResponse<List<ResponseDTO>> response = 
+		new GenericResponse<>(true, "Record found", responseDto,HttpStatus.OK.value());
 		return ResponseEntity.ok(response);
 	}
 
