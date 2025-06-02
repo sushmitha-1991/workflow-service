@@ -15,6 +15,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,15 +39,19 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.entity.PublishDocumentTemp;
+import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.util.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -168,34 +174,33 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
         spec = spec.and(hasLocale(locale));
 
-        System.out.println("date "+date);
-        System.out.println("documentName "+documentName);
-        System.out.println("locale "+locale);
-        System.out.println("lsNo "+lsNo);
-        System.out.println("sesNo "+sesNo);
-        System.out.println("rssNo "+rssNo);
+        System.out.println("date " + date);
+        System.out.println("documentName " + documentName);
+        System.out.println("locale " + locale);
+        System.out.println("lsNo " + lsNo);
+        System.out.println("sesNo " + sesNo);
+        System.out.println("rssNo " + rssNo);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
-        System.out.println("responseEntitys "+responseEntitys);
+        System.out.println("responseEntitys " + responseEntitys);
 
         List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
                 .collect(Collectors.toList());
 
-        System.out.println("list of Docs "+listOfDTOs);
+        System.out.println("list of Docs " + listOfDTOs);
         if (responseEntitys != null) {
             for (PublishHistoryEntity entity : responseEntitys) {
                 UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
                         .name(entity.getApplicationName()).fileType(entity.getFileType()).url(entity.getPublishUrl())
                         .build();
-                        if(entity.getForDate()!=null)
-                        {
-                            responseDto.setDate(entity.getForDate().toString());
-                        }
+                if (entity.getForDate() != null) {
+                    responseDto.setDate(entity.getForDate().toString());
+                }
                 urlDto.add(responseDto);
             }
         }
-        System.out.println("list of urlDto"+urlDto);
+        System.out.println("list of urlDto" + urlDto);
 
         return urlDto;
     }
@@ -361,21 +366,52 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public List<String> uploadToDsp2() {
-        List<PublishDocumentTemp> urlList = tempRepo.findAll();
+    public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
+
+        Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
+        spec = spec.and(hasAppName(applicationName));
+        if (StringUtils.isNotBlank(dto.getLsNo()))
+            spec = spec.and(hasLsNo(dto.getLsNo()));
+        if (StringUtils.isNotBlank(dto.getSesNo()))
+            spec = spec.and(hasSessNo(dto.getSesNo()));
+        if (StringUtils.isNotBlank(dto.getLocale()))
+            spec = spec.and(hasLocaleTemp(dto.getLocale()));
+        List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
         List<String> uploadedUuids = new ArrayList<>();
+        Long houseId = utils.getHouseIdFromAuthentication();
         if (urlList.isEmpty()) {
             return uploadedUuids;
         }
+        System.out.println("Url List " + urlList.size());
+        int i = 0;
         try {
             for (PublishDocumentTemp response : urlList) {
-                logger.info("Processing document: {}", response);
-                byte[] fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
-                if (fileData == null) {
+                logger.info("Processing document: {}", response.getCompleteUrl());
+                byte[] fileData = null;
+                try {
+                    fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
+                    System.out.println("fileData  " + fileData);
+
+                } catch (Exception e) {
+                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+                    logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
+                    continue; // Skip this iteration if download fails
+                }
+                logger.info("Processing document: {}", response.getCompleteUrl());
+                if (fileData == null || fileData.length == 0) {
+                    System.out.println("iteration inside filedata null " + i++);
+                    logger.warn("File data is null for URL: {}", response.getCompleteUrl());
                     logger.warn("File data is null for URL: {}", response.getCompleteUrl());
                     continue;
                 }
+
+                // String uuid = "";
+                // if (houseId == 1) {
+                // uuid = uploadAndReturnUuidRs(response,
+                // fileData,null,response.getSesNo(),response.getApplicationName());
+                // } else {
                 String uuid = uploadAndReturnUuid(response, fileData);
+                // }
                 if (uuid.isEmpty()) {
                     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
                     continue; // Skip this iteration and move to the next document
@@ -391,13 +427,194 @@ public class PublishServiceImpl implements PublishService {
 
     public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
         try {
-            String folderPath = "/okm:root/PC";
-            String folderCheckUrl = openKmUrl + "/folder/getPath?path="
-                    + URLEncoder.encode(folderPath, StandardCharsets.UTF_8);
+            System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             HttpHeaders headers = new HttpHeaders();
+            System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            // // Set Authorization Token
+            String token = getTokenFromRequest();
+            if (token == null || token.isEmpty()) {
+                logger.error("Authorization token is missing. Cannot upload file.");
+                return "";
+            }
+            headers.set("Authorization", "Bearer " + token);
+            String appAbbr = repository.getAbbrByApplicationId(response.getApplicationId());
+            System.out.println("appAbbr " + appAbbr);
+            String folderPath = createDmsFolderStructure("LS",
+                    response.getLsNo(), response.getSesNo(), token, appAbbr);
+            System.out.println("folder path " + folderPath);
+            String originalFileName = response.getUrl();
+            int lastDotIndex = originalFileName.lastIndexOf(".");
+            String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
+                    : originalFileName.substring(0, lastDotIndex);
+            String updatedFileName = fileNameWithoutExt + ".pdf";
+            // Create a temporary file
+            File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(fileData);
+            }
+            // Create file resource
+            ByteArrayResource resource = new ByteArrayResource(fileData) {
+                @Override
+                public String getFilename() {
+                    return updatedFileName;
+                }
+            };
 
+            // Prepare request body
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", resource);
+            body.add("folderPath", folderPath);
+            body.add("documentName", updatedFileName);
+            body.add("masterId", 231);
+            body.add("applicationNo", response.getApplicationId());
+            body.add("referenceId", 1);
+            body.add("referenceType", "ApplicationInstance");
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
+                    requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
+                    });
+            logger.info("Response from OpenKM: {}", responseEntity);
+            // Check response status
+            if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+                Map<String, Object> responseBody = responseEntity.getBody();
+                logger.info("Response Body: {}", responseBody);
+                // Extract "data"
+                Object dataObject = responseBody.get("data");
+                if (dataObject instanceof Map) {
+                    Map<String, Object> dataMap = (Map<String, Object>) dataObject;
+                    // Extract "documentUuid"
+                    Object generatedUuid = dataMap.get("documentUuid");
+                    logger.info("Extracted documentUuid: {}", generatedUuid);
+                    if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
+                        String uuidString = generatedUuid.toString().trim();
+                        try {
+                            UUID uuid = UUID.fromString(uuidString);
+                            Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
+                            if (entity.isPresent()) {
+                                PublishDocumentTemp entitys = entity.get();
+                                entitys.setPublishUuid(uuid);
+                                entitys = tempRepo.save(entitys);
+                                System.out.println("entity " + entity);
+                            }
+                            logger.info("entity after saving");
+                            // repository.saveUuidById(uuid, response.getId());
+                            return uuidString;
+                        } catch (IllegalArgumentException ex) {
+                            logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
+                        }
+                    } else {
+                        logger.warn("Received empty or null UUID from OpenKM: {}", dataMap);
+                    }
+                } else {
+                    logger.warn("Response does not contain 'data' field: {}", responseBody);
+                }
+            } else {
+                logger.error("Failed to upload document. HTTP Status: {}", responseEntity.getStatusCode());
+            }
+        } catch (IOException e) {
+            logger.error("Error writing temp file: ", e);
+        } catch (Exception e) {
+            logger.error("Error uploading file: ", e.getMessage());
+        }
+        return "";
+    }
+    public String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,
+            String applicationName) {
+        String rootPath = "/okm:root";
+        // Create houseType folder (LS or RS)
+        System.out.println("rootPath " + rootPath);
+        if (!StringUtils.isBlank(lsNo)) {
+            String completeFolderName=houseType+"/"+lsNo+"/"+sessionNo+"/"+applicationName;
+            String path = createFolderIfNotExists(rootPath, completeFolderName, token);
+            System.out.println("applicationPath " + path);
+            return path;
+        } else {
+            String completeFolderName=houseType+"/"+sessionNo+"/"+applicationName;
+            String path = createFolderIfNotExists(rootPath, completeFolderName, token);
+            System.out.println("applicationPath " + path);
+            return path;
+        }
+    }
+
+    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+        String folderPath = parentPath + "/" + folderName;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            // headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            // Use TEXT_PLAIN as per your curl
+            headers.setBearerAuth(token);
+            HttpEntity<String> request = new HttpEntity<>(folderName, headers);
+            String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
+            System.out.println("Calling URL: " + url + " with folder: " + folderName);
+            System.out.println("headers  " + headers);
+            System.out.println(" request " + request);
+            ResponseEntity<String> response = new RestTemplate().postForEntity(url,request, String.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                System.out.println("Folder created: " + folderName);
+                return folderPath;
+            } else {
+                // In case the API responds with non-2xx but still returns a JSON body
+                return handleApiError(response.getBody(), folderPath);
+            }
+        } catch (HttpClientErrorException.Conflict e) {
+            // 409: Folder already exists
+            System.out.println("Folder already exists: " + folderPath);
+            return folderPath;
+        } catch (HttpClientErrorException.NotFound e) {
+            // 404: Parent path not found
+            System.err.println("Invalid parent path: " + parentPath);
+        } catch (HttpClientErrorException e) {
+            // For other HTTP errors
+            System.err.println("HTTP Error: " + e.getStatusCode() + " - " +
+                    e.getResponseBodyAsString());
+        } catch (Exception e) {
+            // Other exceptions
+            System.err.println("Unexpected error during folder creation: " +
+                    e.getMessage());
+            e.printStackTrace();
+        }
+        return folderPath; // Or throw custom exception
+    }
+
+    private String handleApiError(String responseBody, String folderPath) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseBody);
+            int statusCode = root.path("statusCode").asInt();
+            String message = root.path("message").asText();
+            switch (statusCode) {
+                case 409:
+                    System.out.println("Folder already exists: " + folderPath);
+                    return folderPath;
+                case 404:
+                    System.err.println("Parent path not found for: " + folderPath);
+                    return null;
+                default:
+                    System.err.println("Unhandled API response: " + message);
+                    return null;
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing API error response: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
+        try {
+            String folderPath = "/okm:root/";
+            String folderCheckUrl = openKmUrl + "/folder/getPath?path=" + folderPath;
+            // + URLEncoder.encode(folderPath, StandardCharsets.UTF_8);
+            System.out.println("folder   " + folderPath);
+            System.out.println("folder url " + folderCheckUrl);
+            System.out.println("response   " + response);
+            System.out.println("fileData  " + fileData);
+            String uploadUrl = openKmUrl + "/document/upload";
+            HttpHeaders headers = new HttpHeaders();
+            System.out.println("uploadUrl  " + uploadUrl);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             // Set Authorization Token
             String token = getTokenFromRequest();
             if (token == null || token.isEmpty()) {
@@ -415,16 +632,12 @@ public class PublishServiceImpl implements PublishService {
             } catch (HttpClientErrorException.NotFound ex) {
                 // Folder does not exist - create it
                 logger.info("Folder not found, creating: {}", folderPath);
-
                 String createFolderUrl = openKmUrl + "/folder/createSimple";
-
                 MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
                 createFolderBody.add("parentPath", "/okm:root");
                 createFolderBody.add("name", "PC");
-
                 HttpEntity<MultiValueMap<String, String>> createFolderEntity = new HttpEntity<>(createFolderBody,
                         headers);
-
                 ResponseEntity<String> createFolderResponse = restTemplate.postForEntity(createFolderUrl,
                         createFolderEntity, String.class);
                 if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
@@ -439,7 +652,6 @@ public class PublishServiceImpl implements PublishService {
             }
             //
             //
-
             String originalFileName = response.getUrl();
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
@@ -526,6 +738,64 @@ public class PublishServiceImpl implements PublishService {
     }
 
     // Specifications
+    public static Specification<PublishDocumentTemp> hasAppName(String appName) {
+        return (root, query, criteriaBuilder) -> {
+            if (appName != null) {
+                return criteriaBuilder.equal(root.get("applicationName"), appName);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTemp> hasLocaleTemp(String locale) {
+        return (root, query, criteriaBuilder) -> {
+            if (locale != null) {
+                return criteriaBuilder.equal(root.get("locale"), locale);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTempRS> hasAppNameRs(String appName) {
+        return (root, query, criteriaBuilder) -> {
+            if (appName != null) {
+                return criteriaBuilder.equal(root.get("applicationName"), appName);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTemp> hasLsNo(String lsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (lsNo != null) {
+                return criteriaBuilder.equal(root.get("lsNo"), lsNo);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTemp> hasSessNo(String sesNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (sesNo != null) {
+                return criteriaBuilder.equal(root.get("sesNo"), sesNo);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTempRS> hasRSNo(String rsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (rsNo != null) {
+                return criteriaBuilder.equal(root.get("rsesNo"), rsNo);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    /*
+     * 
+     */
+    // Specifications publish history
     public static Specification<PublishHistoryEntity> hasForDate(LocalDate date) {
         return (root, query, criteriaBuilder) -> {
             if (date != null) {
@@ -548,7 +818,7 @@ public class PublishServiceImpl implements PublishService {
         return (root, query, criteriaBuilder) -> {
             if (applicationName != null) {
                 return criteriaBuilder.equal(root.get("applicationName"),
-                         applicationName);
+                        applicationName);
             }
             return criteriaBuilder.conjunction();
         };
@@ -567,7 +837,7 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasLokSabhaSessionNo(String sessNo) {
         String sess = "";
         if (!isRoman(sessNo)) {
-            System.out.println("is Roman false "+sessNo);
+            System.out.println("is Roman false " + sessNo);
             return (root, query, criteriaBuilder) -> {
                 if (sessNo != null) {
                     return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
@@ -576,7 +846,7 @@ public class PublishServiceImpl implements PublishService {
                 return criteriaBuilder.conjunction();
             };
         } else {
-            System.out.println("is Roman true "+sessNo);
+            System.out.println("is Roman true " + sessNo);
 
             return (root, query, criteriaBuilder) -> {
                 if (sessNo != null) {

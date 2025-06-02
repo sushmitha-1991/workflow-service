@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.response.GenericResponse;
@@ -170,10 +171,11 @@ public class PublishController {
         List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
         return responseDto;
     }
-    @PostMapping("/uploadDocDSP2")
-    public ResponseEntity<List<String>> uploadToDsp2() {
+    @PostMapping("/uploadDocDSP2/{appName}")
+    public ResponseEntity<List<String>> uploadToDsp2(@PathVariable String appName,
+    @RequestBody SessionDto dto) {
         System.out.println("Received in Controller: ");
-        List<String> uuidString = publishService.uploadToDsp2();
+        List<String> uuidString = publishService.uploadToDsp2(appName,dto);
         return ResponseEntity.ok(uuidString);
     }
 }
