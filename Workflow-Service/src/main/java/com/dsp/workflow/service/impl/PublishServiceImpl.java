@@ -16,12 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.fit.pdfdom.PDFDomTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +35,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.w3c.dom.Document;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.ResponseDTO;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
-import com.dsp.workflow.entity.ApplicationInstance;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
@@ -82,7 +75,6 @@ public class PublishServiceImpl implements PublishService {
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
 
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
-
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
             System.out.println("application no exists  " + alreadyExists.getApplicationNo());
@@ -768,15 +760,4 @@ sesNo=obj.get("sesNo").toString();
         return cleaned;
     }
 
-    public String convertPdfBytesToHtml(byte[] pdfBytes) {
-    try (PDDocument pdDoc = PDDocument.load(new ByteArrayInputStream(pdfBytes))) {
-        Writer output = new StringWriter();
-        Document htmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-        new PDFDomTree().writeText(pdDoc, output);
-        return output.toString();
-    } catch (Exception e) {
-        logger.error("Error converting PDF to HTML", e);
-        return "<p>Error converting PDF</p>";
-    }
-}
 }
