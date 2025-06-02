@@ -33,4 +33,9 @@ public interface PublishRepository
     Boolean findOfficeIdByUserId(@Param("userId") Long userId,
             @Param("appId") Long appId);
 
+    List<PublishHistoryEntity> findByApplicationIdAndRajyaSabhaSessionNo(Long appId, String sesNo);
+
+    List<PublishHistoryEntity> findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(Long appId, String lsNo,
+            String sesNo);
+
 }
