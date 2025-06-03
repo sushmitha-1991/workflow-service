@@ -2,6 +2,8 @@ package com.dsp.workflow.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,5 +37,20 @@ public interface PublishRepository
 
         @Query(value = "select abbr from master.applications a where a.id=:appId", nativeQuery = true)
         String getAbbrByApplicationId(@Param("appId") Long appId);
+
+    List<PublishHistoryEntity> findByApplicationIdAndRajyaSabhaSessionNo(Long appId, String sesNo);
+
+    List<PublishHistoryEntity> findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(Long appId, String lsNo,
+            String sesNo);
+    @Query(value = "select lssm.session_number as sesNo,lsm.lok_sabha_numberas lsNo from master.lok_sabha_session_masters lssm " +
+        "left join master.lok_sabha_masters lsm on lssm.lok_sabha_master_id =lsm.id "+
+        "order by lssm.session_start desc limit 1", 
+        nativeQuery = true)
+        Map<String,Object> findLatestLS();
+    @Query(value = "select rssm.session_number, from master.rajya_sabha_session_master rssm " +
+                        " order by rssm.session_start desc limit 1", nativeQuery = true)
+        
+        String findLatestRS();
+
 
 }

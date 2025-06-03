@@ -234,4 +234,11 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Query(value = "DELETE from workflow.workflow_history where draft_id = :draftId", nativeQuery = true)
 	void deleteByDraftId(Long draftId);
 
+	/**
+	 * @param application_no
+	 * @return
+	 */
+	@Query(value = "select abbr from master.applications where id = :application_no", nativeQuery = true)
+	String getApplicationAbbr(Long application_no);
+
 }

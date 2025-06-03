@@ -43,7 +43,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/workflow")
+@RequestMapping()
 @Tag(name = "Workflow APIs", description = "APIs related to Camunda Workflow Engine management")
 public class WorkflowController {
 
@@ -342,6 +342,26 @@ public class WorkflowController {
 		// Call the service method to save the draft data
 		PublishHistoryDTO responseDTO = publishService.save(publishHistoryDTO);
 		return responseDTO;
+	}
+
+	@PostMapping("/send-to-translation")
+	public ResponseEntity<GenericResponse<String>> processTranslation(
+			@RequestParam("appInstId") Long applicationInstanceId) {
+		try {
+			boolean result = workflowService.processTranslation(applicationInstanceId);
+
+			if (result) {
+				return ResponseEntity.ok(new GenericResponse<>(true, "Translation processed successfully.", null,
+						HttpStatus.OK.value()));
+			} else {
+				return ResponseEntity.ok(new GenericResponse<>(true, "Translation flag is false or no data found.",
+						null, HttpStatus.OK.value()));
+			}
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new GenericResponse<>(false, "Translation processing failed: " + e.getMessage(), null,
+							HttpStatus.INTERNAL_SERVER_ERROR.value()));
+		}
 	}
 
 }

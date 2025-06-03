@@ -6,6 +6,8 @@
 package com.dsp.workflow.repository;
 
 import java.util.List;
+import java.util.Map;
+
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -40,5 +42,31 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 									""", nativeQuery = true)
 	List<Object[]> getTranslationDataByApplicationInstanceId(
 			@Param("applicationInstanceId") Long applicationInstanceId);
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = """
+						SELECT
+			    lsm.id AS lokSabhaNo,
+			    lssm.id AS lokSabhaSessionNo,
+			    rssm.id AS rajyaSabhaSessionNo,
+			    ai.application_id AS documentTypeId,
+			CAST(ai.document_date AS DATE) AS documentDate,
+			    ai.html_content_en AS inputContent
+			FROM master.application_instance ai
+			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session
+			left join master.lok_sabha_session_masters lssm on lssm.session_number = ai.lok_sabha_session_number
+			left join master.rajya_sabha_session_master rssm on rssm.session_number = ai.rajya_sabha_session
+			WHERE ai.id = :applicationInstanceId
+
+						""", nativeQuery = true)
+	List<Object[]> getCorrectedDebatesByApplicationInstanceId(Long applicationInstanceId);
+
+		@Query(value = " select ai.html_content_en as enContent,ai.html_content_hi as hiContent from master.application_instance ai "+
+		"where ai.application_id =:applicationId and ai.application_no =:applicationNo", nativeQuery = true)
+    Map<String,Object> getByApplicationIdAndApplicationNo(@Param("applicationId") Long applicationId,
+	@Param("applicationNo") String applicationNo);
 
 }

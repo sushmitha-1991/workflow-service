@@ -135,4 +135,10 @@ public interface WorkflowService {
 
 	List<DraftDataDTO> getDraftByAppId(Long applicationId);
 
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	boolean processTranslation(Long applicationInstanceId);
+
 }

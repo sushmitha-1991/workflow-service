@@ -4,7 +4,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+
 import com.dsp.workflow.dto.SessionDto;
+
+import com.dsp.workflow.dto.ResponseDTO;
+
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 
@@ -36,6 +40,8 @@ public interface PublishService {
     List<String> uploadToDsp2(String applicationName,SessionDto dto);
 
     List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale);
+
+    List<ResponseDTO> getDocsByAppId(Long appId,String abbr,String lsNo,String sesNo,LocalDate fromDate,LocalDate toDate);
 
 
 }

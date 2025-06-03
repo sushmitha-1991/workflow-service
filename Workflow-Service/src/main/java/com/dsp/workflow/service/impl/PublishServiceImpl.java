@@ -1,12 +1,14 @@
 package com.dsp.workflow.service.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
@@ -40,12 +40,14 @@ import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.SessionDto;
+import com.dsp.workflow.dto.ResponseDTO;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
+import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.service.PublishService;
@@ -62,7 +64,7 @@ public class PublishServiceImpl implements PublishService {
     private PublishRepository repository;
     @Autowired
     private RestTemplate restTemplate;
-    @Value("${openKM.service.url}")
+    @Value("${openKm.service.upload.endpoint}")
     private String openKmUrl;
     @Autowired
     private Utils utils;
@@ -72,12 +74,13 @@ public class PublishServiceImpl implements PublishService {
 
     @Autowired
     private HttpServletRequest httpRequest;
+    @Autowired
+    private ApplicationInstanceRepository applicationInstanceRepository;
 
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
 
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
-
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
             System.out.println("application no exists  " + alreadyExists.getApplicationNo());
@@ -95,12 +98,14 @@ public class PublishServiceImpl implements PublishService {
                     throw new RuntimeException("Error updating field: " + field.getName(), e);
                 }
             }
-            if (StringUtils.isBlank(alreadyExists.getPublishUrl()))
+            if (StringUtils.isBlank(alreadyExists.getPublishUrl())) {
                 alreadyExists.setPublishUrl(openKmUrl + "/downloads/" + alreadyExists.getPublishUuid());
+            }
             entity = repository.save(alreadyExists);
         } else {
-            if (StringUtils.isBlank(entity.getPublishUrl()))
+            if (StringUtils.isBlank(entity.getPublishUrl())) {
                 entity.setPublishUrl(openKmUrl + "/downloads/" + entity.getPublishUuid());
+            }
             System.out.println("application no  " + entity.getApplicationNo());
             entity = repository.save(entity);
         }
@@ -129,16 +134,20 @@ public class PublishServiceImpl implements PublishService {
     public List<UrlDto> getAllDocs(LocalDate date, String documentName, String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
 
-        if (locale == null)
+        if (locale == null) {
             locale = "en";
+        }
 
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-        if (date != null)
+        if (date != null) {
             spec = spec.and(hasForDate(date));
-        if (documentName != null)
+        }
+        if (documentName != null) {
             spec = spec.and(hasApplicationName(documentName));
-        if (locale != null)
+        }
+        if (locale != null) {
             spec = spec.and(hasLocale(locale));
+        }
         // Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         List<PublishHistoryEntity> responseEntitysAll = repository.findAll();
@@ -162,18 +171,29 @@ public class PublishServiceImpl implements PublishService {
             locale = "en";
         }
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-        if (date != null)
+        if (date != null) {
             spec = spec.and(hasForDate(date));
-        if (documentName != null)
+        }
+        if (documentName != null) {
             spec = spec.and(hasApplicationName(documentName));
-        if (lsNo != null)
+        }
+        if (lsNo != null) {
             spec = spec.and(hasLokSabhaNo(lsNo));
-        if (sesNo != null)
+        }
+        if (sesNo != null) {
             spec = spec.and(hasLokSabhaSessionNo(sesNo));
-        if (rssNo != null)
+        }
+        if (rssNo != null) {
             spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
+        }
         spec = spec.and(hasLocale(locale));
 
+        System.out.println("date " + date);
+        System.out.println("documentName " + documentName);
+        System.out.println("locale " + locale);
+        System.out.println("lsNo " + lsNo);
+        System.out.println("sesNo " + sesNo);
+        System.out.println("rssNo " + rssNo);
         System.out.println("date " + date);
         System.out.println("documentName " + documentName);
         System.out.println("locale " + locale);
@@ -208,8 +228,9 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public UrlDto getByDateDoc(LocalDate forDate, String applicationName, String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
-        if (locale == null)
+        if (locale == null) {
             locale = "en";
+        }
         System.out.println("SSSSSSSS");
         if (Optional.ofNullable(forDate).isEmpty()) {
             Optional<PublishHistoryEntity> responseEntity = repository.findByApplicationName(applicationName);
@@ -241,8 +262,9 @@ public class PublishServiceImpl implements PublishService {
     public UrlDto getBySession(LocalDate forDate, String lsNo, String sessNo, String rsNo, String applicationName,
             String locale) {
         // PublishHistoryEntity entity=PublishMapper.toEntity(dto);
-        if (locale == null)
+        if (locale == null) {
             locale = "en";
+        }
         if (sessNo == null) {
             Optional<PublishHistoryEntity> responseEntity = repository
                     .findByApplicationNameAndRajyaSabhaSessionNo(applicationName, rsNo);
@@ -370,12 +392,15 @@ public class PublishServiceImpl implements PublishService {
 
         Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
         spec = spec.and(hasAppName(applicationName));
-        if (StringUtils.isNotBlank(dto.getLsNo()))
+        if (StringUtils.isNotBlank(dto.getLsNo())) {
             spec = spec.and(hasLsNo(dto.getLsNo()));
-        if (StringUtils.isNotBlank(dto.getSesNo()))
+        }
+        if (StringUtils.isNotBlank(dto.getSesNo())) {
             spec = spec.and(hasSessNo(dto.getSesNo()));
-        if (StringUtils.isNotBlank(dto.getLocale()))
+        }
+        if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTemp(dto.getLocale()));
+        }
         List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
         List<String> uploadedUuids = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
@@ -410,6 +435,7 @@ public class PublishServiceImpl implements PublishService {
                 // uuid = uploadAndReturnUuidRs(response,
                 // fileData,null,response.getSesNo(),response.getApplicationName());
                 // } else {
+                System.out.println("data " + fileData);
                 String uuid = uploadAndReturnUuid(response, fileData);
                 // }
                 if (uuid.isEmpty()) {
@@ -474,7 +500,7 @@ public class PublishServiceImpl implements PublishService {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
-                    });
+            });
             logger.info("Response from OpenKM: {}", responseEntity);
             // Check response status
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
@@ -491,7 +517,8 @@ public class PublishServiceImpl implements PublishService {
                         String uuidString = generatedUuid.toString().trim();
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
+                            Optional<PublishDocumentTemp> entity = tempRepo
+                                    .findById(response.getId());
                             if (entity.isPresent()) {
                                 PublishDocumentTemp entitys = entity.get();
                                 entitys.setPublishUuid(uuid);
@@ -520,18 +547,19 @@ public class PublishServiceImpl implements PublishService {
         }
         return "";
     }
+
     public String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,
             String applicationName) {
         String rootPath = "/okm:root";
         // Create houseType folder (LS or RS)
         System.out.println("rootPath " + rootPath);
         if (!StringUtils.isBlank(lsNo)) {
-            String completeFolderName=houseType+"/"+lsNo+"/"+sessionNo+"/"+applicationName;
+            String completeFolderName = houseType + "/" + lsNo + "/" + sessionNo + "/" + applicationName;
             String path = createFolderIfNotExists(rootPath, completeFolderName, token);
             System.out.println("applicationPath " + path);
             return path;
         } else {
-            String completeFolderName=houseType+"/"+sessionNo+"/"+applicationName;
+            String completeFolderName = houseType + "/" + sessionNo + "/" + applicationName;
             String path = createFolderIfNotExists(rootPath, completeFolderName, token);
             System.out.println("applicationPath " + path);
             return path;
@@ -551,7 +579,7 @@ public class PublishServiceImpl implements PublishService {
             System.out.println("Calling URL: " + url + " with folder: " + folderName);
             System.out.println("headers  " + headers);
             System.out.println(" request " + request);
-            ResponseEntity<String> response = new RestTemplate().postForEntity(url,request, String.class);
+            ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
             if (response.getStatusCode().is2xxSuccessful()) {
                 System.out.println("Folder created: " + folderName);
                 return folderPath;
@@ -568,12 +596,12 @@ public class PublishServiceImpl implements PublishService {
             System.err.println("Invalid parent path: " + parentPath);
         } catch (HttpClientErrorException e) {
             // For other HTTP errors
-            System.err.println("HTTP Error: " + e.getStatusCode() + " - " +
-                    e.getResponseBodyAsString());
+            System.err.println("HTTP Error: " + e.getStatusCode() + " - "
+                    + e.getResponseBodyAsString());
         } catch (Exception e) {
             // Other exceptions
-            System.err.println("Unexpected error during folder creation: " +
-                    e.getMessage());
+            System.err.println("Unexpected error during folder creation: "
+                    + e.getMessage());
             e.printStackTrace();
         }
         return folderPath; // Or throw custom exception
@@ -682,7 +710,7 @@ public class PublishServiceImpl implements PublishService {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
-                    });
+            });
 
             logger.info("Response from OpenKM: {}", responseEntity);
 
@@ -827,8 +855,7 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasLokSabhaNo(String lsNo) {
         return (root, query, criteriaBuilder) -> {
             if (lsNo != null) {
-                return criteriaBuilder.equal(root.get("lokSabhaNo"),
-                        lsNo);
+                return criteriaBuilder.equal(root.get("lokSabhaNo"), lsNo);
             }
             return criteriaBuilder.conjunction();
         };
@@ -840,8 +867,7 @@ public class PublishServiceImpl implements PublishService {
             System.out.println("is Roman false " + sessNo);
             return (root, query, criteriaBuilder) -> {
                 if (sessNo != null) {
-                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
-                            toRoman(Integer.parseInt(sessNo)));
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"), toRoman(Integer.parseInt(sessNo)));
                 }
                 return criteriaBuilder.conjunction();
             };
@@ -850,8 +876,7 @@ public class PublishServiceImpl implements PublishService {
 
             return (root, query, criteriaBuilder) -> {
                 if (sessNo != null) {
-                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"),
-                            sessNo);
+                    return criteriaBuilder.equal(root.get("lokSabhaSessionNo"), sessNo);
                 }
                 return criteriaBuilder.conjunction();
             };
@@ -861,8 +886,7 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasRajyaSabhaSessionNo(String rsNo) {
         return (root, query, criteriaBuilder) -> {
             if (rsNo != null) {
-                return criteriaBuilder.equal(root.get("rajyaSabhaSessionNo"),
-                        rsNo);
+                return criteriaBuilder.equal(root.get("rajyaSabhaSessionNo"), rsNo);
             }
             return criteriaBuilder.conjunction();
         };
@@ -878,8 +902,8 @@ public class PublishServiceImpl implements PublishService {
         if (number <= 0 || number > 50) {
             throw new IllegalArgumentException("Number must be between 1 and 50");
         }
-        int[] values = { 50, 40, 10, 9, 5, 4, 1 };
-        String[] symbols = { "L", "XL", "X", "IX", "V", "IV", "I" };
+        int[] values = {50, 40, 10, 9, 5, 4, 1};
+        String[] symbols = {"L", "XL", "X", "IX", "V", "IV", "I"};
         StringBuilder roman = new StringBuilder();
         for (int i = 0; i < values.length; i++) {
             while (number >= values[i]) {
@@ -893,8 +917,7 @@ public class PublishServiceImpl implements PublishService {
     public static Specification<PublishHistoryEntity> hasLocale(String locale) {
         return (root, query, criteriaBuilder) -> {
             if (locale != null) {
-                return criteriaBuilder.equal(criteriaBuilder.lower(root.get("locale")),
-                        locale.toLowerCase());
+                return criteriaBuilder.equal(criteriaBuilder.lower(root.get("locale")), locale.toLowerCase());
             }
             return criteriaBuilder.conjunction();
         };
@@ -935,6 +958,86 @@ public class PublishServiceImpl implements PublishService {
         }
 
         return listOfDTOs;
+    }
+
+    @Override
+    public List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo,
+            String sesNo, LocalDate fromDate, LocalDate toDate) {
+        List<ResponseDTO> responseList = new ArrayList<>();
+        List<PublishHistoryEntity> responseEntitysAll = new ArrayList<>();
+        Long houseId = utils.getHouseIdFromAuthentication();
+        if (houseId == 1) {
+            if (sesNo == null) {
+                sesNo = repository.findLatestRS();
+
+            }
+            responseEntitysAll = repository.findByApplicationIdAndRajyaSabhaSessionNo(appId, sesNo);
+        } else {
+            if (sesNo == null) {
+                Map<String, Object> obj = repository.findLatestLS();
+                lsNo = obj.get("lsNo").toString();
+                sesNo = obj.get("sesNo").toString();
+            }
+
+            responseEntitysAll = repository.findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(appId, lsNo, sesNo);
+        }
+        if (responseEntitysAll.isEmpty()) {
+            return responseList;
+        }
+        for (PublishHistoryEntity entity : responseEntitysAll) {
+            Boolean addRes = true;
+            if (fromDate != null || toDate != null) {
+                LocalDate forDate = entity.getForDate();
+                System.out.println("(fromDate!=null && (forDate.isEqual(fromDate)||forDate.isAfter(fromDate)))");
+                System.out.println((fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate))));
+                if (!(fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate)))) {
+                    addRes = false;
+                    continue;
+                }
+                System.out.println("(toDate!=null && (forDate.isEqual(toDate)||forDate.isBefore(toDate)))");
+                System.out.println((toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate))));
+                if (!(toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate)))) {
+                    addRes = false;
+                    continue;
+                }
+            }
+            System.out.println("add to dto " + addRes);
+            if (addRes) {
+                String text = "";
+                Map<String, Object> applicationInstance = applicationInstanceRepository
+                        .getByApplicationIdAndApplicationNo(entity.getApplicationId(), entity.getApplicationNo());
+                System.out.println("instance " + applicationInstance);
+                if (applicationInstance != null || !applicationInstance.isEmpty()) {
+                    text += applicationInstance.get("enContent") + "<br/> " + applicationInstance.get("hiContent");
+                }
+                System.out.println("text " + text);
+                responseList.add(
+                        ResponseDTO.builder()
+                                .appId(entity.getApplicationId())
+                                .applicationName(entity.getApplicationName())
+                                .lsNo(entity.getLokSabhaNo())
+                                .sessNo(sesNo)
+                                .url(entity.getPublishUrl())
+                                .text(removeExtraTags(text))
+                                .build()
+                );
+            }
+        }
+        System.out.println("responseList");
+        System.out.println(responseList);
+
+        return responseList;
+    }
+
+    private static String removeExtraTags(String input) {
+        String cleaned = input
+                .replace("\n", "")
+                .replace("\t", "")
+                .replace("\r", "")
+                .replace("\\\"", "\"")
+                .replace("\\", "");
+        // System.out.println("Cleaned: " + cleaned);
+        return cleaned;
     }
 
 }
