@@ -27,7 +27,7 @@ public class PublishHistoryEntity extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "publish_history_seq")
-    @SequenceGenerator(name = "publish_history_seq", sequenceName = "publish_history_seq", allocationSize = 1)
+    @SequenceGenerator(name = "publish_history_seq", sequenceName = "workflow.publish_history_seq", allocationSize = 1)
     private Long id;
 
     private String lokSabhaNo;

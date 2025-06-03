@@ -2,6 +2,7 @@ package com.dsp.workflow.entity;
 
 import java.util.UUID;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -24,11 +25,12 @@ public class PublishDocumentTemp {
     @Id
     private Long id;
     private String url;
+    @Column(name = "lsno")
+    private String lsNo;
+    private String sesNo;
     private String completeUrl;
     private UUID publishUuid;
     private Long applicationId;
-    public PublishDocumentTemp saveTemp(PublishDocumentTemp publishDocumentTemp) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'saveTemp'");
-    }
+    private String applicationName;
+    private String locale;
 }

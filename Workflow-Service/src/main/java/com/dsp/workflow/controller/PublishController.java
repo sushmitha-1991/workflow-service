@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.ResponseDTO;
+import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.response.GenericResponse;
@@ -79,8 +80,10 @@ public class PublishController {
 
 	@PostMapping("/getAll/publishedDocs")
 	public ResponseEntity<List<UrlDto>> getByDate(@RequestParam(required = false) LocalDate date,
-			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
-			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
+			@RequestParam(required = false) String applicationName,
+			 @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo,
+			 @RequestParam(required = false) String sessNo,
 			@RequestParam(required = false) String rssNo) {
 		List<UrlDto> responseDto = publishService.getByDate(date, applicationName, locale, lsNo, sessNo, rssNo);
 		// if (responseDto.isEmpty()) {
@@ -175,17 +178,18 @@ public class PublishController {
 		return response;
 	}
 
-	@PostMapping("/getAll/docs")
-	public List<UrlDto> getAllDocs(@RequestParam(required = false) LocalDate date,
-			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
-		List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
-		return responseDto;
-	}
-
-	@PostMapping("/uploadDocDSP2")
-	public ResponseEntity<List<String>> uploadToDsp2() {
-		System.out.println("Received in Controller: ");
-		List<String> uuidString = publishService.uploadToDsp2();
-		return ResponseEntity.ok(uuidString);
-	}
+    @PostMapping("/getAll/docs")
+    public List<UrlDto> getAllDocs(@RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String applicationName,
+            @RequestParam(required = false) String locale) {
+        List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
+        return responseDto;
+    }
+   @PostMapping("/uploadDocDSP2/{appName}")
+    public ResponseEntity<List<String>> uploadToDsp2(@PathVariable String appName,
+    @RequestBody SessionDto dto) {
+        System.out.println("Received in Controller: ");
+        List<String> uuidString = publishService.uploadToDsp2(appName,dto);
+        return ResponseEntity.ok(uuidString);
+    }
 }

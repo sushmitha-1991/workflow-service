@@ -60,7 +60,7 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests(
 				(authz) -> authz.requestMatchers("workflow/v3/api-docs/**", "workflow/swagger-ui/**", "workflow/swagger-ui.html",
-						"/workflow/**", "/camunda/**", "/notesheet/**","/workflow/publish-history/getAll/publishedDocs/**").permitAll().anyRequest().authenticated())
+						"/workflow/**", "/camunda/**", "/notesheet/**","/publish-history/getAll/publishedDocs").permitAll().anyRequest().authenticated())
 				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
