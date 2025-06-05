@@ -122,9 +122,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
+	
+	private static final String PUBLISHED = "Published";
+
 
 	@Value("${master.service.url}")
 	private String masterServiceUrl;
+	
 	@Autowired
 	private HttpServletRequest httpRequest;
 
@@ -189,7 +193,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                        ai.rajya_sabha_session as RSSNo,
 			                        case
 			                                when ai.current_status = 'Returned' then 'In Progress'
-			                                else ai.current_status
+			                                else ai.current_status   
 			                        end as status,
 			                        CONCAT(wh.pending_with_name) as pendingAt,
 			                        ai.ref_id as refId,
@@ -457,6 +461,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			          WHERE ah.sent_to_user_id = :userId
 			          AND inp.document_date IS NOT NULL
+			          and ah.is_active = true
+			          and ah.is_deleted = false
 
 			        union
 
@@ -535,6 +541,35 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        WHERE da.sent_to_user_id = :userId
 			        and da.status <> 'Completed'
 			    union
+				    SELECT
+			        es.application_no as applicationNo,
+			        'E-Summon for MPs' as documentName,
+			        es.e_summon_issuance_date as date,
+			        es.lok_sabha_no  as LSNo,
+			        es.session_no as SSNo,
+			        es.session_no  as RSSNo,
+			        'Published' as status,
+			        '' as pendingAt,
+			        es.id as refId,
+			        null as applicationId,
+			        null as applicationinstanceId,
+			        'IN-PROCESS' as taskName,
+			        null as taskId,
+			        'True' as actionPerformed,
+			        '/workflow/mailsentinfo' as formUrl,
+			        '/workflow/mailsentinfo' as actionUrl,
+			        null as draftId,
+			        null as publishedUrl,
+			        null as documentUUIDEn,
+			        null as documentUUIDHi,
+			        null as htmlContentEn,
+			        null as htmlContentHi,
+			        null as editorId,
+			        null as uploaded_document_uuid
+				FROM agenda_papers.e_summon es 
+				where es.status = 'Published' and es.is_active = true and es.is_deleted = false    
+			        
+			    union
 			          select
 			                distinct on
 			        (ai.document_date, ai.application_id, rd.document_type) ai.application_no as applicationNo,
@@ -601,7 +636,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public String startProcessInstance(String workflowId) {
 		String url = camundaRestUrl + "/process-definition/key/" + workflowId + "/start";
-		Map<String, Object> requestBody = new HashMap<>();
+		Map<String, Object> requestBody = new HashMap<>();  
 
 		try {
 			// Specify the type of response expected
