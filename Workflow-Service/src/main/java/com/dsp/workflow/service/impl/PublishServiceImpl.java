@@ -11,6 +11,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriUtils;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.SessionDto;
@@ -416,7 +418,6 @@ public class PublishServiceImpl implements PublishService {
                 try {
                     fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
                     System.out.println("fileData  " + fileData);
-
                 } catch (Exception e) {
                     System.out.println("ERROR While Fetching data from URl " + e.getMessage());
                     logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
@@ -566,49 +567,115 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
-        String folderPath = parentPath + "/" + folderName;
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            // headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            // Use TEXT_PLAIN as per your curl
-            headers.setBearerAuth(token);
-            HttpEntity<String> request = new HttpEntity<>(folderName, headers);
-            String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
-            System.out.println("Calling URL: " + url + " with folder: " + folderName);
-            System.out.println("headers  " + headers);
-            System.out.println(" request " + request);
-            ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
-            if (response.getStatusCode().is2xxSuccessful()) {
-                System.out.println("Folder created: " + folderName);
-                return folderPath;
-            } else {
-                // In case the API responds with non-2xx but still returns a JSON body
-                return handleApiError(response.getBody(), folderPath);
-            }
-        } catch (HttpClientErrorException.Conflict e) {
-            // 409: Folder already exists
-            System.out.println("Folder already exists: " + folderPath);
+private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+    parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+    String folderPath = parentPath + folderName;
+    System.out.println("Parent Path: " + parentPath);
+    try {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_PLAIN);  // RAW plain text body
+        headers.set("Authorization", "Bearer " + token);
+        HttpEntity<String> request = new HttpEntity<>(folderName, headers);
+        String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
+        System.out.println("Calling: " + url+" with request "+request);
+        ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
+        if (response.getStatusCode().is2xxSuccessful()) {
+            System.out.println("Folder created successfully");
             return folderPath;
-        } catch (HttpClientErrorException.NotFound e) {
-            // 404: Parent path not found
-            System.err.println("Invalid parent path: " + parentPath);
-        } catch (HttpClientErrorException e) {
-            // For other HTTP errors
-            System.err.println("HTTP Error: " + e.getStatusCode() + " - "
-                    + e.getResponseBodyAsString());
-        } catch (Exception e) {
-            // Other exceptions
-            System.err.println("Unexpected error during folder creation: "
-                    + e.getMessage());
-            e.printStackTrace();
+        } else {
+            System.err.println("Unexpected response: " + response.getStatusCode());
+            return handleApiError(response.getBody(), folderPath);
         }
-        return folderPath; // Or throw custom exception
+    } catch (HttpClientErrorException.Conflict e) {
+        System.out.println("Folder already exists: " + folderPath);
+        return folderPath;
+    } catch (Exception e) {
+        System.err.println("Error creating folder: " + e.getMessage());
+        e.printStackTrace();
+        return null;
     }
+}
+
+// private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+// parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+//     String folderPath = parentPath + "" + folderName;
+//     System.out.println("Parent Path "+parentPath);
+
+//     try {
+//         HttpHeaders headers = new HttpHeaders();
+//         headers.setContentType(MediaType.TEXT_PLAIN);  // Important: match curl body
+//         // headers.setAccept(Collections.singletonList(MediaType.ALL));
+//          // Accept: */*
+//         //  String bearerToken ="Bearer "+token;
+//         headers.set("Authorization", "Bearer " + token);
+//         // headers.setBearerAuth(bearerToken); // Authorization: Bearer <token>
+//         HttpEntity<String> request = new HttpEntity<>(folderName, headers);
+//         // String encodedParentPath = UriUtils.encode(parentPath, StandardCharsets.UTF_8);
+//         // String url = openKmUrl + "/folders/create?parentPath=" + encodedParentPath;
+//                     String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
+//         System.out.println("Calling: " + url);
+//         ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
+//         if (response.getStatusCode().is2xxSuccessful()) {
+//             System.out.println("Folder created successfully");
+//             return folderPath;
+//         } else {
+//             System.err.println("Unexpected response: " + response.getStatusCode());
+//             return handleApiError(response.getBody(), folderPath);
+//         }
+//     } catch (HttpClientErrorException.Conflict e) {
+//         System.out.println("Folder already exists: " + folderPath);
+//         return folderPath;
+//     } catch (Exception e) {
+//         System.err.println("Error creating folder: " + e.getMessage());
+//         e.printStackTrace();
+//         return folderPath;
+//     }
+// }
+    // private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+    //     String folderPath = parentPath + "/" + folderName;
+    //     try {
+    //         HttpHeaders headers = new HttpHeaders();
+    //         // headers.setContentType(MediaType.TEXT_PLAIN);
+    //         headers.setContentType(MediaType.APPLICATION_JSON);
+    //         // Use TEXT_PLAIN as per your curl
+    //         headers.setBearerAuth(token);
+    //         HttpEntity<String> request = new HttpEntity<>(folderName, headers);
+    //         String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
+    //         System.out.println("Calling URL: " + url + " with folder: " + folderName);
+    //         System.out.println("headers  " + headers);
+    //         System.out.println(" request " + request);
+    //         ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
+    //         if (response.getStatusCode().is2xxSuccessful()) {
+    //             System.out.println("Folder created: " + folderName);
+    //             return folderPath;
+    //         } else {
+    //             // In case the API responds with non-2xx but still returns a JSON body
+    //             return handleApiError(response.getBody(), folderPath);
+    //         }
+    //     } catch (HttpClientErrorException.Conflict e) {
+    //         // 409: Folder already exists
+    //         System.out.println("Folder already exists: " + folderPath);
+    //         return folderPath;
+    //     } catch (HttpClientErrorException.NotFound e) {
+    //         // 404: Parent path not found
+    //         System.err.println("Invalid parent path: " + parentPath);
+    //     } catch (HttpClientErrorException e) {
+    //         // For other HTTP errors
+    //         System.err.println("HTTP Error: " + e.getStatusCode() + " - "
+    //                 + e.getResponseBodyAsString());
+    //     } catch (Exception e) {
+    //         // Other exceptions
+    //         System.err.println("Unexpected error during folder creation: "
+    //                 + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+    //     return folderPath; // Or throw custom exception
+    // }
 
     private String handleApiError(String responseBody, String folderPath) {
         try {
+            System.out.println("response Body "+responseBody);
+            System.out.println("Folder Path "+folderPath);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(responseBody);
             int statusCode = root.path("statusCode").asInt();
