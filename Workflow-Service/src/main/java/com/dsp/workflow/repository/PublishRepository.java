@@ -47,7 +47,7 @@ public interface PublishRepository
         "order by lssm.session_start desc limit 1", 
         nativeQuery = true)
         Map<String,Object> findLatestLS();
-    @Query(value = "select rssm.session_number, from master.rajya_sabha_session_master rssm " +
+    @Query(value = "select rssm.session_number from master.rajya_sabha_session_master rssm " +
                         " order by rssm.session_start desc limit 1", nativeQuery = true)
         
         String findLatestRS();

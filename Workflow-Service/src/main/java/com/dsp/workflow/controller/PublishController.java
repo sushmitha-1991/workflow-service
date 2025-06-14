@@ -192,4 +192,6 @@ public class PublishController {
         List<String> uuidString = publishService.uploadToDsp2(appName,dto);
         return ResponseEntity.ok(uuidString);
     }
+
+	
 }
