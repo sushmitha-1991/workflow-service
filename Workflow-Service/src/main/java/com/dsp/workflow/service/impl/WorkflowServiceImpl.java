@@ -568,7 +568,41 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        null as uploaded_document_uuid
 				FROM agenda_papers.e_summon es 
 				where es.status = 'Published' and es.is_active = true and es.is_deleted = false    
-			        
+			    
+			    union
+			    -- ESummon
+			    SELECT
+						       es.application_no as applicationNo,
+						       'E-Summon for MPs' as documentName,
+						       es.e_summon_issuance_date as date,
+						       es.lok_sabha_no  as LSNo,
+						       es.session_no as SSNo,
+						       es.session_no  as RSSNo,
+						       'Published' as status,
+						       '' as pendingAt,
+						       es.id as refId,
+						       null as applicationId,
+						       null as applicationinstanceId,
+						       'IN-PROCESS' as taskName,
+						       null as taskId,
+						       'True' as actionPerformed,
+						       '/workflow/mailsentinfo' as formUrl,
+						       '/workflow/mailsentinfo' as actionUrl,
+						       null as draftId,
+						       null as publishedUrl,
+						       null as documentUUIDEn,
+						       null as documentUUIDHi,
+						       null as htmlContentEn,
+						       null as htmlContentHi,
+						       null as editorId,
+						       null as uploaded_document_uuid
+						   FROM agenda_papers.e_summon es
+						   where es.status = 'Published' and es.house_id = :houseId
+						   and es.is_active = true and es.is_deleted = false 
+						and exists(select 1 from  authentication.user_roles ur  where ur.user_id = :userId
+						and ur.office_id in (
+						select  a.primary_office_id from master.applications a where a.abbr='ES'))  
+    
 			    union
 			          select
 			                distinct on
