@@ -1534,6 +1534,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSession(lokSabhaSession);
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
+			draftDocument.setForDate(draftDataDTO.getForDate());
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -1549,6 +1550,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSession(lokSabhaSession);
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
+			draftDocument.setForDate(draftDataDTO.getForDate());
 
 			// Save new draft document
 			draftDocumentRepository.save(draftDocument);
