@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.entity;
 
+import java.time.LocalDate;
+
 import com.dsp.workflow.util.JsonNodeConverter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -57,4 +59,6 @@ public class DraftDocument extends Auditable {
 	@OneToOne(mappedBy = "draftDocument", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private WorkflowHistory workflowHistory;
 
+	@Column(name = "for_date", nullable = true)
+	private LocalDate forDate;
 }

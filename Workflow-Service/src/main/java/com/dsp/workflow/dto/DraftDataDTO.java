@@ -39,5 +39,6 @@ public class DraftDataDTO {
     private LocalDateTime createdAt;
     private LocalDate createdAtWithoutTime;
     private String createdBy;
+    private LocalDate forDate;
 
 }
