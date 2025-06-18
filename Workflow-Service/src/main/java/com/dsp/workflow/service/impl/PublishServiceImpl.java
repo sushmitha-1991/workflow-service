@@ -991,11 +991,12 @@ public class PublishServiceImpl implements PublishService {
             locale = "en";
         }
         Long userId = utils.getUserIdFromAuthentication();
+        System.out.println("user "+userId);
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (applicationName != null) {
+        if (!(StringUtils.isBlank(applicationName)) ) {
             spec = spec.and(hasApplicationName(applicationName));
         }
         spec = spec.and(hasLocale(locale));
