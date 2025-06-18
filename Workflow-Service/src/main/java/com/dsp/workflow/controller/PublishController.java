@@ -192,6 +192,16 @@ public class PublishController {
         List<String> uuidString = publishService.uploadToDsp2(appName,dto);
         return ResponseEntity.ok(uuidString);
     }
-
-	
+	 @GetMapping("/create-foldert-sructure")
+    public ResponseEntity<String> folderStructure(
+		@RequestParam(required=false) String houseType,
+		@RequestParam(required=false) String lsNo,
+		@RequestParam(required=false) String sessionNo,
+		@RequestParam(required=false) String token1,
+		@RequestParam(required=false) String appName
+    ) {
+        System.out.println("Received in Controller: ");
+        String folder = publishService.createDmsFolderStructure(houseType, lsNo, sessionNo,token1, appName);
+        return ResponseEntity.ok(folder);
+    }
 }

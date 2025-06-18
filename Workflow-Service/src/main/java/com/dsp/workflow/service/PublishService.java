@@ -16,13 +16,13 @@ public interface PublishService {
 
     PublishHistoryDTO save(PublishHistoryDTO dto);
 
-    List<UrlDto> getByDate(LocalDate date, String documentName, String locale,String lsNo,String sesNo,String rssNo);
+    List<UrlDto> getByDate(LocalDate date, String documentName, String locale, String lsNo, String sesNo, String rssNo);
+
     UrlDto getByDateDoc(LocalDate date, String documentName, String locale);
 
-    PublishHistoryDTO update(Long id,PublishHistoryDTO dto);
+    PublishHistoryDTO update(Long id, PublishHistoryDTO dto);
 
-
-    PublishHistoryDTO updateById(Long id,UnPublishRequest request);
+    PublishHistoryDTO updateById(Long id, UnPublishRequest request);
 
     PublishHistoryDTO getbyAppNo(String applicationNo);
 
@@ -34,20 +34,16 @@ public interface PublishService {
 
     List<UrlDto> getAll();
 
-    UrlDto getBySession(LocalDate forDate,String lsNo,String sessNo,
-    String rsNo, String applicationName, String locale);
+    UrlDto getBySession(LocalDate forDate, String lsNo, String sessNo,
+            String rsNo, String applicationName, String locale);
 
-    List<String> uploadToDsp2(String applicationName,SessionDto dto);
+    List<String> uploadToDsp2(String applicationName, SessionDto dto);
 
     List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale);
 
-    List<ResponseDTO> getDocsByAppId(Long appId,String abbr,String lsNo,String sesNo,LocalDate fromDate,LocalDate toDate);
+    List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo, String sesNo, LocalDate fromDate,
+            LocalDate toDate);
 
+    String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,String appName);
 
 }
-
-
-
-
-
-
