@@ -621,7 +621,7 @@ public class PublishServiceImpl implements PublishService {
 
         HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
         System.out.println("entity  " + entity);
-        String folderPath = parentPath + "/" + folderName;
+        String folderPath = parentPath + "" + folderName;
         try {
             // return restTemplate.postForObject(url, entity,new
             // GenericResponse<String>(){});
