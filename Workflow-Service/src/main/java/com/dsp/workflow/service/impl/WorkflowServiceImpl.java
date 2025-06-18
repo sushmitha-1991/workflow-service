@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.stream.Collectors; 
 
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
@@ -298,7 +298,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                        distinct on
 			                        (dd.application_no) dd.application_no as applicationNo,
 			                        coalesce(a.document_display_name, a."name") as documentName,
-			                        null as date,
+			                        dd.for_date as date,
 			                        dd.lok_sabha_session as LSNo,
 			                        dd.lok_sabha_session_number as SSNo,
 			                        dd.rajya_sabha_session as RSSNo,
@@ -540,35 +540,41 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        left join authentication.base_user bu on bu.id = da.sent_to_user_id
 			        WHERE da.sent_to_user_id = :userId
 			        and da.status <> 'Completed'
+			    
 			    union
-				    SELECT
-			        es.application_no as applicationNo,
-			        'E-Summon for MPs' as documentName,
-			        es.e_summon_issuance_date as date,
-			        es.lok_sabha_no  as LSNo,
-			        es.session_no as SSNo,
-			        es.session_no  as RSSNo,
-			        'Published' as status,
-			        '' as pendingAt,
-			        es.id as refId,
-			        null as applicationId,
-			        null as applicationinstanceId,
-			        'IN-PROCESS' as taskName,
-			        null as taskId,
-			        'True' as actionPerformed,
-			        '/workflow/mailsentinfo' as formUrl,
-			        '/workflow/mailsentinfo' as actionUrl,
-			        null as draftId,
-			        null as publishedUrl,
-			        null as documentUUIDEn,
-			        null as documentUUIDHi,
-			        null as htmlContentEn,
-			        null as htmlContentHi,
-			        null as editorId,
-			        null as uploaded_document_uuid
-				FROM agenda_papers.e_summon es 
-				where es.status = 'Published' and es.is_active = true and es.is_deleted = false    
-			        
+			    -- ESummon
+			    SELECT
+						       es.application_no as applicationNo,
+						       'E-Summon for MPs' as documentName,
+						       es.e_summon_issuance_date as date,
+						       es.lok_sabha_no  as LSNo,
+						       es.session_no as SSNo,
+						       es.session_no  as RSSNo,
+						       'Published' as status,
+						       '' as pendingAt,
+						       es.id as refId,
+						       null as applicationId,
+						       null as applicationinstanceId,
+						       'IN-PROCESS' as taskName,
+						       null as taskId,
+						       'True' as actionPerformed,
+						       '/workflow/mailsentinfo' as formUrl,
+						       '/workflow/mailsentinfo' as actionUrl,
+						       null as draftId,
+						       null as publishedUrl,
+						       null as documentUUIDEn,
+						       null as documentUUIDHi,
+						       null as htmlContentEn,
+						       null as htmlContentHi,
+						       null as editorId,
+						       null as uploaded_document_uuid
+						   FROM agenda_papers.e_summon es
+						   where es.status = 'Published' and es.house_id = :houseId
+						   and es.is_active = true and es.is_deleted = false 
+						and exists(select 1 from  authentication.user_roles ur  where ur.user_id = :userId
+						and ur.office_id in (
+						select  a.primary_office_id from master.applications a where a.abbr='ES'))  
+    
 			    union
 			          select
 			                distinct on
@@ -1500,6 +1506,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSession(lokSabhaSession);
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
+			draftDocument.setForDate(draftDataDTO.getForDate());
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -1515,6 +1522,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSession(lokSabhaSession);
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
+			draftDocument.setForDate(draftDataDTO.getForDate());
 
 			// Save new draft document
 			draftDocumentRepository.save(draftDocument);
