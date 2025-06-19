@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors; 
+import java.util.stream.Collectors;
 
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
@@ -122,13 +122,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
-	
-	private static final String PUBLISHED = "Published";
 
+	private static final String PUBLISHED = "Published";
 
 	@Value("${master.service.url}")
 	private String masterServiceUrl;
-	
+
 	@Autowired
 	private HttpServletRequest httpRequest;
 
@@ -193,7 +192,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                        ai.rajya_sabha_session as RSSNo,
 			                        case
 			                                when ai.current_status = 'Returned' then 'In Progress'
-			                                else ai.current_status   
+			                                else ai.current_status
 			                        end as status,
 			                        CONCAT(wh.pending_with_name) as pendingAt,
 			                        ai.ref_id as refId,
@@ -540,7 +539,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        left join authentication.base_user bu on bu.id = da.sent_to_user_id
 			        WHERE da.sent_to_user_id = :userId
 			        and da.status <> 'Completed'
-			    
+
 			    union
 			    -- ESummon
 			    SELECT
@@ -570,11 +569,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 						       null as uploaded_document_uuid
 						   FROM agenda_papers.e_summon es
 						   where es.status = 'Published' and es.house_id = :houseId
-						   and es.is_active = true and es.is_deleted = false 
+						   and es.is_active = true and es.is_deleted = false
 						and exists(select 1 from  authentication.user_roles ur  where ur.user_id = :userId
 						and ur.office_id in (
-						select  a.primary_office_id from master.applications a where a.abbr='ES'))  
-    
+						select  a.primary_office_id from master.applications a where a.abbr='ES'))
+
 			    union
 			          select
 			                distinct on
@@ -642,7 +641,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public String startProcessInstance(String workflowId) {
 		String url = camundaRestUrl + "/process-definition/key/" + workflowId + "/start";
-		Map<String, Object> requestBody = new HashMap<>();  
+		Map<String, Object> requestBody = new HashMap<>();
 
 		try {
 			// Specify the type of response expected
@@ -754,30 +753,46 @@ public class WorkflowServiceImpl implements WorkflowService {
 					notesheetRepository.save(notesheet);
 
 					// First entry with status = "submitted"
-					WorkflowHistory firstEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
-							.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
-							.actionTakenBy(senderUserId).actionTakenByName(userName).actionTaken(actionTaken)
-							.actionTakenOn(LocalDateTime.now()).status(status).statusKey(statusKey).actionUrl(actionUrl)
-							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
-							.pendingStartDate(LocalDateTime.now()).initalStatusKey(statusKey).note(note)
-							.currentTaskId(taskId).build();
-					workflowHistoryRepository.save(firstEntry);
+					WorkflowHistory.WorkflowHistoryBuilder firstEntryBuilder = WorkflowHistory.builder()
+							.processInstanceId(processInstanceId).subModuleId(application_no)
+							.applicationInstanceId(applicationInstanceId).actionTakenBy(senderUserId)
+							.actionTakenByName(userName).actionTaken(actionTaken).actionTakenOn(LocalDateTime.now())
+							.status(status).statusKey(statusKey).actionUrl(actionUrl).pendingWith(receiverUserId)
+							.pendingWithName(receiverUserName).pendingStartDate(LocalDateTime.now())
+							.initalStatusKey(statusKey).note(note).currentTaskId(taskId);
 
 					// Second entry, for the next task or status
-					WorkflowHistory secondEntry = WorkflowHistory.builder().processInstanceId(processInstanceId)
-							.subModuleId(application_no).applicationInstanceId(applicationInstanceId).actionTaken(null)
-							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
-							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+					WorkflowHistory.WorkflowHistoryBuilder secondEntryBuilder = WorkflowHistory.builder()
+							.processInstanceId(processInstanceId).subModuleId(application_no)
+							.applicationInstanceId(applicationInstanceId).actionTaken(null).actionTakenBy(null)
+							.actionTakenByName(null).actionTakenOn(null).status(null).statusKey(null)
+							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
-					workflowHistoryRepository.save(secondEntry);
+							.nextTaskId(nextTaskId).actionUrl(actionUrl);
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
-						System.out.println("### Calling this");
-						callTranslationAPI(translationInputDTO);
+						try {
+							callTranslationAPI(translationInputDTO);
+							secondEntryBuilder.translationSuccess(true);
+							firstEntryBuilder.translationSuccess(true);
+
+						} catch (Exception e) {
+							// Log and continue
+							System.err.println("Translation API call failed: " + e.getMessage());
+							secondEntryBuilder.translationSuccess(false);
+							firstEntryBuilder.translationSuccess(false);
+							e.printStackTrace();
+
+						}
 					}
+
+					WorkflowHistory secondEntry = secondEntryBuilder.build();
+					workflowHistoryRepository.save(secondEntry);
+
+					WorkflowHistory firstEntry = firstEntryBuilder.build();
+					workflowHistoryRepository.save(firstEntry);
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -805,23 +820,50 @@ public class WorkflowServiceImpl implements WorkflowService {
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
 
+					// Update existing workflow history for FINAL step
 					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
 							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
-					// Entry to Translation Inputs
+					// Prepare new entry with translation and corrected debates success flags
+					WorkflowHistory.WorkflowHistoryBuilder finalEntryBuilder = WorkflowHistory.builder()
+							.processInstanceId(processInstanceId).applicationInstanceId(applicationInstanceId)
+							.subModuleId(application_no).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+							.pendingStartDate(LocalDateTime.now()).note(note).currentTaskId(taskId).status(status)
+							.statusKey(statusKey).actionUrl(actionUrl);
+
+					// Translation API
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
-						callTranslationAPI(translationInputDTO);
+						try {
+							callTranslationAPI(translationInputDTO);
+							finalEntryBuilder.translationSuccess(true);
+						} catch (Exception e) {
+							System.err.println("Translation API call failed: " + e.getMessage());
+							e.printStackTrace();
+							finalEntryBuilder.translationSuccess(false);
+						}
 					}
 
+					// Corrected Debates API
 					String correctedDebatesAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
-					if (correctedDebatesAbbr.equals(CORRECTED_DEBATES_ABBR)) {
+					if (CORRECTED_DEBATES_ABBR.equals(correctedDebatesAbbr)) {
 						System.out.println("### correctedDebatesAbbr - " + correctedDebatesAbbr);
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						System.out.println("### correctedDebatedDTO - " + correctedDebatedDTO);
-						callCorrectedDebatesAPI(correctedDebatedDTO);
+
+						try {
+							callCorrectedDebatesAPI(correctedDebatedDTO);
+							finalEntryBuilder.correctedDebateSuccess(true);
+						} catch (Exception e) {
+							System.err.println("Corrected Debates API call failed: " + e.getMessage());
+							e.printStackTrace();
+							finalEntryBuilder.correctedDebateSuccess(false);
+						}
 					}
+
+					// Save entry
+					workflowHistoryRepository.save(finalEntryBuilder.build());
 				}
 
 				// Return next task ID or end message
