@@ -69,7 +69,7 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "pending_with_name", nullable = true)
 	private String pendingWithName;
 
-	@Column(name = "note", nullable = true,columnDefinition="text")
+	@Column(name = "note", nullable = true, columnDefinition = "text")
 	private String note;
 
 	@Column(name = "pending_start_date", nullable = true)
@@ -90,5 +90,11 @@ public class WorkflowHistory extends Auditable {
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "draft_id", referencedColumnName = "id")
 	private DraftDocument draftDocument;
+
+	@Column(name = "translation_success")
+	private Boolean translationSuccess;
+
+	@Column(name = "corrected_debate_success")
+	private Boolean correctedDebateSuccess;
 
 }
