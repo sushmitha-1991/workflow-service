@@ -10,10 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.UUID;
-
-import java.time.LocalDate;
-
 @Data
 @Getter
 @Setter
@@ -50,4 +46,5 @@ public class PublishHistoryDTO {
 	private Integer month;
     private String fileTypeName;
     private String title;
+    private String house;
 }
