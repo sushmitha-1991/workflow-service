@@ -50,4 +50,5 @@ public class PublishHistoryDTO {
 	private Integer month;
     private String fileTypeName;
     private String title;
+    private String house;
 }

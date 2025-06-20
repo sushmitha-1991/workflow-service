@@ -107,17 +107,33 @@ public class PublishServiceImpl implements PublishService {
                 }
             }
             if (StringUtils.isBlank(alreadyExists.getPublishUrl())) {
-                alreadyExists.setPublishUrl(openKmUrl + "/downloads/" + alreadyExists.getPublishUuid());
+                alreadyExists.setPublishUrl(openKmUrl + "/dsp1/downloads/" + alreadyExists.getPublishUuid());
+            }
+            if(StringUtils.isBlank(entity.getHouse()))
+            {
+            alreadyExists.setHouse(getHouse());
             }
             entity = repository.save(alreadyExists);
         } else {
             if (StringUtils.isBlank(entity.getPublishUrl())) {
-                entity.setPublishUrl(openKmUrl + "/downloads/" + entity.getPublishUuid());
+                entity.setPublishUrl(openKmUrl + "/dsp1/downloads/" + entity.getPublishUuid());
             }
             System.out.println("application no  " + entity.getApplicationNo());
+            if (StringUtils.isBlank(entity.getHouse())) {
+                entity.setHouse(getHouse());
+            }
             entity = repository.save(entity);
         }
         return PublishMapper.toDTO(entity);
+    }
+
+    private String getHouse() {
+        Long house = utils.getHouseIdFromAuthentication();
+        if (house == 1)
+            return "RS";
+        else if (house == 2)
+            return "LS";
+
     }
 
     @Override
@@ -182,7 +198,7 @@ public class PublishServiceImpl implements PublishService {
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (documentName != null) {
+        if (StringUtils) {
             spec = spec.and(hasApplicationName(documentName));
         }
         if (lsNo != null) {
@@ -991,12 +1007,12 @@ public class PublishServiceImpl implements PublishService {
             locale = "en";
         }
         Long userId = utils.getUserIdFromAuthentication();
-        System.out.println("user "+userId);
+        System.out.println("user " + userId);
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (!(StringUtils.isBlank(applicationName)) ) {
+        if (!(StringUtils.isBlank(applicationName))) {
             spec = spec.and(hasApplicationName(applicationName));
         }
         spec = spec.and(hasLocale(locale));

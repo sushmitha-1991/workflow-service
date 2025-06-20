@@ -76,5 +76,6 @@ public class PublishHistoryEntity extends Auditable {
     @Column(nullable = false)
     private String locale;
     private String fileTypeName;
+    private String house;
 
 }
