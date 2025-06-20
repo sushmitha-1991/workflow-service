@@ -133,7 +133,8 @@ public class PublishServiceImpl implements PublishService {
             return "RS";
         else if (house == 2)
             return "LS";
-
+        else 
+            return "NH";
     }
 
     @Override
@@ -198,7 +199,7 @@ public class PublishServiceImpl implements PublishService {
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (StringUtils) {
+        if (StringUtils.isBlank(documentName)) {
             spec = spec.and(hasApplicationName(documentName));
         }
         if (lsNo != null) {
