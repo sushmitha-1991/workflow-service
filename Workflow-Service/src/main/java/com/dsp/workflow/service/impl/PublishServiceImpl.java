@@ -188,13 +188,13 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public List<UrlDto> getByDate(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
+    public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
             String rssNo) {
 
         List<UrlDto> urlDto = new ArrayList<>();
-        if (locale == null) {
-            locale = "en";
-        }
+        // if (locale == null) {
+        //     locale = "en";
+        // }
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null) {
             spec = spec.and(hasForDate(date));
@@ -1016,6 +1016,7 @@ public class PublishServiceImpl implements PublishService {
         if (!(StringUtils.isBlank(applicationName))) {
             spec = spec.and(hasApplicationName(applicationName));
         }
+        if(StringUtils.isBlank(locale))
         spec = spec.and(hasLocale(locale));
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
