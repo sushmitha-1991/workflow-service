@@ -1004,9 +1004,9 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
-        if (locale == null) {
-            locale = "en";
-        }
+        // if (locale == null) {
+        //     locale = "en";
+        // }
         Long userId = utils.getUserIdFromAuthentication();
         System.out.println("user " + userId);
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
