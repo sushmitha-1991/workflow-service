@@ -825,22 +825,22 @@ public class WorkflowServiceImpl implements WorkflowService {
 							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
 					// Prepare new entry with translation and corrected debates success flags
-					WorkflowHistory.WorkflowHistoryBuilder finalEntryBuilder = WorkflowHistory.builder()
-							.processInstanceId(processInstanceId).applicationInstanceId(applicationInstanceId)
-							.subModuleId(application_no).pendingWith(receiverUserId).pendingWithName(receiverUserName)
-							.pendingStartDate(LocalDateTime.now()).note(note).currentTaskId(taskId).status(status)
-							.statusKey(statusKey).actionUrl(actionUrl);
+//					WorkflowHistory.WorkflowHistoryBuilder finalEntryBuilder = WorkflowHistory.builder()
+//							.processInstanceId(processInstanceId).applicationInstanceId(applicationInstanceId)
+//							.subModuleId(application_no).pendingWith(receiverUserId).pendingWithName(receiverUserName)
+//							.pendingStartDate(LocalDateTime.now()).note(note).currentTaskId(taskId).status(status)
+//							.statusKey(statusKey).actionUrl(actionUrl);
 
 					// Translation API
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
 							callTranslationAPI(translationInputDTO);
-							finalEntryBuilder.translationSuccess(true);
+//							finalEntryBuilder.translationSuccess(true);
 						} catch (Exception e) {
 							System.err.println("Translation API call failed: " + e.getMessage());
 							e.printStackTrace();
-							finalEntryBuilder.translationSuccess(false);
+//							finalEntryBuilder.translationSuccess(false);
 						}
 					}
 
@@ -854,16 +854,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 						try {
 							callCorrectedDebatesAPI(correctedDebatedDTO);
-							finalEntryBuilder.correctedDebateSuccess(true);
+//							finalEntryBuilder.correctedDebateSuccess(true);
 						} catch (Exception e) {
 							System.err.println("Corrected Debates API call failed: " + e.getMessage());
 							e.printStackTrace();
-							finalEntryBuilder.correctedDebateSuccess(false);
+//							finalEntryBuilder.correctedDebateSuccess(false);
 						}
 					}
 
 					// Save entry
-					workflowHistoryRepository.save(finalEntryBuilder.build());
+//					workflowHistoryRepository.save(finalEntryBuilder.build());
 				}
 
 				// Return next task ID or end message
