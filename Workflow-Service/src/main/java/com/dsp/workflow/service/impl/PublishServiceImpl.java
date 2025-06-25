@@ -218,7 +218,6 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasHouse(house));
         }
         
-
         System.out.println("date " + date);
         System.out.println("documentName " + documentName);
         System.out.println("locale " + locale);
@@ -226,11 +225,7 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("sesNo " + sesNo);
         System.out.println("rssNo " + rssNo);
         System.out.println("date " + date);
-        System.out.println("documentName " + documentName);
-        System.out.println("locale " + locale);
-        System.out.println("lsNo " + lsNo);
-        System.out.println("sesNo " + sesNo);
-        System.out.println("rssNo " + rssNo);
+        System.out.println("house "+house);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
@@ -893,7 +888,7 @@ public class PublishServiceImpl implements PublishService {
         };
     }
     
-    public static Specification<PublishDocumentTemp> hasHouse(String house) {
+    public static Specification<PublishHistoryEntity> hasHouse(String house) {
         return (root, query, criteriaBuilder) -> {
             if (house != null) {
                 return criteriaBuilder.equal(root.get("house"), house);
