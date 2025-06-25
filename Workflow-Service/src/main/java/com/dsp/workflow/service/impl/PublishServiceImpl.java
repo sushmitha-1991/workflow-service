@@ -109,9 +109,8 @@ public class PublishServiceImpl implements PublishService {
             if (StringUtils.isBlank(alreadyExists.getPublishUrl())) {
                 alreadyExists.setPublishUrl(openKmUrl + "/dsp1/downloads/" + alreadyExists.getPublishUuid());
             }
-            if(StringUtils.isBlank(entity.getHouse()))
-            {
-            alreadyExists.setHouse(getHouse());
+            if (StringUtils.isBlank(entity.getHouse())) {
+                alreadyExists.setHouse(getHouse());
             }
             entity = repository.save(alreadyExists);
         } else {
@@ -133,7 +132,7 @@ public class PublishServiceImpl implements PublishService {
             return "RS";
         else if (house == 2)
             return "LS";
-        else 
+        else
             return "NH";
     }
 
@@ -188,12 +187,13 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
-            String rssNo) {
+    public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo,
+            String sesNo,
+            String rssNo,String house) {
 
         List<UrlDto> urlDto = new ArrayList<>();
         // if (locale == null) {
-        //     locale = "en";
+        // locale = "en";
         // }
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
         if (date != null) {
@@ -211,8 +211,13 @@ public class PublishServiceImpl implements PublishService {
         if (rssNo != null) {
             spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
         }
-        spec = spec.and(hasLocale(locale));
-
+        if (StringUtils.isBlank(locale)) {
+            spec = spec.and(hasLocale(locale));
+        }
+        if (StringUtils.isBlank(house)) {
+            spec = spec.and(hasHouse(house));
+        }
+        
         System.out.println("date " + date);
         System.out.println("documentName " + documentName);
         System.out.println("locale " + locale);
@@ -220,11 +225,7 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("sesNo " + sesNo);
         System.out.println("rssNo " + rssNo);
         System.out.println("date " + date);
-        System.out.println("documentName " + documentName);
-        System.out.println("locale " + locale);
-        System.out.println("lsNo " + lsNo);
-        System.out.println("sesNo " + sesNo);
-        System.out.println("rssNo " + rssNo);
+        System.out.println("house "+house);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
@@ -389,14 +390,20 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public List<UrlDto> getAllUnpublished(LocalDate date, String applicationName, String locale) {
-        if (locale == null) {
-            locale = "en";
-        }
+        // if (locale == null) {
+        // locale = "en";
+        // }
         List<UrlDto> urlDto = new ArrayList<>();
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(false));
-        spec = spec.and(hasForDate(date));
-        spec = spec.and(hasApplicationName(applicationName));
-        spec = spec.and(hasLocale(locale));
+        if (date != null) {
+            spec = spec.and(hasForDate(date));
+        }
+        if (StringUtils.isBlank(applicationName)) {
+            spec = spec.and(hasApplicationName(applicationName));
+        }
+        if (StringUtils.isBlank(locale)) {
+            spec = spec.and(hasLocale(locale));
+        }
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
 
@@ -880,6 +887,15 @@ public class PublishServiceImpl implements PublishService {
             return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
         };
     }
+    
+    public static Specification<PublishHistoryEntity> hasHouse(String house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("house"), house);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
 
     public static Specification<PublishDocumentTemp> hasSessNo(String sesNo) {
         return (root, query, criteriaBuilder) -> {
@@ -1005,7 +1021,7 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
         // if (locale == null) {
-        //     locale = "en";
+        // locale = "en";
         // }
         Long userId = utils.getUserIdFromAuthentication();
         System.out.println("user " + userId);
@@ -1016,8 +1032,9 @@ public class PublishServiceImpl implements PublishService {
         if (!(StringUtils.isBlank(applicationName))) {
             spec = spec.and(hasApplicationName(applicationName));
         }
-        if(StringUtils.isBlank(locale))
-        spec = spec.and(hasLocale(locale));
+        if (StringUtils.isBlank(locale)) {
+            spec = spec.and(hasLocale(locale));
+        }
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
