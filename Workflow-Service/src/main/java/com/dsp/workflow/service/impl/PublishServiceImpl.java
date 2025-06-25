@@ -189,7 +189,7 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo,
             String sesNo,
-            String rssNo) {
+            String rssNo,String house) {
 
         List<UrlDto> urlDto = new ArrayList<>();
         // if (locale == null) {
@@ -214,6 +214,10 @@ public class PublishServiceImpl implements PublishService {
         if (StringUtils.isBlank(locale)) {
             spec = spec.and(hasLocale(locale));
         }
+        if (StringUtils.isBlank(house)) {
+            spec = spec.and(hasHouse(house));
+        }
+        
 
         System.out.println("date " + date);
         System.out.println("documentName " + documentName);
@@ -884,6 +888,15 @@ public class PublishServiceImpl implements PublishService {
         return (root, query, criteriaBuilder) -> {
             if (lsNo != null) {
                 return criteriaBuilder.equal(root.get("lsNo"), lsNo);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+    
+    public static Specification<PublishDocumentTemp> hasHouse(String house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("house"), house);
             }
             return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
         };

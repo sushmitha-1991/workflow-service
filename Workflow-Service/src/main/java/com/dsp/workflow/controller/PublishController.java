@@ -84,8 +84,11 @@ public class PublishController {
 			 @RequestParam(required = false) String locale,
 			@RequestParam(required = false) String lsNo,
 			 @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo) {
-		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo, rssNo);
+			@RequestParam(required = false) String rssNo,
+			@RequestParam(required = false) String house
+			) {
+		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale,
+		 lsNo, sessNo, rssNo,house);
 		// if (responseDto.isEmpty()) {
 		// return ResponseEntity.noContent().build();
 		// }
