@@ -1555,12 +1555,18 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		} else {
 			// Create new draft
-			SerialNumberResponse applicationNo = generateApplicationNo(serialNumberRequest);
-
 			draftDocument = new DraftDocument();
 			draftDocument.setDraftData(draftData);
 			draftDocument.setApplicationId(draftDataDTO.getApplicationId());
-			draftDocument.setApplicationNo(applicationNo.getId());
+
+			// Use existing applicationNo if provided, else generate new one
+			if (draftDataDTO.getApplicationNo() != null) {
+				draftDocument.setApplicationNo(draftDataDTO.getApplicationNo());
+			} else {
+				SerialNumberResponse applicationNo = generateApplicationNo(serialNumberRequest);
+				draftDocument.setApplicationNo(applicationNo.getId());
+			}
+
 			draftDocument.setLokSabhaSession(lokSabhaSession);
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
