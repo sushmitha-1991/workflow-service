@@ -70,6 +70,7 @@ public class PublishServiceImpl implements PublishService {
     private PublishRepository repository;
     @Autowired
     private RestTemplate restTemplate;
+
     @Value("${openKm.service.upload.endpoint}")
     private String openKmUrl;
 
@@ -85,8 +86,8 @@ public class PublishServiceImpl implements PublishService {
     @Autowired
     private ApplicationInstanceRepository applicationInstanceRepository;
 
-    private final static String OKM_ROOT = "/okm:root/";
-    
+    private final static String OKM_ROOT = "/okm:root";
+
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
 
@@ -644,32 +645,105 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public String createDmsFolderStructure(String root, List<String> folders, String applicationName) {
-        
+
     	String path = (StringUtils.isEmpty(root)) ? OKM_ROOT : root;
-    	
+
         String token = getTokenFromRequest();
         if (StringUtils.isBlank(token)) {
         	logger.error("Authorization token is missing. Cannot upload file.");
         	return "";
         }
-        
+
         for (int i = 0; i < folders.size(); i++) {
         	path = createFolderIfNotExists(path, folders.get(i), token);
         }
-        
+
         return path;
     }
-    
-    
+
+    //  kaushik sir code for folder
+//    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+//        parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+//
+//        System.out.println("Parent Path: " + parentPath);
+//        System.out.println("folderName: " + folderName);
+//        System.out.println("token: " + token);
+//
+//        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
+//        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
+//
+//        if (token == null || token.isBlank()) {
+//            throw new IllegalStateException("Authorization token is missing");
+//        }
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.set("Authorization", "Bearer " + token);
+//        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+//        System.out.println("headers  " + headers);
+//        FolderCreateDTO dto = FolderCreateDTO.builder()
+//                .folderName(folderName)
+//                .build();
+//        System.out.println("req dto  " + dto);
+//
+//        HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
+//        System.out.println("entity  " + entity);
+//        String folderPath = parentPath + "" + folderName;
+//        try {
+//            // return restTemplate.postForObject(url, entity,new
+//            // GenericResponse<String>(){});
+//
+//            // // 1
+//
+//        	System.out.println("URL: " + url);
+//            ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
+//                    url,
+//                    HttpMethod.POST,
+//                    entity,
+//                    new ParameterizedTypeReference<GenericResponse<String>>() {
+//                    });
+//            GenericResponse<String> responseBody = response.getBody();
+//            // // 3
+//            // // ResponseEntity<String> response = restTemplate.exchange(
+//            // // url,
+//            // // HttpMethod.POST,
+//            // // entity,
+//            // // new ParameterizedTypeReference<String>(){});
+//
+//            // System.out.println("response " + response);
+//            // System.out.println("responseBody " + responseBody);
+//            if (responseBody != null) {
+//                if (responseBody.getStatusCode() == 200 && responseBody.isSuccess()) {
+//                    return responseBody.getData();
+//                } else if (responseBody.getStatusCode() == 409 &&
+//                        responseBody.getMessage().contains("already exists")) {
+//                    return folderPath;
+//                } else {
+//                    System.out.println("Unexpected response: {}" + responseBody.getMessage());
+//                    return null;
+//                }
+//            } else {
+//                System.out.println("Empty response received from folder creation API");
+//                return null;
+//            }
+//
+//        } catch (HttpClientErrorException.Conflict e) {
+//        	e.printStackTrace();
+//            return folderPath;
+//        } catch (Exception e) {
+//        	e.printStackTrace();
+//            System.out.println("Error occurred while creating folder" + e);
+//            throw e;
+//        }
+//
+//    }
+    // samar code for the folder
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
-        parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
-        
-        System.out.println("Parent Path: " + parentPath);
+        String fixedParentPath = "/okm:root";
+        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + fixedParentPath;
+
+        System.out.println("Hardcoded Final URL: " + url);
         System.out.println("folderName: " + folderName);
         System.out.println("token: " + token);
-
-        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
-        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
 
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("Authorization token is missing");
@@ -677,39 +751,25 @@ public class PublishServiceImpl implements PublishService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-        System.out.println("headers  " + headers);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
         FolderCreateDTO dto = FolderCreateDTO.builder()
                 .folderName(folderName)
                 .build();
-        System.out.println("req dto  " + dto);
 
         HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
-        System.out.println("entity  " + entity);
-        String folderPath = parentPath + "" + folderName;
-        try {
-            // return restTemplate.postForObject(url, entity,new
-            // GenericResponse<String>(){});
+        String folderPath = fixedParentPath + "/" + folderName;
 
-            // // 1
-        	
-        	System.out.println("URL: " + url);
+        try {
             ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     entity,
-                    new ParameterizedTypeReference<GenericResponse<String>>() {
-                    });
-            GenericResponse<String> responseBody = response.getBody();
-            // // 3
-            // // ResponseEntity<String> response = restTemplate.exchange(
-            // // url,
-            // // HttpMethod.POST,
-            // // entity,
-            // // new ParameterizedTypeReference<String>(){});
+                    new ParameterizedTypeReference<GenericResponse<String>>() {}
+            );
 
-            // System.out.println("response " + response);
-            // System.out.println("responseBody " + responseBody);
+            GenericResponse<String> responseBody = response.getBody();
+
             if (responseBody != null) {
                 if (responseBody.getStatusCode() == 200 && responseBody.isSuccess()) {
                     return responseBody.getData();
@@ -717,7 +777,7 @@ public class PublishServiceImpl implements PublishService {
                         responseBody.getMessage().contains("already exists")) {
                     return folderPath;
                 } else {
-                    System.out.println("Unexpected response: {}" + responseBody.getMessage());
+                    System.out.println("Unexpected response: " + responseBody.getMessage());
                     return null;
                 }
             } else {
@@ -726,17 +786,18 @@ public class PublishServiceImpl implements PublishService {
             }
 
         } catch (HttpClientErrorException.Conflict e) {
-        	e.printStackTrace();
+            e.printStackTrace();
             return folderPath;
         } catch (Exception e) {
-        	e.printStackTrace();
-            System.out.println("Error occurred while creating folder" + e);
+            e.printStackTrace();
+            System.out.println("Error occurred while creating folder: " + e.getMessage());
             throw e;
         }
-
     }
 
-    
+
+
+
     private String createFolderIfNotExistsV2 (String parentPath, String folderName, String token) {
 
     	parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
@@ -745,8 +806,11 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("folderName: " + folderName);
         System.out.println("token: " + token);
 
-        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
-        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
+//        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
+//        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
+
+        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + parentPath;
+
 
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("Authorization token is missing");
