@@ -1,8 +1,10 @@
 package com.dsp.workflow.controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -24,12 +26,17 @@ import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.PublishService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/publish-history")
 public class PublishController {
 
 	@Autowired
 	private PublishService publishService;
+	
+    @Autowired
+    private HttpServletRequest httpRequest;
 
 	@PostMapping("/create")
 	public PublishHistoryDTO save(@RequestBody PublishHistoryDTO dto) {
@@ -195,16 +202,39 @@ public class PublishController {
         List<String> uuidString = publishService.uploadToDsp2(appName,dto);
         return ResponseEntity.ok(uuidString);
     }
-	 @GetMapping("/create-foldert-sructure")
+	
+   	@GetMapping("/create-folder-structure")
     public ResponseEntity<String> folderStructure(
 		@RequestParam(required=false) String houseType,
 		@RequestParam(required=false) String lsNo,
 		@RequestParam(required=false) String sessionNo,
-		@RequestParam(required=false) String token1,
 		@RequestParam(required=false) String appName
     ) {
         System.out.println("Received in Controller: ");
-        String folder = publishService.createDmsFolderStructure(houseType, lsNo, sessionNo,token1, appName);
+        
+        List<String> folders = new ArrayList<String>();
+        if (!StringUtils.isEmpty(houseType)) {
+        	folders.add(houseType);
+        }
+        if (!StringUtils.isEmpty(lsNo)) {
+        	folders.add(lsNo);
+        }
+        if (!StringUtils.isEmpty(sessionNo)) {
+        	folders.add(sessionNo);
+        }
+        
+        String folder = publishService.createDmsFolderStructure(null, folders, appName);
+//        String token1 = getTokenFromRequest();
+//        String folder = publishService.createDmsFolderStructure(houseType, lsNo, sessionNo,token1, appName);
         return ResponseEntity.ok(folder);
+    }
+   	
+    public String getTokenFromRequest() {
+
+        String authorizationHeader = httpRequest.getHeader("Authorization");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
     }
 }

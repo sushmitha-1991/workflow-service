@@ -46,5 +46,8 @@ public interface PublishService {
             LocalDate toDate);
 
     String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,String appName);
+    
+    String createDmsFolderStructure(String root, List<String> folders, String applicationName);
+
 
 }
