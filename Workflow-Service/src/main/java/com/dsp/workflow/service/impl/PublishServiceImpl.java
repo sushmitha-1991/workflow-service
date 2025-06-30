@@ -506,10 +506,9 @@ public class PublishServiceImpl implements PublishService {
             
             
             List<String> folders = new ArrayList();
-            Long houseId = utils.getHouseIdFromAuthentication();
-            String house = (houseId == 1L) ? "RS" : "LS";
-            folders.add(house);
-            if (houseId == 1) {
+            String houseAbbr = utils.getHouseAbbr();
+            folders.add(houseAbbr);
+            if ("LS".equals(houseAbbr)) {
             	folders.add(response.getLsNo());
             }
             folders.add(response.getSesNo());
@@ -661,82 +660,7 @@ public class PublishServiceImpl implements PublishService {
         return path;
     }
 
-    //  kaushik sir code for folder
-//    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
-//        parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
-//
-//        System.out.println("Parent Path: " + parentPath);
-//        System.out.println("folderName: " + folderName);
-//        System.out.println("token: " + token);
-//
-//        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
-//        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
-//
-//        if (token == null || token.isBlank()) {
-//            throw new IllegalStateException("Authorization token is missing");
-//        }
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.set("Authorization", "Bearer " + token);
-//        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-//        System.out.println("headers  " + headers);
-//        FolderCreateDTO dto = FolderCreateDTO.builder()
-//                .folderName(folderName)
-//                .build();
-//        System.out.println("req dto  " + dto);
-//
-//        HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
-//        System.out.println("entity  " + entity);
-//        String folderPath = parentPath + "" + folderName;
-//        try {
-//            // return restTemplate.postForObject(url, entity,new
-//            // GenericResponse<String>(){});
-//
-//            // // 1
-//
-//        	System.out.println("URL: " + url);
-//            ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
-//                    url,
-//                    HttpMethod.POST,
-//                    entity,
-//                    new ParameterizedTypeReference<GenericResponse<String>>() {
-//                    });
-//            GenericResponse<String> responseBody = response.getBody();
-//            // // 3
-//            // // ResponseEntity<String> response = restTemplate.exchange(
-//            // // url,
-//            // // HttpMethod.POST,
-//            // // entity,
-//            // // new ParameterizedTypeReference<String>(){});
-//
-//            // System.out.println("response " + response);
-//            // System.out.println("responseBody " + responseBody);
-//            if (responseBody != null) {
-//                if (responseBody.getStatusCode() == 200 && responseBody.isSuccess()) {
-//                    return responseBody.getData();
-//                } else if (responseBody.getStatusCode() == 409 &&
-//                        responseBody.getMessage().contains("already exists")) {
-//                    return folderPath;
-//                } else {
-//                    System.out.println("Unexpected response: {}" + responseBody.getMessage());
-//                    return null;
-//                }
-//            } else {
-//                System.out.println("Empty response received from folder creation API");
-//                return null;
-//            }
-//
-//        } catch (HttpClientErrorException.Conflict e) {
-//        	e.printStackTrace();
-//            return folderPath;
-//        } catch (Exception e) {
-//        	e.printStackTrace();
-//            System.out.println("Error occurred while creating folder" + e);
-//            throw e;
-//        }
-//
-//    }
-    // samar code for the folder
+
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
         String fixedParentPath = "/okm:root";
         String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + fixedParentPath;
@@ -795,73 +719,6 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-
-
-
-    private String createFolderIfNotExistsV2 (String parentPath, String folderName, String token) {
-
-    	parentPath = parentPath.endsWith("/") ? parentPath : parentPath + "/";
-        
-    	System.out.println("Parent Path: " + parentPath);
-        System.out.println("folderName: " + folderName);
-        System.out.println("token: " + token);
-
-//        String encodedPath = URLEncoder.encode(parentPath, StandardCharsets.UTF_8);
-//        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + encodedPath;
-
-        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + parentPath;
-
-
-        if (token == null || token.isBlank()) {
-            throw new IllegalStateException("Authorization token is missing");
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-        System.out.println("headers  " + headers);
-
-        FolderCreateDTO dto = FolderCreateDTO.builder()
-                .folderName(folderName)
-                .build();
-        System.out.println("req dto  " + dto);
-
-        HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
-        System.out.println("entity  " + entity);
-        String folderPath = parentPath + "" + folderName;
-        try {
-            ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<GenericResponse<String>>() {
-                    });
-
-            GenericResponse<String> responseBody = response.getBody();
-            if (responseBody != null) {
-                if (responseBody.getStatusCode() == 200 && responseBody.isSuccess()) {
-                    return responseBody.getData();
-                } else if (responseBody.getStatusCode() == 409 &&
-                        responseBody.getMessage().contains("already exists")) {
-                    return folderPath;
-                } else {
-                    System.out.println("Unexpected response: {}" + responseBody.getMessage());
-                    return null;
-                }
-            } else {
-                System.out.println("Empty response received from folder creation API");
-                return null;
-            }
-
-        } catch (HttpClientErrorException.Conflict e) {
-            return folderPath;
-        } catch (Exception e) {
-            System.out.println("Error occurred while creating folder" + e);
-            throw e;
-        }
-
-    }
-
     
     private String handleApiError(String responseBody, String folderPath) {
         try {
@@ -888,6 +745,7 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
+    
     public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
         try {
             String folderPath = "/okm:root/";

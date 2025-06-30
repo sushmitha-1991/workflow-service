@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
+import com.dsp.workflow.dto.UserDetailsDTO;
 import com.dsp.workflow.entity.BaseUser;
 import com.dsp.workflow.repository.MyUserRepository;
 
@@ -173,4 +174,11 @@ public class Utils {
 		return false;
 	}
 
+	public String getHouseAbbr() {
+		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		if (!(principal instanceof UserDetailsDTO udto)) {
+			throw new RuntimeException("Authentication Problems");
+		}
+		return udto.getHouseAbbr();
+	}	
 }
