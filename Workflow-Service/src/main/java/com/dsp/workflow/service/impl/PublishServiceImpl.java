@@ -202,22 +202,22 @@ public class PublishServiceImpl implements PublishService {
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (StringUtils.isBlank(documentName)) {
+        if (StringUtils.isNotBlank(documentName)) {
             spec = spec.and(hasApplicationName(documentName));
         }
         if (lsNo != null) {
             spec = spec.and(hasLokSabhaNo(lsNo));
         }
-        if (sesNo != null) {
+        if (StringUtils.isNotBlank(sesNo)) {
             spec = spec.and(hasLokSabhaSessionNo(sesNo));
         }
         if (rssNo != null) {
             spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
         }
-        if (StringUtils.isBlank(locale)) {
+        if (StringUtils.isNotBlank(locale)) {
             spec = spec.and(hasLocale(locale));
         }
-        if (StringUtils.isBlank(house)) {
+        if (StringUtils.isNotBlank(house)) {
             spec = spec.and(hasHouse(house));
         }
         
