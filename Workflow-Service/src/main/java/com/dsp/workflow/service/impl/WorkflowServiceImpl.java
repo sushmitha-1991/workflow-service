@@ -788,11 +788,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					}
 
-					WorkflowHistory secondEntry = secondEntryBuilder.build();
-					workflowHistoryRepository.save(secondEntry);
-
 					WorkflowHistory firstEntry = firstEntryBuilder.build();
 					workflowHistoryRepository.save(firstEntry);
+
+					WorkflowHistory secondEntry = secondEntryBuilder.build();
+					workflowHistoryRepository.save(secondEntry);
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
