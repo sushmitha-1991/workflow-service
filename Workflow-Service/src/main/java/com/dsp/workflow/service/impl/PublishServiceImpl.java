@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriUtils;
 
@@ -192,7 +193,7 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo,
             String sesNo,
-            String rssNo,String house) {
+            String rssNo, String house) {
 
         List<UrlDto> urlDto = new ArrayList<>();
         // if (locale == null) {
@@ -220,7 +221,7 @@ public class PublishServiceImpl implements PublishService {
         if (StringUtils.isNotBlank(house)) {
             spec = spec.and(hasHouse(house));
         }
-        
+
         System.out.println("date " + date);
         System.out.println("documentName " + documentName);
         System.out.println("locale " + locale);
@@ -228,7 +229,7 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("sesNo " + sesNo);
         System.out.println("rssNo " + rssNo);
         System.out.println("date " + date);
-        System.out.println("house "+house);
+        System.out.println("house " + house);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
         List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
@@ -426,7 +427,7 @@ public class PublishServiceImpl implements PublishService {
     public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
         Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
-        spec = spec.and(hasAppName(applicationName));
+        // spec = spec.and(hasAppName(applicationName));
         if (StringUtils.isNotBlank(dto.getLsNo())) {
             spec = spec.and(hasLsNo(dto.getLsNo()));
         }
@@ -439,6 +440,7 @@ public class PublishServiceImpl implements PublishService {
         List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
         List<String> uploadedUuids = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
+        System.out.println("urlList " + urlList);
         if (urlList.isEmpty()) {
             return uploadedUuids;
         }
@@ -497,26 +499,24 @@ public class PublishServiceImpl implements PublishService {
             }
             String appAbbr = repository.getAbbrByApplicationId(response.getApplicationId());
             System.out.println("appAbbr " + appAbbr);
-            
 
             // ----------- Modified for generic processing
-            
-//          String folderPath = createDmsFolderStructure("LS",
-//          response.getLsNo(), response.getSesNo(), token, appAbbr);
-            
-            
+
+            // String folderPath = createDmsFolderStructure("LS",
+            // response.getLsNo(), response.getSesNo(), token, appAbbr);
+
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
             if ("LS".equals(houseAbbr)) {
-            	folders.add(response.getLsNo());
+                folders.add(response.getLsNo());
             }
             folders.add(response.getSesNo());
-            
-        	String rootPath = OKM_ROOT;
+
+            String rootPath = OKM_ROOT;
             String folderPath = createDmsFolderStructure(rootPath, folders, appAbbr);
             // ----------- End
-            
+
             System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
             System.out.println("uploadUrl  " + uploadUrl);
@@ -606,9 +606,9 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,
             String applicationName) {
-        String rootPath = "/okm:root/";
+        String rootPath = "/okm:root";
         // Create houseType folder (LS or RS)
-       
+
         if (StringUtils.isBlank(token)) {
             token = getTokenFromRequest();
             if (StringUtils.isBlank(token)) {
@@ -620,85 +620,102 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("rootPath " + rootPath);
         if (!StringUtils.isBlank(lsNo)) {
             String completeFolderName = houseType + "/" + lsNo + "/" + sessionNo + "/" + applicationName;
-        
-            String path = createFolderIfNotExists(rootPath, houseType, token);
-            System.out.println("path  " + path);
-            String sesPath = createFolderIfNotExists(path, lsNo, token);
-            System.out.println("sesPath  " + sesPath);
-            String nextPath = createFolderIfNotExists(sesPath, sessionNo, token);
-            System.out.println("path  " + path);
-            String applicationPath = createFolderIfNotExists(nextPath, applicationName, token);
-            System.out.println("applicationPath " + applicationPath);
-            return applicationPath;
+            String path = createFolderIfNotExists(rootPath, completeFolderName, token);
+
+            // String path = createFolderIfNotExists(rootPath, houseType, token);
+            // System.out.println("path " + path);
+            // String sesPath = createFolderIfNotExists(path, lsNo, token);
+            // System.out.println("sesPath " + sesPath);
+            // String nextPath = createFolderIfNotExists(sesPath, sessionNo, token);
+            // System.out.println("path " + path);
+            // String applicationPath = createFolderIfNotExists(nextPath, applicationName,
+            // token);
+            System.out.println("applicationPath " + path);
+            return path;
         } else {
             String completeFolderName = houseType + "/" + sessionNo + "/" + applicationName;
-            String path = createFolderIfNotExists(rootPath, houseType, token);
-            System.out.println("path  " + path);
-            String nextPath = createFolderIfNotExists(path, sessionNo, token);
-            System.out.println("path  " + path);
-            String applicationPath = createFolderIfNotExists(nextPath, applicationName, token);
-            System.out.println("applicationPath " + applicationPath);
-            return applicationPath;
+            String path = createFolderIfNotExists(rootPath, completeFolderName, token);
+
+            // String path = createFolderIfNotExists(rootPath, houseType, token);
+            // System.out.println("path " + path);
+            // String nextPath = createFolderIfNotExists(path, sessionNo, token);
+            // System.out.println("path " + path);
+            // String applicationPath = createFolderIfNotExists(nextPath, applicationName,
+            // token);
+            System.out.println("applicationPath " + path);
+            return path;
         }
     }
 
     @Override
     public String createDmsFolderStructure(String root, List<String> folders, String applicationName) {
 
-    	String path = (StringUtils.isEmpty(root)) ? OKM_ROOT : root;
+        String path = (StringUtils.isEmpty(root)) ? OKM_ROOT : root;
 
         String token = getTokenFromRequest();
         if (StringUtils.isBlank(token)) {
-        	logger.error("Authorization token is missing. Cannot upload file.");
-        	return "";
+            logger.error("Authorization token is missing. Cannot upload file.");
+            return "";
         }
+        System.out.println("folder " + folders);
+        System.out.println("applicationName " + applicationName);
 
         for (int i = 0; i < folders.size(); i++) {
-        	path = createFolderIfNotExists(path, folders.get(i), token);
+            int size = folders.size();
+            path = createFolderIfNotExists(path, folders.get(i), token);
+            System.out.println("path " + path);
+            if (size == (i + 1)) {
+                path = createFolderIfNotExists(path, applicationName, token);
+                System.out.println("complete path " + path);
+            }
         }
-
+        // path = createFolderIfNotExists(path, applicationName, token);
+        // System.out.println("complete path "+path);
         return path;
     }
 
-
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
-        String fixedParentPath = "/okm:root";
-        String url = "https://dspstg.sansad.in/dms/openkm/folders/create?parentPath=" + fixedParentPath;
-
+        if (StringUtils.isBlank(parentPath))
+            parentPath = "/okm:root";
+        String url = openKmUrl + "/dms/openkm/folders/create?parentPath=" + parentPath;
         System.out.println("Hardcoded Final URL: " + url);
         System.out.println("folderName: " + folderName);
         System.out.println("token: " + token);
-
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("Authorization token is missing");
         }
-
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        System.out.println("headers " + headers);
 
         FolderCreateDTO dto = FolderCreateDTO.builder()
                 .folderName(folderName)
                 .build();
+        System.out.println("dto " + dto);
 
         HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
-        String folderPath = fixedParentPath + "/" + folderName;
-
+        String folderPath = parentPath + "/" + folderName;
+        System.out.println("path " + folderPath);
+        System.out.println("create api entity " + entity);
         try {
             ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     entity,
-                    new ParameterizedTypeReference<GenericResponse<String>>() {}
-            );
-
+                    new ParameterizedTypeReference<GenericResponse<String>>() {
+                    });
             GenericResponse<String> responseBody = response.getBody();
-
+            System.out.println("status " + responseBody);
             if (responseBody != null) {
-                if (responseBody.getStatusCode() == 200 && responseBody.isSuccess()) {
+                if (responseBody.getStatusCode() == 200)
+                // responseBody.isSuccess())
+                {
                     return responseBody.getData();
-                } else if (responseBody.getStatusCode() == 409 &&
-                        responseBody.getMessage().contains("already exists")) {
+
+                    // } else if (responseBody.getStatusCode() == 409 &&
+                    // responseBody.getMessage().contains("already exists")) {
+                } else if (responseBody.getStatusCode() == 409) {
                     return folderPath;
                 } else {
                     System.out.println("Unexpected response: " + responseBody.getMessage());
@@ -708,9 +725,14 @@ public class PublishServiceImpl implements PublishService {
                 System.out.println("Empty response received from folder creation API");
                 return null;
             }
-
+        
         } catch (HttpClientErrorException.Conflict e) {
-            e.printStackTrace();
+            System.out.println("status " + e.getMessage());
+            // e.printStackTrace();
+            return folderPath;
+        } catch (HttpClientErrorException e) {
+            System.out.println("status " + e.getMessage());
+            // e.printStackTrace();
             return folderPath;
         } catch (Exception e) {
             e.printStackTrace();
@@ -719,7 +741,6 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-    
     private String handleApiError(String responseBody, String folderPath) {
         try {
             System.out.println("response Body " + responseBody);
@@ -745,7 +766,6 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-    
     public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
         try {
             String folderPath = "/okm:root/";
@@ -917,7 +937,7 @@ public class PublishServiceImpl implements PublishService {
             return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
         };
     }
-    
+
     public static Specification<PublishHistoryEntity> hasHouse(String house) {
         return (root, query, criteriaBuilder) -> {
             if (house != null) {
