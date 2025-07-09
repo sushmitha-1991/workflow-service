@@ -223,7 +223,7 @@ public class PublishController {
         	folders.add(sessionNo);
         }
         
-        String folder = publishService.createDmsFolderStructure(null, folders, appName);
+        String folder = publishService.createDmsFolderStructure("/okm:root", folders, appName);
 //        String token1 = getTokenFromRequest();
 //        String folder = publishService.createDmsFolderStructure(houseType, lsNo, sessionNo,token1, appName);
         return ResponseEntity.ok(folder);
