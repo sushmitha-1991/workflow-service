@@ -733,7 +733,7 @@ public class PublishServiceImpl implements PublishService {
             // e.printStackTrace();
             return folderPath;
         } catch (HttpClientErrorException e) {
-            System.out.println("status  alr");
+            System.out.println("status  already exist");
             // e.printStackTrace();
             return folderPath;
         } catch (Exception e) {
