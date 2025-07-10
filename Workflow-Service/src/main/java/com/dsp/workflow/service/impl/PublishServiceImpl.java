@@ -72,7 +72,7 @@ public class PublishServiceImpl implements PublishService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${openKm.service.upload.endpoint}")
+    @Value("${service.url}")
     private String openKmUrl;
 
     // private String openKmUrl="http://localhost:8889/dms/openkm";
@@ -677,7 +677,9 @@ public class PublishServiceImpl implements PublishService {
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
         if (StringUtils.isBlank(parentPath))
             parentPath = "/okm:root";
-        String url = openKmUrl + "/dms/openkm/folders/create?parentPath=" + parentPath;
+        String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
+        // String url =  "http://localhost:8089/dms/openkm/folders/create?parentPath=" + parentPath;
+
         System.out.println("Hardcoded Final URL: " + url);
         System.out.println("folderName: " + folderName);
         System.out.println("token: " + token);
@@ -726,18 +728,19 @@ public class PublishServiceImpl implements PublishService {
                 return null;
             }
         
-        } catch (HttpClientErrorException.Conflict e) {
-            System.out.println("status " + e.getMessage());
-            // e.printStackTrace();
-            return folderPath;
-        } catch (HttpClientErrorException e) {
-            System.out.println("status " + e.getMessage());
-            // e.printStackTrace();
-            return folderPath;
+        // } catch (HttpClientErrorException.Conflict e) {
+        //     System.out.println("status already exist ");
+        //     // e.printStackTrace();
+        //     return folderPath;
+        // } catch (HttpClientErrorException e) {
+        //     System.out.println("status  alr");
+        //     // e.printStackTrace();
+        //     return folderPath;
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error occurred while creating folder: " + e.getMessage());
-            throw e;
+            // e.printStackTrace();
+            System.out.println("Error occurred while creating folder: ");
+            // throw e;
+            return folderPath;
         }
     }
 
