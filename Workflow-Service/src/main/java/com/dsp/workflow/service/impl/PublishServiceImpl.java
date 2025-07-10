@@ -231,7 +231,7 @@ public class PublishServiceImpl implements PublishService {
         System.out.println("date " + date);
         System.out.println("house " + house);
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec,sort);
         // List<PublishHistoryEntity> responseEntitys = repository.findAll();
         System.out.println("responseEntitys " + responseEntitys);
 
