@@ -728,14 +728,14 @@ public class PublishServiceImpl implements PublishService {
                 return null;
             }
         
-        // } catch (HttpClientErrorException.Conflict e) {
-        //     System.out.println("status already exist ");
-        //     // e.printStackTrace();
-        //     return folderPath;
-        // } catch (HttpClientErrorException e) {
-        //     System.out.println("status  alr");
-        //     // e.printStackTrace();
-        //     return folderPath;
+        } catch (HttpClientErrorException.Conflict e) {
+            System.out.println("status already exist ");
+            // e.printStackTrace();
+            return folderPath;
+        } catch (HttpClientErrorException e) {
+            System.out.println("status  alr");
+            // e.printStackTrace();
+            return folderPath;
         } catch (Exception e) {
             // e.printStackTrace();
             System.out.println("Error occurred while creating folder: ");
