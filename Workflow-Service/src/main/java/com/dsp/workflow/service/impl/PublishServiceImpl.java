@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -544,7 +545,7 @@ public class PublishServiceImpl implements PublishService {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
             body.add("folderPath", folderPath);
-            body.add("documentName", updatedFileName);
+            body.add("documentName", updatedFileName+""+LocalDateTime.now());
             body.add("masterId", 231);
             body.add("applicationNo", response.getApplicationId());
             body.add("referenceId", 1);
@@ -840,7 +841,7 @@ public class PublishServiceImpl implements PublishService {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", resource);
             body.add("folderPath", folderPath);
-            body.add("documentName", updatedFileName);
+            body.add("documentName", updatedFileName+""+LocalDateTime.now());
             body.add("masterId", 231);
             body.add("applicationNo", response.getApplicationId());
             body.add("referenceId", 1);
