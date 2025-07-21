@@ -548,7 +548,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						       es.e_summon_issuance_date as date,
 						       es.lok_sabha_no  as LSNo,
 						       es.session_no as SSNo,
-						       es.session_no  as RSSNo,
+						       es.rajya_sabha_session_no  as RSSNo,
 						       'Published' as status,
 						       '' as pendingAt,
 						       es.id as refId,
