@@ -45,9 +45,8 @@ public interface PublishService {
     List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo, String sesNo, LocalDate fromDate,
             LocalDate toDate);
 
-    String createDmsFolderStructure(String houseType, String lsNo, String sessionNo, String token,String appName);
     
-    String createDmsFolderStructure(String root, List<String> folders, String applicationName);
+    String createDmsFolderStructure(String root, List<String> folders);
 
 
 }
