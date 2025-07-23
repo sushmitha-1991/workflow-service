@@ -666,7 +666,7 @@ public class PublishServiceImpl implements PublishService {
 
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
 
-      //System.out.println("parent path "+parentPath);
+      System.out.println("parent path "+parentPath);
         //System.out.println("folder name "+folderName);
         if (StringUtils.isBlank(parentPath))
             parentPath = "/okm:root";
@@ -700,7 +700,7 @@ public class PublishServiceImpl implements PublishService {
             GenericResponse<String> responseBody = response.getBody();
             //System.out.println("status " + responseBody);
             if (responseBody != null) {
-            //System.out.println("status " + responseBody.getStatusCode());
+            System.out.println("status " + responseBody.getStatusCode());
                 if (responseBody.getStatusCode() == 200)
                 // responseBody.isSuccess())
                 {
