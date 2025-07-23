@@ -67,4 +67,7 @@ public class InputWorkflowHistory extends Auditable {
 	
 	@Column(name = "ip_address") 
 	private String ipAddress;
+	
+	@Column(name = "input_instance_id") 
+	private Long inputInstanceId;
 }
