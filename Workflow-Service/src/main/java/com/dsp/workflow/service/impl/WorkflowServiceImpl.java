@@ -80,7 +80,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private NotesheetRepository notesheetRepository;
 
 	@Autowired
-	private ApplicationInstanceRepository applicationInstanceRepository;
+	private ApplicationInstanceRepository applicationInstanceRepository; 
 
 	@Autowired
 	private WorkflowHistoryRepository workflowHistoryRepository;
