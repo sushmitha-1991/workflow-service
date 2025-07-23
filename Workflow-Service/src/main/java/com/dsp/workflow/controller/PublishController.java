@@ -222,10 +222,10 @@ public class PublishController {
         if (!StringUtils.isEmpty(sessionNo)) {
         	folders.add(sessionNo);
         }
-        
-        String folder = publishService.createDmsFolderStructure("/okm:root", folders, appName);
-//        String token1 = getTokenFromRequest();
-//        String folder = publishService.createDmsFolderStructure(houseType, lsNo, sessionNo,token1, appName);
+		folders.add(appName);
+        System.out.println(folders);
+        String folder = publishService.createDmsFolderStructure("/okm:root", folders);
+
         return ResponseEntity.ok(folder);
     }
    	
