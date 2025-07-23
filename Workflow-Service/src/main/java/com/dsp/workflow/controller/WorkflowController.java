@@ -29,9 +29,11 @@ import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.entity.InputWorkflowHistory;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.response.GenericResponse;
+import com.dsp.workflow.service.InputWorkflowService;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
@@ -49,6 +51,9 @@ public class WorkflowController {
 
 	@Autowired
 	private WorkflowService workflowService;
+	
+	@Autowired
+	private InputWorkflowService inputWorkflowService;
 
 	@Autowired
 	private PublishService publishService;
@@ -363,5 +368,27 @@ public class WorkflowController {
 							HttpStatus.INTERNAL_SERVER_ERROR.value()));
 		}
 	}
+	
+	/*
+	 * Get the Input History
+	 */
+	@GetMapping("/get-input-history")
+	public ResponseEntity<GenericResponse<List<InputWorkflowHistory>>> getInputHistory (
+															@RequestParam Long inputInstanceId) {
+		
+		List<InputWorkflowHistory> histories = inputWorkflowService
+										.getInputHistoryByInputInstanceId(inputInstanceId);
+		
+		if (histories.isEmpty()) {
+			GenericResponse<List<InputWorkflowHistory>> response = new GenericResponse<>(false, 
+						"No records found", histories, HttpStatus.OK.value());
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		}
+		
+		GenericResponse<List<InputWorkflowHistory>> response = new GenericResponse<>(true, 
+						"Records found", histories, HttpStatus.OK.value());
+		
+		return ResponseEntity.ok(response);  
+	}	
 
 }
