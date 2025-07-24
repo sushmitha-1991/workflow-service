@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.dsp.workflow.dto.DraftDataDTO;
+import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
@@ -140,5 +141,12 @@ public interface WorkflowService {
 	 * @return
 	 */
 	boolean processTranslation(Long applicationInstanceId);
+
+	/**
+	 * @param userIdFromAuthentication
+	 * @param houseIdFromAuthentication
+	 * @return
+	 */
+	InProgressCountResponse getInProgressCount(Long userIdFromAuthentication, Long houseIdFromAuthentication);
 
 }

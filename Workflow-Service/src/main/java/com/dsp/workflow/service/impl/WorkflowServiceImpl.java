@@ -1,6 +1,6 @@
 package com.dsp.workflow.service.impl;
 
-import java.time.LocalDate;  
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -35,6 +35,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.CorrectedDebatedDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
+import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.SerialNumberRequest;
 import com.dsp.workflow.dto.SerialNumberResponse;
@@ -1695,6 +1696,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
+		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
 
 }
