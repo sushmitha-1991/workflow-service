@@ -5,16 +5,8 @@
  */
 package com.dsp.workflow.dto;
 
-/**
- * 
- */
+public interface InProgressCountResponse {
+	String getStatus(); // must match alias in query
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
-public class InProgressCountResponse {
-	private String status;
-	private Long count;
+	Long getCount(); // must match alias in query
 }

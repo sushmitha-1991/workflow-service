@@ -248,7 +248,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 * @return
 	 */
 	@Query(value = """
-			SELECT status, COUNT(status)
+			SELECT status AS status, COUNT(status) AS count
 			FROM (
 			    -- START: Big SQL Union Query
 			    select distinct on (ai.application_no) ai.application_no as applicationNo,
