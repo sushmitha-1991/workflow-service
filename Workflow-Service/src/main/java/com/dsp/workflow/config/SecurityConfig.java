@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -22,11 +23,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.dsp.workflow.exception.CustomAccessDeniedHandler;
 import com.dsp.workflow.filter.JwtFilter;
 import com.dsp.workflow.service.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	@Autowired
@@ -41,6 +44,9 @@ public class SecurityConfig {
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
+
+	@Autowired
+	private CustomAccessDeniedHandler customAccessDeniedHandler;
 
 	@Bean
 	public AuthenticationProvider authenticationProvider() {
@@ -58,13 +64,15 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests(
-				(authz) -> authz.requestMatchers("workflow/v3/api-docs/**", "workflow/swagger-ui/**", "workflow/swagger-ui.html",
-						"/workflow/**", "/camunda/**", "/notesheet/**","/publish-history/getAll/publishedDocs").permitAll().anyRequest().authenticated())
+		http.authorizeHttpRequests((authz) -> authz
+				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/workflow/**", "/camunda/**",
+						"/notesheet/**", "/publish-history/getAll/publishedDocs")
+				.permitAll().requestMatchers("/**").hasRole("ADMIN").anyRequest().authenticated())
 				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-		http.exceptionHandling((ex) -> ex.authenticationEntryPoint(new JwtAuthenticationEntryPoint()))
+		http.exceptionHandling((ex) -> ex.authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+				.accessDeniedHandler(customAccessDeniedHandler))
 				.sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
 		return http.build();

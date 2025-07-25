@@ -5,10 +5,13 @@
  */
 package com.dsp.workflow.entity;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
@@ -81,17 +84,17 @@ public class BaseUser extends Auditable implements UserDetails {
 	private Long houseId;
 
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "house_id", nullable = false, insertable = false,updatable = false)
+	@JoinColumn(name = "house_id", nullable = false, insertable = false, updatable = false)
 	private Houses house;
-	
-	// Implement UserDetails interface methods
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		// Here, you should return the roles and authorities granted to the user.
-		// If you're not using GrantedAuthority, you can return an empty list or
-		// customize as needed.
-		return Collections.emptyList();
+		if (this.role == null || this.role.isBlank()) {
+			return Collections.emptyList();
+		}
+
+		return Arrays.stream(this.role.split(",")).map(String::trim).filter(r -> !r.isEmpty())
+				.map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase())).collect(Collectors.toSet());
 	}
 
 	@Override
