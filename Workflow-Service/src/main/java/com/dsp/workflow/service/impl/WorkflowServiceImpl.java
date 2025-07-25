@@ -35,6 +35,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.CorrectedDebatedDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
+import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.dto.SerialNumberRequest;
 import com.dsp.workflow.dto.SerialNumberResponse;
@@ -80,7 +81,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private NotesheetRepository notesheetRepository;
 
 	@Autowired
-	private ApplicationInstanceRepository applicationInstanceRepository;
+	private ApplicationInstanceRepository applicationInstanceRepository; 
 
 	@Autowired
 	private WorkflowHistoryRepository workflowHistoryRepository;
@@ -548,7 +549,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						       es.e_summon_issuance_date as date,
 						       es.lok_sabha_no  as LSNo,
 						       es.session_no as SSNo,
-						       es.session_no  as RSSNo,
+						       es.rajya_sabha_session_no  as RSSNo,
 						       'Published' as status,
 						       '' as pendingAt,
 						       es.id as refId,
@@ -1695,6 +1696,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
+		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
 
 }

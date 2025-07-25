@@ -33,4 +33,5 @@ public class PublishDocumentTemp {
     private Long applicationId;
     private String applicationName;
     private String locale;
+    private Boolean isUpdatedUuid;
 }

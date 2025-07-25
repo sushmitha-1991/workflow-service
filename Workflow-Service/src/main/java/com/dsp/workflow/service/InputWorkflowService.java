@@ -1,7 +1,16 @@
 package com.dsp.workflow.service;
 
+import java.util.List;
+
+import com.dsp.workflow.entity.InputWorkflowHistory;
+
 public interface InputWorkflowService {
 
-	String getHistoryList(Long applicationId, Long recordId);
+	/**
+	 * 
+	 * @param inputInstanceId
+	 * @return
+	 */
+	List<InputWorkflowHistory> getInputHistoryByInputInstanceId(Long inputInstanceId); 
 
 }
