@@ -134,7 +134,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 
-			        SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+				ELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 			    applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url, uploaded_document_uuid
 			    FROM (
 			                                select
@@ -186,7 +186,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                select
 			                        distinct on
 			                        (ai.application_no) ai.application_no as applicationNo,
-			                        coalesce(a.document_display_name, a."name") as documentName,
+			                        coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name")) as documentName,
 			                        ai.document_date as date,
 			                        ai.lok_sabha_session as LSNo,
 			                        ai.lok_sabha_session_number as SSNo,
@@ -246,7 +246,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        union
 			                select
 			                        distinct on
-			                        (ii.application_no) ii.application_no as applicationNo,
+			                        (ii.application_no) 
+			                        ii.application_no as applicationNo,
 			                        coalesce(a.document_display_name, a."name") as documentName,
 			                        ii.document_date as date,
 			                        ii.lok_sabha_session as LSNo,
@@ -335,7 +336,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                select
 			                        distinct on
 			                        (ai.application_no) ai.application_no as applicationNo,
-			                        coalesce(a.document_display_name, a."name") as documentName,
+			                        coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name")) as documentName,
 			                        ai.document_date as date,
 			                        ai.lok_sabha_session as LSNo,
 			                        ai.lok_sabha_session_number as SSNo,
@@ -621,7 +622,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        where a.module_id = m.id and a.abbr in ('SYN'))
 			        ) A
 			        left join master.applications ma on
-			                ma.id = A.applicationId												""";
+			                ma.id = A.applicationId	
+				""";
 
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
@@ -963,6 +965,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			formParams.add("htmlContentEn", translationInputDTO.getInputContent());
 			formParams.add("startingPageNo", startingPageNo);
 			formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
+		    formParams.add("locale", "en");
 
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
@@ -1018,6 +1021,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			formParams.add("htmlContentEn", correctedDebatedDTO.getInputContent());
 			formParams.add("startingPageNo", startingPageNo);
 			formParams.add("applicationId", correctedDebatedDTO.getDocumentTypeId().toString());
+		    formParams.add("locale", "en");
+		    formParams.add("applicationAbbr", CORRECTED_DEBATES_ABBR);
+//		    formParams.add("fileName", generateFileName(esummon, member, locale));
 
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
