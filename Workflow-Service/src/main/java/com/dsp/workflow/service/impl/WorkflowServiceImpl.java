@@ -966,7 +966,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			formParams.add("startingPageNo", startingPageNo);
 			formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
 		    formParams.add("locale", "en");
-
+		    System.out.println("PARAMS: " + formParams);
+		    
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
 			ResponseEntity<String> uploadResponse = restTemplate
@@ -1697,6 +1698,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public boolean processTranslation(Long applicationInstanceId) {
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 
+		System.out.println("TRANS DTO: " + translationInputDTO);
+		
 		if (translationInputDTO != null && Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 			callTranslationAPI(translationInputDTO);
 			return true;
