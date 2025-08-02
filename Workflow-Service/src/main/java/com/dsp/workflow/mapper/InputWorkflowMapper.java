@@ -28,7 +28,7 @@ public class InputWorkflowMapper {
                 .actionTakenByName(taskInstance.getActionTakenByName())
                 .subModuleId(taskInstance.getApplicationId().toString())
                 .status(taskInstance.getStatus())
-                .note(taskInstance.getNote())
+                .note(taskInstance.getCommentForDisplay())
                 .applicationInstanceId(taskInstance.getApplicationRecordId())
                 .actionTakenOn(taskInstance.getCreatedAt())
                 .build();
