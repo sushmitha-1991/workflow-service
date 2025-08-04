@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
+import com.dsp.workflow.dto.DocumentMetadataDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -391,6 +392,26 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
+	
+	@GetMapping("/get-input-documents")
+	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments (
+															@RequestParam Long inputInstanceId) {
+
+		List<com.dsp.workflow.dto.DocumentMetadataDTO> histories = inputWorkflowService.getDocuments(inputInstanceId);
+
+		if (histories.isEmpty()) {
+			GenericResponse<List<DocumentMetadataDTO>> response = new GenericResponse<>(false, "No records found",
+					histories, HttpStatus.OK.value());
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		}
+
+		GenericResponse<List<DocumentMetadataDTO>> response = new GenericResponse<>(true, "Records found", histories,
+				HttpStatus.OK.value());
+
+		return ResponseEntity.ok(response);
+	}
+	
+	
 	@GetMapping("/my-task/in-progress-count")
 	public InProgressCountResponse getInProgressStatusCount() {
 		return workflowService.getInProgressCount(utils.getUserIdFromAuthentication(),
