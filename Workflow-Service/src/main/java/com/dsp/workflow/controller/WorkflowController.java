@@ -374,18 +374,18 @@ public class WorkflowController {
 	 * Get the Input History
 	 */
 	@GetMapping("/get-input-history")
-	public ResponseEntity<GenericResponse<List<InputWorkflowHistory>>> getInputHistory(
+	public ResponseEntity<GenericResponse<List<WorkflowHistory>>> getInputHistory(
 			@RequestParam Long inputInstanceId) {
 
-		List<InputWorkflowHistory> histories = inputWorkflowService.getInputHistoryByInputInstanceId(inputInstanceId);
+		List<WorkflowHistory> histories = inputWorkflowService.getInputHistoryByInputInstanceId(inputInstanceId);
 
 		if (histories.isEmpty()) {
-			GenericResponse<List<InputWorkflowHistory>> response = new GenericResponse<>(false, "No records found",
+			GenericResponse<List<WorkflowHistory>> response = new GenericResponse<>(false, "No records found",
 					histories, HttpStatus.OK.value());
 			return ResponseEntity.status(HttpStatus.OK).body(response);
 		}
 
-		GenericResponse<List<InputWorkflowHistory>> response = new GenericResponse<>(true, "Records found", histories,
+		GenericResponse<List<WorkflowHistory>> response = new GenericResponse<>(true, "Records found", histories,
 				HttpStatus.OK.value());
 
 		return ResponseEntity.ok(response);
