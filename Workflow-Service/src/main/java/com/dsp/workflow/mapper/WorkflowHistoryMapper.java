@@ -41,7 +41,7 @@ public class WorkflowHistoryMapper {
 
 		DocumentMetadataDTO document = DocumentMetadataDTO.builder()
 				.documentId(docMap.get("documentName") != null ? docMap.get("documentName").toString() : "")
-				.uuid(UUID.fromString(docMap.get("documentUuid").toString()))
+				.uuid(UUID.fromString(docMap.get("documentUuid").toString())) 
 				.build();
 				
 		return document;
