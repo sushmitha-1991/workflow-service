@@ -81,7 +81,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private NotesheetRepository notesheetRepository;
 
 	@Autowired
-	private ApplicationInstanceRepository applicationInstanceRepository; 
+	private ApplicationInstanceRepository applicationInstanceRepository;
 
 	@Autowired
 	private WorkflowHistoryRepository workflowHistoryRepository;
@@ -111,6 +111,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Value("${corrected.debate.url}")
 	private String correctedDebateUrl;
+
+	@Value("${pdf.upload.url}")
+	private String pdfUploadUrl;
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -838,6 +841,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
+							System.out.println("##### translationInputDTO - " + translationInputDTO);
 							callTranslationAPI(translationInputDTO);
 //							finalEntryBuilder.translationSuccess(true);
 						} catch (Exception e) {
@@ -970,9 +974,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 		    
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-			ResponseEntity<String> uploadResponse = restTemplate
-					.postForEntity("https://dspstg.sansad.in/template/upload-html-english", formRequest, String.class);
+			System.out.println(">>> upload failing - ");
+			ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
 
+			System.out.println("### upload completed");
 			// Parse documentUuid from response
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
@@ -982,6 +987,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			}
 
 			UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
+
+			System.out.println("### doc - " + documentUuid);
 
 			translationInputDTO.setContentUUID(documentUuid); // directly set it
 
@@ -1028,9 +1035,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-			ResponseEntity<String> uploadResponse = restTemplate
-					.postForEntity("https://dspstg.sansad.in/template/upload-html-english", formRequest, String.class);
+			System.out.println(">>> calling");
+			ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
 
+			System.out.println(">>> success");
 			// Parse documentUuid from response
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
