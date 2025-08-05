@@ -23,7 +23,7 @@ public class WorkflowHistoryMapper {
 		WorkflowHistory history = WorkflowHistory.builder()
 									.actionTakenBy(input.getActionTakenBy())
 									.actionTakenByName(input.getActionTakenByName())
-									.actionTakenOn(input.getActionTakenOn().toLocalDateTime())
+									.actionTakenOn(input.getCreatedAt())
 									.status(input.getStatus())
 									.pendingWith(input.getPendingWith())
 									.pendingWithName(input.getPendingWithName())
