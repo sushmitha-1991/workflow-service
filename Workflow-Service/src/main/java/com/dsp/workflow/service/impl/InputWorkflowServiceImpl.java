@@ -1,12 +1,15 @@
 package com.dsp.workflow.service.impl;
 
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.dsp.workflow.dto.DocumentMetadataDTO;
 import com.dsp.workflow.entity.InputWorkflowHistory;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.mapper.WorkflowHistoryMapper;
@@ -35,4 +38,21 @@ public class InputWorkflowServiceImpl implements InputWorkflowService {
                 .collect(Collectors.toList());
     }
 
+	
+	@Override
+	public List<DocumentMetadataDTO> getDocuments (Long inputInstanceId) {
+		
+		InputWorkflowHistory history = inputHistoryRepository.findTop1ByInputInstanceIdOrderByCreatedAtDesc(inputInstanceId);
+		
+		if (history == null) return Collections.EMPTY_LIST;
+		
+		List<Map<String, Object>>docList = history.getReferenceFiles();
+		
+		if (docList == null) return Collections.EMPTY_LIST;
+		
+		return docList.stream()
+                .map(wfHistoryMapper::toDocumentDTO) 
+                .collect(Collectors.toList());
+    
+	}	
 }

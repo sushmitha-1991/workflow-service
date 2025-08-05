@@ -6,8 +6,11 @@ package com.dsp.workflow.entity;
 
 
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -70,4 +73,9 @@ public class InputWorkflowHistory extends Auditable {
 	
 	@Column(name = "input_instance_id") 
 	private Long inputInstanceId;
+	
+	@Convert(converter = JsonConverter.class)
+    @Column(name = "reference_files", columnDefinition = "JSONB")
+    private List<Map<String,Object>> referenceFiles;	
+	
 }
