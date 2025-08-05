@@ -1,5 +1,7 @@
 package com.dsp.workflow.dto;
 
+import java.time.LocalDate;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,4 +18,7 @@ public class SessionDto {
     private String sesNo;
     private String rsNo;
     private String locale;
+    private LocalDate fromDate;
+    private LocalDate toDate;
+
 }

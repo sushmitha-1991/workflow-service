@@ -28,6 +28,7 @@ public class PublishDocumentTemp {
     @Column(name = "lsno")
     private String lsNo;
     private String sesNo;
+    private String forDate;
     private String completeUrl;
     private UUID publishUuid;
     private Long applicationId;
