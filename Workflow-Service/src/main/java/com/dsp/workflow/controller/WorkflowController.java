@@ -5,6 +5,7 @@
  */
 package com.dsp.workflow.controller;
 
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import com.dsp.workflow.dto.TaskResponseDTO;
 import com.dsp.workflow.entity.InputWorkflowHistory;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
+import com.dsp.workflow.repository.ApplicationRepository;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.InputWorkflowService;
 import com.dsp.workflow.service.PublishService;
@@ -59,8 +61,15 @@ public class WorkflowController {
 
 	@Autowired
 	private PublishService publishService;
+	
 	@Autowired
 	private Utils utils;
+	
+	@Autowired
+	private ApplicationRepository appRepository;
+	
+	
+	private final static String draftSuccessMsg = "{0} saved as Draft with Ref. No {1}"; 
 
 	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
@@ -306,7 +315,14 @@ public class WorkflowController {
 		if (data.isEmpty()) {
 			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
 		}
-		return ResponseEntity.ok(new GenericResponse<>(true, "Document saved as draft", data, 200));
+		
+		// Get Document Display name
+		String appName = appRepository.findApplicationDisplayName(draftDataDTO.getApplicationId());
+		String message = MessageFormat.format(draftSuccessMsg, appName, data.get("applicationNo"));
+
+//		return ResponseEntity.ok(new GenericResponse<>(true, "Document saved as draft", data, 200));
+		return ResponseEntity.ok(new GenericResponse<>(true, message, data, 200));
+
 	}
 
 	@GetMapping("/get-save-as-draft")
