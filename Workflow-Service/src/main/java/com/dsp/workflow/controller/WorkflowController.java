@@ -69,7 +69,7 @@ public class WorkflowController {
 	private ApplicationRepository appRepository;
 	
 	
-	private final static String draftSuccessMsg = "{0} saved as Draft with Ref. No {1}";
+	private final static String draftSuccessMsg = "{0} saved as Draft with Ref. No {1}"; 
 
 	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
