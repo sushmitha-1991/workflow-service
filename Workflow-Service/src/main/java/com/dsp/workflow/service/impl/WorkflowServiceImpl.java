@@ -145,7 +145,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                        (ai.application_no) ai.application_no as applicationNo,
 			                       case
 			                            when ai.additional_details = 'Supplementary Synopsis' then 'Supplementary Synopsis'
-			                            else coalesce(a.document_display_name, a."name")
+			                        	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
 			                        end
 			                        as documentName,
 			                        ai.document_date as date,
