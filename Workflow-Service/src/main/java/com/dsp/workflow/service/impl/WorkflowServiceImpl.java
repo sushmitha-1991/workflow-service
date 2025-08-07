@@ -34,6 +34,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.CorrectedDebatedDTO;
+import com.dsp.workflow.dto.DebateTaggingDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
@@ -111,6 +112,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Value("${corrected.debate.url}")
 	private String correctedDebateUrl;
+
+	@Value("${debate.tagging.url}")
+	private String debateTaggingUrl;
 
 	@Value("${pdf.upload.url}")
 	private String pdfUploadUrl;
@@ -249,7 +253,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        union
 			                select
 			                        distinct on
-			                        (ii.application_no) 
+			                        (ii.application_no)
 			                        ii.application_no as applicationNo,
 			                        coalesce(a.document_display_name, a."name") as documentName,
 			                        ii.document_date as date,
@@ -625,7 +629,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        where a.module_id = m.id and a.abbr in ('SYN'))
 			        ) A
 			        left join master.applications ma on
-			                ma.id = A.applicationId	
+			                ma.id = A.applicationId
 				""";
 
 	private final static String orderByClause = """
@@ -786,7 +790,6 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 						} catch (Exception e) {
 							// Log and continue
-							System.err.println("Translation API call failed: " + e.getMessage());
 							secondEntryBuilder.translationSuccess(false);
 							firstEntryBuilder.translationSuccess(false);
 							e.printStackTrace();
@@ -830,24 +833,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
 							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
 
-					// Prepare new entry with translation and corrected debates success flags
-//					WorkflowHistory.WorkflowHistoryBuilder finalEntryBuilder = WorkflowHistory.builder()
-//							.processInstanceId(processInstanceId).applicationInstanceId(applicationInstanceId)
-//							.subModuleId(application_no).pendingWith(receiverUserId).pendingWithName(receiverUserName)
-//							.pendingStartDate(LocalDateTime.now()).note(note).currentTaskId(taskId).status(status)
-//							.statusKey(statusKey).actionUrl(actionUrl);
-
 					// Translation API
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
-							System.out.println("##### translationInputDTO - " + translationInputDTO);
 							callTranslationAPI(translationInputDTO);
-//							finalEntryBuilder.translationSuccess(true);
 						} catch (Exception e) {
-							System.err.println("Translation API call failed: " + e.getMessage());
 							e.printStackTrace();
-//							finalEntryBuilder.translationSuccess(false);
 						}
 					}
 
@@ -855,22 +847,35 @@ public class WorkflowServiceImpl implements WorkflowService {
 					String correctedDebatesAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
 					if (CORRECTED_DEBATES_ABBR.equals(correctedDebatesAbbr)) {
-						System.out.println("### correctedDebatesAbbr - " + correctedDebatesAbbr);
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
-						System.out.println("### correctedDebatedDTO - " + correctedDebatedDTO);
+						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
 						try {
 							callCorrectedDebatesAPI(correctedDebatedDTO);
-//							finalEntryBuilder.correctedDebateSuccess(true);
+
+							try {
+								// Calling Debate Tagging for DTAG
+								debateTaggingDTO.setApplicationId(80L);
+								callDebateTagging(debateTaggingDTO);
+							} catch (Exception e) {
+								System.err.println("Error in first call to callDebateTagging (DTAG):");
+								e.printStackTrace();
+							}
+
+							try {
+								// Calling Debate Tagging for Supplementary Tagging
+								debateTaggingDTO.setApplicationId(81L);
+								callDebateTagging(debateTaggingDTO);
+							} catch (Exception e) {
+								System.err.println("Error in second call to callDebateTagging (Supplementary):");
+								e.printStackTrace();
+							}
+
 						} catch (Exception e) {
-							System.err.println("Corrected Debates API call failed: " + e.getMessage());
 							e.printStackTrace();
-//							finalEntryBuilder.correctedDebateSuccess(false);
 						}
 					}
 
-					// Save entry
-//					workflowHistoryRepository.save(finalEntryBuilder.build());
 				}
 
 				// Return next task ID or end message
@@ -886,6 +891,51 @@ public class WorkflowServiceImpl implements WorkflowService {
 		} catch (Exception e) {
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * @param debateTaggingDTO
+	 */
+	private void callDebateTagging(DebateTaggingDTO debateTaggingDTO) {
+		try {
+			String token = getTokenFromRequest();
+
+			// Step 2: Call translation API
+			HttpHeaders jsonHeaders = new HttpHeaders();
+			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+			jsonHeaders.setBearerAuth(token);
+			HttpEntity<DebateTaggingDTO> jsonRequest = new HttpEntity<>(debateTaggingDTO, jsonHeaders);
+			ResponseEntity<String> response = restTemplate.postForEntity(debateTaggingUrl, jsonRequest, String.class);
+
+			System.out.println("### Debate tagging API Response: " + response.getBody());
+
+		} catch (HttpClientErrorException e) {
+			System.err.println("HTTP error during Debates Tagging API call: " + e.getResponseBodyAsString());
+			throw new RuntimeException("Error calling Debates Tagging API: " + e.getStatusCode(), e);
+		} catch (Exception e) {
+			System.err.println("Unexpected error during debates tagging process.");
+			e.printStackTrace();
+			throw new RuntimeException("Debates Tagging API call failed.", e);
+		}
+	}
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	private DebateTaggingDTO getDebatetaggingDTO(Long applicationInstanceId) {
+		List<Object[]> result = applicationInstanceRepository
+				.getDebateTaggingByApplicationInstanceId(applicationInstanceId);
+
+		if (result.isEmpty()) {
+			return null;
+		}
+
+		Object[] row = result.get(0);
+
+		return DebateTaggingDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
+				.rajyaSabhaSessionNo(convertToLong(row[2])).debateDate(convertToLocalDate(row[3]))
+				.content((String) row[4]).status("DRAFT").build();
 	}
 
 	/**
@@ -969,9 +1019,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			formParams.add("htmlContentEn", translationInputDTO.getInputContent());
 			formParams.add("startingPageNo", startingPageNo);
 			formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
-		    formParams.add("locale", "en");
-		    System.out.println("PARAMS: " + formParams);
-		    
+			formParams.add("locale", "en");
+			System.out.println("PARAMS: " + formParams);
+
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
 			System.out.println(">>> upload failing - ");
@@ -1029,8 +1079,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			formParams.add("htmlContentEn", correctedDebatedDTO.getInputContent());
 			formParams.add("startingPageNo", startingPageNo);
 			formParams.add("applicationId", correctedDebatedDTO.getDocumentTypeId().toString());
-		    formParams.add("locale", "en");
-		    formParams.add("applicationAbbr", CORRECTED_DEBATES_ABBR);
+			formParams.add("locale", "en");
+			formParams.add("applicationAbbr", CORRECTED_DEBATES_ABBR);
 //		    formParams.add("fileName", generateFileName(esummon, member, locale));
 
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
@@ -1707,7 +1757,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 
 		System.out.println("TRANS DTO: " + translationInputDTO);
-		
+
 		if (translationInputDTO != null && Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 			callTranslationAPI(translationInputDTO);
 			return true;
