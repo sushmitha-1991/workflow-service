@@ -34,6 +34,13 @@ public class PublishMapper {
         return dto;
     }
 
+    // New overloaded method to set branch
+    public static PublishHistoryDTO toDTO(PublishHistoryEntity entity, String branch) {
+        PublishHistoryDTO dto = toDTO(entity);
+        dto.setBranch(branch);
+        return dto;
+    }
+
     public static PublishHistoryEntity toEntity(PublishHistoryDTO dto) {
         PublishHistoryEntity entity = PublishHistoryEntity.builder()
                 .id(dto.getId())
