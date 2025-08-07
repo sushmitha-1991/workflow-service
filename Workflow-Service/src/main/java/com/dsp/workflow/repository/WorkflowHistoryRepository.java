@@ -357,7 +357,10 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 
 			    union
 
-			    SELECT ah.ref_no as applicationNo, 'In Progress' as status
+			    SELECT ah.ref_no as applicationNo, CASE 
+				  WHEN inp.status = 'Returned' THEN 'Returned'
+				    ELSE 'In Progress'
+				  END AS status
 			    FROM translation.translation_input inp
 			    JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			    left join master.applications ma on ma.id = inp.document_type_id

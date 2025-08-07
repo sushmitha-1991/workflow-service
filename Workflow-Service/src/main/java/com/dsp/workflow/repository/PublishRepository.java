@@ -52,5 +52,11 @@ public interface PublishRepository
         
         String findLatestRS();
 
+    @Query(value = "SELECT o.office_name FROM master.applications a " +
+            "JOIN master.offices o ON o.id = a.primary_office_id " +
+            "WHERE a.id = :appId", nativeQuery = true)
+    String getPrimaryOfficeNameByApplicationId(@Param("appId") Long appId);
+
+
 
 }
