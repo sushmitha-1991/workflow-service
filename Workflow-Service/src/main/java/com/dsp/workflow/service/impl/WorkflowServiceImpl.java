@@ -452,7 +452,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 		                  lsm.lok_sabha_number as LSNo,
 		                  lssm.session_number as SSNo,
 		                  rssm.session_number as RSSNo,
-		                  'In Progress' as status,
+          				  case
+							  	when (inp.status = 'Returned') then inp.status
+							  	else 'In Progress'
+						  end
+		                  as status,
 		          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 		          null as refId,
 		          null as applicationId,
