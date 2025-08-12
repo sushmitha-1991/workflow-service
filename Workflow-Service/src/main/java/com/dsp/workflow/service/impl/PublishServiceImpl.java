@@ -1088,46 +1088,94 @@ private String getMonth(String date) {
             return criteriaBuilder.conjunction();
         };
     }
+// old
+//    @Override
+//    public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
+//        // if (locale == null) {
+//        // locale = "en";
+//        // }
+//        Long userId = utils.getUserIdFromAuthentication();
+//        System.out.println("user " + userId);
+//        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
+//        if (date != null) {
+//            spec = spec.and(hasForDate(date));
+//        }
+//        if (!(StringUtils.isBlank(applicationName))) {
+//            spec = spec.and(hasApplicationName(applicationName));
+//        }
+//        if (StringUtils.isBlank(locale)) {
+//            spec = spec.and(hasLocale(locale));
+//        }
+//        Sort sort = Sort.by(Sort.Order.desc("forDate"));
+//        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+//        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+//        List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
+//        Long houseId = utils.getHouseIdFromAuthentication();
+//        for (PublishHistoryEntity entity : responseEntitys) {
+//            System.out.println("entity   " + entity);
+//            System.out.println("userId " + userId);
+//
+//            Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
+//            if (exists != null && exists) {
+//                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
+//
+//                    listOfDTOs.add(PublishMapper.toDTO(entity));
+//                } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
+//                    listOfDTOs.add(PublishMapper.toDTO(entity));
+//                }
+//            }
+//        }
+//
+//        return listOfDTOs;
+//    }
 
+// changes for the branch name
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
-        // if (locale == null) {
-        // locale = "en";
-        // }
         Long userId = utils.getUserIdFromAuthentication();
-        System.out.println("user " + userId);
+        Long houseId = utils.getHouseIdFromAuthentication();
+
         Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
+
         if (date != null) {
             spec = spec.and(hasForDate(date));
         }
-        if (!(StringUtils.isBlank(applicationName))) {
+
+        if (!StringUtils.isBlank(applicationName)) {
             spec = spec.and(hasApplicationName(applicationName));
         }
-        if (StringUtils.isBlank(locale)) {
+
+        if (!StringUtils.isBlank(locale)) {
             spec = spec.and(hasLocale(locale));
         }
+
         Sort sort = Sort.by(Sort.Order.desc("forDate"));
-        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+        List<PublishHistoryEntity> responseEntities = repository.findAll(spec, sort);
+
         List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
-        Long houseId = utils.getHouseIdFromAuthentication();
-        for (PublishHistoryEntity entity : responseEntitys) {
-            System.out.println("entity   " + entity);
-            System.out.println("userId " + userId);
 
+        for (PublishHistoryEntity entity : responseEntities) {
             Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
-            if (exists != null && exists) {
-                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
 
-                    listOfDTOs.add(PublishMapper.toDTO(entity));
+            if (exists != null && exists) {
+                boolean shouldAdd = false;
+
+                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
+                    shouldAdd = true;
                 } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
-                    listOfDTOs.add(PublishMapper.toDTO(entity));
+                    shouldAdd = true;
+                }
+
+                if (shouldAdd) {
+                    String branch = repository.getPrimaryOfficeNameByApplicationId(entity.getApplicationId());
+                    listOfDTOs.add(PublishMapper.toDTO(entity, branch));
                 }
             }
         }
 
         return listOfDTOs;
     }
+
 
     @Override
     public List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo,

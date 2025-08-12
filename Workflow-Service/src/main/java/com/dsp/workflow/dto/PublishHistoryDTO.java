@@ -47,4 +47,7 @@ public class PublishHistoryDTO {
     private String fileTypeName;
     private String title;
     private String house;
+
+    private String branch; // maps to primary_office_name
+
 }
