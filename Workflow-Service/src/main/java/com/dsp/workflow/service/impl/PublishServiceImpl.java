@@ -422,7 +422,7 @@ public class PublishServiceImpl implements PublishService {
     public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
         Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
-        
+
         spec = spec.and(hasPublishUuid());
         if (StringUtils.isNotBlank(dto.getLsNo())) {
             spec = spec.and(hasLsNo(dto.getLsNo()));
@@ -433,7 +433,7 @@ public class PublishServiceImpl implements PublishService {
         if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTemp(dto.getLocale()));
         }
-       
+
         List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
 
         List<String> uploadedUuids = new ArrayList<>();
@@ -449,7 +449,7 @@ public class PublishServiceImpl implements PublishService {
                 if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate())) {
                     continue;
                 }
-             
+
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 byte[] fileData = null;
                 try {
@@ -463,7 +463,7 @@ public class PublishServiceImpl implements PublishService {
                 }
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 if (fileData == null || fileData.length == 0) {
-                                        updateNonUuid(response);
+                    updateNonUuid(response);
 
                     System.out.println("iteration inside filedata null " + i++);
                     logger.warn("File data is null for URL: {}", response.getCompleteUrl());
@@ -475,7 +475,7 @@ public class PublishServiceImpl implements PublishService {
                 String uuid = uploadAndReturnUuid(response, fileData);
                 // }
                 if (uuid.isEmpty()) {
-                                        updateNonUuid(response);
+                    updateNonUuid(response);
 
                     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
                     continue; // Skip this iteration and move to the next document
@@ -490,14 +490,18 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private boolean isBetween(LocalDate fromDate, LocalDate toDate, String targetDateStr) {
-        if (StringUtils.isBlank(targetDateStr))
+        if (StringUtils.isBlank(targetDateStr) && fromDate == null && toDate == null)
+         {  
+             return true;
+        }
+        else if (StringUtils.isBlank(targetDateStr) && (fromDate != null || toDate != null)) {
             return false;
-
+        }
         try {
             // Adjust this format to match the format stored in your DB
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
             LocalDate targetDate = LocalDate.parse(targetDateStr.trim(), formatter);
-            System.out.println("date  in entry "+targetDate);
+            System.out.println("date  in entry " + targetDate);
             if (fromDate != null && targetDate.isBefore(fromDate)) {
                 return false;
             }
@@ -535,7 +539,7 @@ public class PublishServiceImpl implements PublishService {
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
-        if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
+            if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
                 folders.add(getYear(response.getForDate()));
                 folders.add(getMonth(response.getForDate()));
             } else {
@@ -561,16 +565,15 @@ public class PublishServiceImpl implements PublishService {
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
-            System.out.println("file Name before slash and space update" +fileNameWithoutExt);
+            System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
-            if(fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" "))
-            {
-                fileNameWithoutExt=fileNameWithoutExt
-                .replace(" ","-")
-                .replace("/", "-")
-                .replace(".","-");
+            if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
+                fileNameWithoutExt = fileNameWithoutExt
+                        .replace(" ", "-")
+                        .replace("/", "-")
+                        .replace(".", "-");
             }
-            System.out.println("file Name after slash and space update" +fileNameWithoutExt);
+            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + ".pdf";
             // Create a temporary file
 
@@ -641,19 +644,21 @@ public class PublishServiceImpl implements PublishService {
         return "";
     }
 
-private String getYear(String date) {
-    // Assuming format mm/dd/yyyy or m/d/yyyy
-    if (date == null || !date.contains("/")) return "";
-    String[] parts = date.split("/");
-    return (parts.length == 3) ? parts[2] : "";
-}
+    private String getYear(String date) {
+        // Assuming format mm/dd/yyyy or m/d/yyyy
+        if (date == null || !date.contains("/"))
+            return "";
+        String[] parts = date.split("/");
+        return (parts.length == 3) ? parts[2] : "";
+    }
 
-private String getMonth(String date) {
-    // Assuming format mm/dd/yyyy or m/d/yyyy
-    if (date == null || !date.contains("/")) return "";
-    String[] parts = date.split("/");
-    return (parts.length >= 1) ? parts[0] : "";
-}
+    private String getMonth(String date) {
+        // Assuming format mm/dd/yyyy or m/d/yyyy
+        if (date == null || !date.contains("/"))
+            return "";
+        String[] parts = date.split("/");
+        return (parts.length >= 1) ? parts[0] : "";
+    }
 
     private void updatePublishTempTable(PublishDocumentTemp response, String uuid) {
         Optional<PublishDocumentTemp> entity = tempRepo
@@ -1088,48 +1093,51 @@ private String getMonth(String date) {
             return criteriaBuilder.conjunction();
         };
     }
-// old
-//    @Override
-//    public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
-//        // if (locale == null) {
-//        // locale = "en";
-//        // }
-//        Long userId = utils.getUserIdFromAuthentication();
-//        System.out.println("user " + userId);
-//        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-//        if (date != null) {
-//            spec = spec.and(hasForDate(date));
-//        }
-//        if (!(StringUtils.isBlank(applicationName))) {
-//            spec = spec.and(hasApplicationName(applicationName));
-//        }
-//        if (StringUtils.isBlank(locale)) {
-//            spec = spec.and(hasLocale(locale));
-//        }
-//        Sort sort = Sort.by(Sort.Order.desc("forDate"));
-//        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-//        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
-//        List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
-//        Long houseId = utils.getHouseIdFromAuthentication();
-//        for (PublishHistoryEntity entity : responseEntitys) {
-//            System.out.println("entity   " + entity);
-//            System.out.println("userId " + userId);
-//
-//            Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
-//            if (exists != null && exists) {
-//                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
-//
-//                    listOfDTOs.add(PublishMapper.toDTO(entity));
-//                } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
-//                    listOfDTOs.add(PublishMapper.toDTO(entity));
-//                }
-//            }
-//        }
-//
-//        return listOfDTOs;
-//    }
+    // old
+    // @Override
+    // public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String
+    // applicationName, String locale) {
+    // // if (locale == null) {
+    // // locale = "en";
+    // // }
+    // Long userId = utils.getUserIdFromAuthentication();
+    // System.out.println("user " + userId);
+    // Specification<PublishHistoryEntity> spec =
+    // Specification.where(isPublishStatus(true));
+    // if (date != null) {
+    // spec = spec.and(hasForDate(date));
+    // }
+    // if (!(StringUtils.isBlank(applicationName))) {
+    // spec = spec.and(hasApplicationName(applicationName));
+    // }
+    // if (StringUtils.isBlank(locale)) {
+    // spec = spec.and(hasLocale(locale));
+    // }
+    // Sort sort = Sort.by(Sort.Order.desc("forDate"));
+    // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+    // // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+    // List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
+    // Long houseId = utils.getHouseIdFromAuthentication();
+    // for (PublishHistoryEntity entity : responseEntitys) {
+    // System.out.println("entity " + entity);
+    // System.out.println("userId " + userId);
+    //
+    // Boolean exists = repository.findOfficeIdByUserId(userId,
+    // entity.getApplicationId());
+    // if (exists != null && exists) {
+    // if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
+    //
+    // listOfDTOs.add(PublishMapper.toDTO(entity));
+    // } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
+    // listOfDTOs.add(PublishMapper.toDTO(entity));
+    // }
+    // }
+    // }
+    //
+    // return listOfDTOs;
+    // }
 
-// changes for the branch name
+    // changes for the branch name
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
         Long userId = utils.getUserIdFromAuthentication();
@@ -1175,7 +1183,6 @@ private String getMonth(String date) {
 
         return listOfDTOs;
     }
-
 
     @Override
     public List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo,
