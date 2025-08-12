@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -43,13 +44,14 @@ public class NoteStepwiseDocuments extends Auditable {
 
 	@Column(name = "uploaded_by", nullable = true)
 	private String uploadedBy;
-	
+
 	@Column(name = "version", nullable = true)
 	private String version;
 
 	// Many-to-One relationship with Notesheet
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "notesheet_id", referencedColumnName = "id", nullable = false)
+	@ToString.Exclude
 	private Notesheet notesheet; // Add this line to establish the relationship
 
 }
