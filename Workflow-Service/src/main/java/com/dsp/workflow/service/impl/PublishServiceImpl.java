@@ -12,6 +12,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +66,7 @@ import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.persistence.criteria.Expression;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
@@ -224,7 +227,6 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasHouse(house));
         }
 
- 
         Sort sort = Sort.by(
                 Sort.Order.desc("forDate"),
                 Sort.Order.desc("id"));
@@ -413,9 +415,7 @@ public class PublishServiceImpl implements PublishService {
                 urlDto.add(responseDto);
             }
         }
-
         return urlDto;
-
     }
 
     @Override
@@ -433,27 +433,28 @@ public class PublishServiceImpl implements PublishService {
         if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTemp(dto.getLocale()));
         }
+
         List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
+
         List<String> uploadedUuids = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
-        System.out.println("urlList " + urlList);
+        System.out.println("urlList " + urlList.size());
         if (urlList.isEmpty()) {
             return uploadedUuids;
         }
-        System.out.println("Url List " + urlList.size());
+        System.out.println("Url List " + urlList);
         int i = 0;
         try {
             for (PublishDocumentTemp response : urlList) {
-                // if(StringUtils.isNotBlank(response.getPublishUuid().toString()))
-                // {
-                // uploadedUuids.add(response.getPublishUuid().toString());
-                // }
-                // else{
+                if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate())) {
+                    continue;
+                }
+
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 byte[] fileData = null;
                 try {
                     fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
-                    // System.out.println("fileData  " + fileData);
+                    // System.out.println("fileData " + fileData);
                 } catch (Exception e) {
                     System.out.println("ERROR While Fetching data from URl " + e.getMessage());
                     updateNonUuid(response);
@@ -462,28 +463,58 @@ public class PublishServiceImpl implements PublishService {
                 }
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 if (fileData == null || fileData.length == 0) {
+                    updateNonUuid(response);
+
                     System.out.println("iteration inside filedata null " + i++);
                     logger.warn("File data is null for URL: {}", response.getCompleteUrl());
                     logger.warn("File data is null for URL: {}", response.getCompleteUrl());
                     continue;
                 }
-              
+
                 // System.out.println("data " + fileData);
                 String uuid = uploadAndReturnUuid(response, fileData);
                 // }
                 if (uuid.isEmpty()) {
+                    updateNonUuid(response);
+
                     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
                     continue; // Skip this iteration and move to the next document
                 }
                 uploadedUuids.add(uuid);
-
-                // }
             }
             return uploadedUuids;
         } catch (Exception e) {
             logger.error("Error downloading or processing file", e);
         }
         return uploadedUuids;
+    }
+
+    private boolean isBetween(LocalDate fromDate, LocalDate toDate, String targetDateStr) {
+        if (StringUtils.isBlank(targetDateStr) && fromDate == null && toDate == null)
+         {  
+             return true;
+        }
+        else if (StringUtils.isBlank(targetDateStr) && (fromDate != null || toDate != null)) {
+            return false;
+        }
+        try {
+            // Adjust this format to match the format stored in your DB
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+            LocalDate targetDate = LocalDate.parse(targetDateStr.trim(), formatter);
+            System.out.println("date  in entry " + targetDate);
+            if (fromDate != null && targetDate.isBefore(fromDate)) {
+                return false;
+            }
+
+            if (toDate != null && targetDate.isAfter(toDate)) {
+                return false;
+            }
+
+            return true;
+        } catch (DateTimeParseException e) {
+            System.out.println("Invalid date format: " + targetDateStr);
+            return false;
+        }
     }
 
     private Specification<PublishDocumentTemp> hasPublishUuid() {
@@ -494,8 +525,7 @@ public class PublishServiceImpl implements PublishService {
         try {
             System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
-            if(fileData==null)
-            {
+            if (fileData == null) {
                 updateNonUuid(response);
             }
             // // Set Authorization Token
@@ -509,13 +539,22 @@ public class PublishServiceImpl implements PublishService {
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
-            if ("LS".equals(houseAbbr)) {
-                folders.add(response.getLsNo());
+            if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
+                folders.add(getYear(response.getForDate()));
+                folders.add(getMonth(response.getForDate()));
+            } else {
+                if ("LS".equals(houseAbbr)) {
+                    folders.add(response.getLsNo());
+                }
+                if (StringUtils.isNotBlank(response.getSesNo())) {
+                    folders.add(response.getSesNo());
+                }
             }
-            folders.add(response.getSesNo());
+
             folders.add(appAbbr);
-            System.out.println("folders "+folders);
+            System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
+
             String folderPath = createDmsFolderStructure(rootPath, folders);
             System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
@@ -526,8 +565,18 @@ public class PublishServiceImpl implements PublishService {
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
+            System.out.println("file Name before slash and space update" + fileNameWithoutExt);
+
+            if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
+                fileNameWithoutExt = fileNameWithoutExt
+                        .replace(" ", "-")
+                        .replace("/", "-")
+                        .replace(".", "-");
+            }
+            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + ".pdf";
             // Create a temporary file
+
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
@@ -572,7 +621,7 @@ public class PublishServiceImpl implements PublishService {
                         String uuidString = generatedUuid.toString().trim();
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            updatePublishTempTable(response,""+uuid);
+                            updatePublishTempTable(response, "" + uuid);
                             logger.info("entity after saving");
                             return uuidString;
                         } catch (IllegalArgumentException ex) {
@@ -595,31 +644,46 @@ public class PublishServiceImpl implements PublishService {
         return "";
     }
 
-   private void updatePublishTempTable(PublishDocumentTemp response, String uuid)
-    {
-        Optional<PublishDocumentTemp> entity = tempRepo
-                                    .findById(response.getId());
-                            if (entity.isPresent()) {
-                                PublishDocumentTemp entitys = entity.get();
-                                entitys.setPublishUuid(stringToUuid(uuid));
-                                entitys.setIsUpdatedUuid(true);
-                                entitys = tempRepo.save(entitys);
-                                System.out.println("entity " + entity);
-                            }
+    private String getYear(String date) {
+        // Assuming format mm/dd/yyyy or m/d/yyyy
+        if (date == null || !date.contains("/"))
+            return "";
+        String[] parts = date.split("/");
+        return (parts.length == 3) ? parts[2] : "";
     }
-     private void updateNonUuid(PublishDocumentTemp response)
-    {
-        Optional<PublishDocumentTemp> entity = tempRepo
-                                    .findById(response.getId());
-                            if (entity.isPresent()) {
-                                PublishDocumentTemp entitys = entity.get();
-                                entitys.setIsUpdatedUuid(false);
-                                entitys = tempRepo.save(entitys);
-                                System.out.println("entity " + entity);
-                            }
+
+    private String getMonth(String date) {
+        // Assuming format mm/dd/yyyy or m/d/yyyy
+        if (date == null || !date.contains("/"))
+            return "";
+        String[] parts = date.split("/");
+        return (parts.length >= 1) ? parts[0] : "";
     }
-    private UUID stringToUuid(String uuid)
-    {   
+
+    private void updatePublishTempTable(PublishDocumentTemp response, String uuid) {
+        Optional<PublishDocumentTemp> entity = tempRepo
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            PublishDocumentTemp entitys = entity.get();
+            entitys.setPublishUuid(stringToUuid(uuid));
+            entitys.setIsUpdatedUuid(true);
+            entitys = tempRepo.save(entitys);
+            System.out.println("entity " + entity);
+        }
+    }
+
+    private void updateNonUuid(PublishDocumentTemp response) {
+        Optional<PublishDocumentTemp> entity = tempRepo
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            PublishDocumentTemp entitys = entity.get();
+            entitys.setIsUpdatedUuid(false);
+            entitys = tempRepo.save(entitys);
+            System.out.println("entity " + entity);
+        }
+    }
+
+    private UUID stringToUuid(String uuid) {
         return UUID.fromString(uuid);
     }
 
@@ -634,61 +698,57 @@ public class PublishServiceImpl implements PublishService {
             return "";
         }
         System.out.println("folder " + folders);
-        String folderName="";
+        String folderName = "";
         for (int i = 0; i < folders.size(); i++) {
             int size = folders.size();
-            if(i>0)
-            {
-                folderName+="/";
+            if (i > 0) {
+                folderName += "/";
             }
-            folderName+=folders.get(i);
-            try{
+            folderName += folders.get(i);
+            try {
                 createFolderIfNotExists(path, folderName, token);
-                
-            }
-            catch(Exception e)
-            {
-                
+
+            } catch (Exception e) {
+
                 System.out.println(e.getLocalizedMessage());
             }
             System.out.println("path " + path);
             System.out.println("folderName " + folderName);
 
-           
         }
-        
-        System.out.println("complete path "+path+ " createdolders "+folderName);
-        if(path.endsWith("/"))
-        return path+""+folderName;
+
+        System.out.println("complete path " + path + " createdolders " + folderName);
+        if (path.endsWith("/"))
+            return path + "" + folderName;
         else
-        return path+"/"+folderName;
+            return path + "/" + folderName;
     }
 
     private String createFolderIfNotExists(String parentPath, String folderName, String token) {
 
-      System.out.println("parent path "+parentPath);
-        //System.out.println("folder name "+folderName);
+        System.out.println("parent path " + parentPath);
+        // System.out.println("folder name "+folderName);
         if (StringUtils.isBlank(parentPath))
             parentPath = "/okm:root";
         String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
-        //System.out.println("Hardcoded Final URL: " + url);
-        //System.out.println("folderName: " + folderName);
-        //System.out.println("token: " + token);
+        // System.out.println("Hardcoded Final URL: " + url);
+        // System.out.println("folderName: " + folderName);
+        // System.out.println("token: " + token);
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("Authorization token is missing");
         }
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         headers.setContentType(MediaType.APPLICATION_JSON);
-        //System.out.println("headers " + headers);
+        // System.out.println("headers " + headers);
         FolderCreateDTO dto = FolderCreateDTO.builder()
                 .folderName(folderName)
                 .build();
-        //System.out.println("dto " + dto);
+        // System.out.println("dto " + dto);
         HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
         String folderPath = parentPath + "/" + folderName;
-        //System.out.println("path " + folderPath);
-        //System.out.println("create api entity " + entity);
+        // System.out.println("path " + folderPath);
+        // System.out.println("create api entity " + entity);
         try {
             ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
                     url,
@@ -696,20 +756,18 @@ public class PublishServiceImpl implements PublishService {
                     entity,
                     new ParameterizedTypeReference<GenericResponse<String>>() {
                     });
-            //System.out.println("response of folder creation "+response);
+            // System.out.println("response of folder creation "+response);
             GenericResponse<String> responseBody = response.getBody();
-            //System.out.println("status " + responseBody);
+            // System.out.println("status " + responseBody);
             if (responseBody != null) {
-            System.out.println("status " + responseBody.getStatusCode());
+                System.out.println("status " + responseBody.getStatusCode());
                 if (responseBody.getStatusCode() == 200)
                 // responseBody.isSuccess())
                 {
                     return responseBody.getData();
-                } 
-                else if (responseBody.getStatusCode() == 409) {
+                } else if (responseBody.getStatusCode() == 409) {
                     return folderPath;
-                } 
-                else {
+                } else {
                     System.out.println("Unexpected response: " + responseBody.getMessage());
                     return null;
                 }
@@ -733,7 +791,6 @@ public class PublishServiceImpl implements PublishService {
             // return folderPath;
         }
     }
-
 
     public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
         try {
@@ -1036,48 +1093,51 @@ public class PublishServiceImpl implements PublishService {
             return criteriaBuilder.conjunction();
         };
     }
-// old
-//    @Override
-//    public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
-//        // if (locale == null) {
-//        // locale = "en";
-//        // }
-//        Long userId = utils.getUserIdFromAuthentication();
-//        System.out.println("user " + userId);
-//        Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-//        if (date != null) {
-//            spec = spec.and(hasForDate(date));
-//        }
-//        if (!(StringUtils.isBlank(applicationName))) {
-//            spec = spec.and(hasApplicationName(applicationName));
-//        }
-//        if (StringUtils.isBlank(locale)) {
-//            spec = spec.and(hasLocale(locale));
-//        }
-//        Sort sort = Sort.by(Sort.Order.desc("forDate"));
-//        List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
-//        // List<PublishHistoryEntity> responseEntitys = repository.findAll();
-//        List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
-//        Long houseId = utils.getHouseIdFromAuthentication();
-//        for (PublishHistoryEntity entity : responseEntitys) {
-//            System.out.println("entity   " + entity);
-//            System.out.println("userId " + userId);
-//
-//            Boolean exists = repository.findOfficeIdByUserId(userId, entity.getApplicationId());
-//            if (exists != null && exists) {
-//                if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
-//
-//                    listOfDTOs.add(PublishMapper.toDTO(entity));
-//                } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
-//                    listOfDTOs.add(PublishMapper.toDTO(entity));
-//                }
-//            }
-//        }
-//
-//        return listOfDTOs;
-//    }
+    // old
+    // @Override
+    // public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String
+    // applicationName, String locale) {
+    // // if (locale == null) {
+    // // locale = "en";
+    // // }
+    // Long userId = utils.getUserIdFromAuthentication();
+    // System.out.println("user " + userId);
+    // Specification<PublishHistoryEntity> spec =
+    // Specification.where(isPublishStatus(true));
+    // if (date != null) {
+    // spec = spec.and(hasForDate(date));
+    // }
+    // if (!(StringUtils.isBlank(applicationName))) {
+    // spec = spec.and(hasApplicationName(applicationName));
+    // }
+    // if (StringUtils.isBlank(locale)) {
+    // spec = spec.and(hasLocale(locale));
+    // }
+    // Sort sort = Sort.by(Sort.Order.desc("forDate"));
+    // List<PublishHistoryEntity> responseEntitys = repository.findAll(spec);
+    // // List<PublishHistoryEntity> responseEntitys = repository.findAll();
+    // List<PublishHistoryDTO> listOfDTOs = new ArrayList<>();
+    // Long houseId = utils.getHouseIdFromAuthentication();
+    // for (PublishHistoryEntity entity : responseEntitys) {
+    // System.out.println("entity " + entity);
+    // System.out.println("userId " + userId);
+    //
+    // Boolean exists = repository.findOfficeIdByUserId(userId,
+    // entity.getApplicationId());
+    // if (exists != null && exists) {
+    // if (houseId == 1 && entity.getRajyaSabhaSessionNo() != null) {
+    //
+    // listOfDTOs.add(PublishMapper.toDTO(entity));
+    // } else if (houseId == 2 && entity.getLokSabhaSessionNo() != null) {
+    // listOfDTOs.add(PublishMapper.toDTO(entity));
+    // }
+    // }
+    // }
+    //
+    // return listOfDTOs;
+    // }
 
-// changes for the branch name
+    // changes for the branch name
     @Override
     public List<PublishHistoryDTO> getPublishedDocs(LocalDate date, String applicationName, String locale) {
         Long userId = utils.getUserIdFromAuthentication();
@@ -1124,7 +1184,6 @@ public class PublishServiceImpl implements PublishService {
         return listOfDTOs;
     }
 
-
     @Override
     public List<ResponseDTO> getDocsByAppId(Long appId, String abbr, String lsNo,
             String sesNo, LocalDate fromDate, LocalDate toDate) {
@@ -1134,7 +1193,6 @@ public class PublishServiceImpl implements PublishService {
         if (houseId == 1) {
             if (sesNo == null) {
                 sesNo = repository.findLatestRS();
-
             }
             responseEntitysAll = repository.findByApplicationIdAndRajyaSabhaSessionNo(appId, sesNo);
         } else {

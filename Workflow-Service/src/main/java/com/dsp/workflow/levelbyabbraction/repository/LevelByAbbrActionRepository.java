@@ -33,4 +33,18 @@ public interface LevelByAbbrActionRepository extends JpaRepository<LevelByAbbrAc
 	List<LevelByAbbrAction> findByLevelAndApplicationIdAndRoleIdIn(@Param("level") String level,
 			@Param("applicationId") Long applicationId, @Param("roleIds") List<Long> roleIds);
 
+//	@Query(value = """
+//			    SELECT DISTINCT ON (af.id) l.*
+//			    FROM workflow.levelbyabbraction l
+//			    JOIN workflow.application_forms af ON af.id = l.form_id
+//			    WHERE l.level = :level
+//			      AND l.application_id = :applicationId
+//			      AND l.role_id IN (:roleIds)
+//			      AND l.is_active = true
+//			      AND l.is_deleted = false
+//			    ORDER BY af.id, af.display_sequence ASC
+//			""", nativeQuery = true)
+//	List<LevelByAbbrAction> findByLevelAndApplicationIdAndRoleIdIn(@Param("level") String level,
+//			@Param("applicationId") Long applicationId, @Param("roleIds") List<Long> roleIds);
+
 }
