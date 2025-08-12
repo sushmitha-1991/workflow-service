@@ -791,6 +791,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					// Entry to Notesheet Table
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
+					System.out.println(">>> checkpoint 11");
 
 					// First entry with status = "submitted"
 					WorkflowHistory.WorkflowHistoryBuilder firstEntryBuilder = WorkflowHistory.builder()
@@ -800,6 +801,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.status(status).statusKey(statusKey).actionUrl(actionUrl).pendingWith(receiverUserId)
 							.pendingWithName(receiverUserName).pendingStartDate(LocalDateTime.now())
 							.initalStatusKey(statusKey).note(note).currentTaskId(taskId);
+					System.out.println(">>> checkpoint 12");
 
 					// Second entry, for the next task or status
 					WorkflowHistory.WorkflowHistoryBuilder secondEntryBuilder = WorkflowHistory.builder()
@@ -809,6 +811,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
 							.nextTaskId(nextTaskId).actionUrl(actionUrl);
+					System.out.println(">>> checkpoint 13");
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
@@ -827,11 +830,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					}
 
+					System.out.println(">>> checkpoint 14");
+
 					WorkflowHistory firstEntry = firstEntryBuilder.build();
 					workflowHistoryRepository.save(firstEntry);
 
+					System.out.println(">>> checkpoint 15");
+
 					WorkflowHistory secondEntry = secondEntryBuilder.build();
 					workflowHistoryRepository.save(secondEntry);
+
+					System.out.println(">>> checkpoint 16");
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
