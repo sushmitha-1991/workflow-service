@@ -537,7 +537,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		    lssm.session_number as SSNo,
 		    rssm.session_number as RSSNo,
 			case
-			  	when (da.status = 'Draft') then da.status
+			  	when (da.status = 'Draft') then da.status 
 			  	else 'In Progress'
 			end
 			as status,
