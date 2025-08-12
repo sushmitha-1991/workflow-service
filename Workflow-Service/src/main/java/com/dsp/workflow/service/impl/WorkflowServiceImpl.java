@@ -789,8 +789,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 				if ("INIT".equals(stepType)) {
 					// Entry to Notesheet Table
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
-					notesheetRepository.save(notesheet);
+					try {
+						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
+						notesheetRepository.save(notesheet);
+					} catch (Exception e) {
+						System.err.println("Unexpected error in INIT step: " + e.getMessage());
+						e.printStackTrace();
+						throw new RuntimeException("Unexpected error while processing INIT step", e);
+					}
+
 					System.out.println(">>> checkpoint 11");
 
 					// First entry with status = "submitted"
@@ -927,7 +934,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
 
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
