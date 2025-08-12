@@ -415,16 +415,14 @@ public class PublishServiceImpl implements PublishService {
                 urlDto.add(responseDto);
             }
         }
-
         return urlDto;
-
     }
 
     @Override
     public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
         Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
-
+        
         spec = spec.and(hasPublishUuid());
         if (StringUtils.isNotBlank(dto.getLsNo())) {
             spec = spec.and(hasLsNo(dto.getLsNo()));
@@ -440,11 +438,11 @@ public class PublishServiceImpl implements PublishService {
 
         List<String> uploadedUuids = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
-        System.out.println("urlList " + urlList);
+        System.out.println("urlList " + urlList.size());
         if (urlList.isEmpty()) {
             return uploadedUuids;
         }
-        System.out.println("Url List " + urlList.size());
+        System.out.println("Url List " + urlList);
         int i = 0;
         try {
             for (PublishDocumentTemp response : urlList) {
@@ -499,7 +497,7 @@ public class PublishServiceImpl implements PublishService {
             // Adjust this format to match the format stored in your DB
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
             LocalDate targetDate = LocalDate.parse(targetDateStr.trim(), formatter);
-
+            System.out.println("date  in entry "+targetDate);
             if (fromDate != null && targetDate.isBefore(fromDate)) {
                 return false;
             }
@@ -537,8 +535,7 @@ public class PublishServiceImpl implements PublishService {
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
-        
-            if (appAbbr.equalsIgnoreCase("B2")) {
+        if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
                 folders.add(getYear(response.getForDate()));
                 folders.add(getMonth(response.getForDate()));
             } else {
@@ -564,8 +561,19 @@ public class PublishServiceImpl implements PublishService {
             int lastDotIndex = originalFileName.lastIndexOf(".");
             String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
                     : originalFileName.substring(0, lastDotIndex);
+            System.out.println("file Name before slash and space update" +fileNameWithoutExt);
+
+            if(fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" "))
+            {
+                fileNameWithoutExt=fileNameWithoutExt
+                .replace(" ","-")
+                .replace("/", "-")
+                .replace(".","-");
+            }
+            System.out.println("file Name after slash and space update" +fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + ".pdf";
             // Create a temporary file
+
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
