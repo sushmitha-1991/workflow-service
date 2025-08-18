@@ -538,6 +538,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			    rssm.session_number as RSSNo,
 				case
 				  	when (da.status = 'Draft') then da.status
+					when (da.status = 'Returned') then da.status
 				  	else 'In Progress'
 				end
 				as status,
@@ -653,7 +654,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			where a.module_id = m.id and a.abbr in ('SYN'))
 			) A
 			left join master.applications ma on
-			        ma.id = A.applicationId
+			        ma.id = A.applicationId 
 
 					""";
 
