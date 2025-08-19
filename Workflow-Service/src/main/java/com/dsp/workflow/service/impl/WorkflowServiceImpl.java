@@ -504,7 +504,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        'In Progress' as status,
 			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
 			        null as refId,
-			        null as applicationId,
+			        :correctedDebateId as applicationId,
 			        null as applicationinstanceId,
 			        'IN-PROCESS' as taskName,
 			        null as taskId,
@@ -1541,6 +1541,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(" where 1 = 1 ");
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
+
+		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
+		parameters.addValue("correctedDebateId", corrDebateId);
+
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
 			Long houseId = ((UserDetailsDTO) principal).getHouseId();
