@@ -3,6 +3,7 @@ package com.dsp.workflow.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.dsp.workflow.dto.UserDetailsDTO;
 import com.dsp.workflow.entity.BaseUser;
+import com.dsp.workflow.repository.ApplicationRepository;
 import com.dsp.workflow.repository.MyUserRepository;
 
 import jakarta.persistence.EntityManager;
@@ -21,6 +23,9 @@ public class Utils {
 
 	@Autowired
 	private MyUserRepository myUserRepository;
+	
+	@Autowired
+	private ApplicationRepository appRepository;
 
 	@Autowired
 	private EntityManager entityManager; // For native query execution
@@ -181,4 +186,12 @@ public class Utils {
 		}
 		return udto.getHouseAbbr();
 	}	
+	
+	public Long getApplicationId(String abbr) {
+		
+		if (StringUtils.isEmpty(abbr)) return null;
+		
+		Long appId = appRepository.findIdByAbbr(abbr, getHouseIdFromAuthentication());
+		return appId;
+	}
 }
