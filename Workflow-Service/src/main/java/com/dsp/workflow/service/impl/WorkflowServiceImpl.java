@@ -492,7 +492,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			      and ah.is_active = true
 			      and ah.is_deleted = false
 
-			    union
+			    union 
 
 			SELECT
 			            da.ref_no as applicationNo,
@@ -504,7 +504,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        'In Progress' as status,
 			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
 			        null as refId,
-			        :correctedDebateId as applicationId,
+			        136 as applicationId,
 			        null as applicationinstanceId,
 			        'IN-PROCESS' as taskName,
 			        null as taskId,
@@ -1542,8 +1542,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
 
-		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
-		parameters.addValue("correctedDebateId", corrDebateId);
+//		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
+//		System.out.println("Corrected Debate ID: " + corrDebateId);
+//		parameters.addValue("correctedDebateId", corrDebateId);
 
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
