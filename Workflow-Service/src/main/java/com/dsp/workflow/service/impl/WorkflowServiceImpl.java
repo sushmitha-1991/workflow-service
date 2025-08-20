@@ -130,6 +130,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
+	
+	private static final String B2_ABBR = "B2";
 
 	private static final String PUBLISHED = "Published";
 
@@ -891,9 +893,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					}
 
 					// Corrected Debates API
-					String correctedDebatesAbbr = workflowHistoryRepository
+					String appAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
-					if (CORRECTED_DEBATES_ABBR.equals(correctedDebatesAbbr)) {
+					if (CORRECTED_DEBATES_ABBR.equals(appAbbr)) {
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
@@ -922,6 +924,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							e.printStackTrace();
 						}
 					}
+					
+					// B2 - INPUT API for RS
+					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
+						callB2InputAPI();
+					}	
 
 				}
 
@@ -942,6 +949,40 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 	}
 
+	/**
+	 * 
+	 */
+	private void callB2InputAPI() {
+		
+		CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
+		DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
+
+		try {
+			callCorrectedDebatesAPI(correctedDebatedDTO);
+
+			try {
+				// Calling Debate Tagging for DTAG
+				debateTaggingDTO.setApplicationId(80L);
+				callDebateTagging(debateTaggingDTO);
+			} catch (Exception e) {
+				System.err.println("Error in first call to callDebateTagging (DTAG):");
+				e.printStackTrace();
+			}
+
+			try {
+				// Calling Debate Tagging for Supplementary Tagging
+				debateTaggingDTO.setApplicationId(81L);
+				callDebateTagging(debateTaggingDTO);
+			} catch (Exception e) {
+				System.err.println("Error in second call to callDebateTagging (Supplementary):");
+				e.printStackTrace();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * @param debateTaggingDTO
 	 */
@@ -1555,7 +1596,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		if (queryDto.getApplicationId() != null) {
 			// qry = qry.append(" and applicationNo =
 			// ").append(queryDto.getApplicationId());
-			qry = qry.append(" and applicationId = :applicationId ");
+			qry = qry.append(" and (applicationId = :applicationId or parent_application_id = :applicationId) ");
 			parameters.addValue("applicationId", queryDto.getApplicationId());
 		}
 
