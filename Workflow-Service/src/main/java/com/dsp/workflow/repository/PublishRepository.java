@@ -57,8 +57,8 @@ public interface PublishRepository
             "WHERE a.id = :appId", nativeQuery = true)
     String getPrimaryOfficeNameByApplicationId(@Param("appId") Long appId);
 
-    @Query(value = "SELECT h.abbr FROM master.houses h " +
-            "WHERE h.id = :houseId", nativeQuery = true)
+    @Query(value = "SELECT abbr FROM master.houses  " +
+            "WHERE id = :houseId", nativeQuery = true)
     Optional<String> findHouseById(Long houseId);
 
 
