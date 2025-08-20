@@ -14,6 +14,6 @@ public interface InputWorkflowService {
 	 */
 	List<WorkflowHistory> getInputHistoryByInputInstanceId(Long inputInstanceId); 
 
-	List<DocumentMetadataDTO> getDocuments(Long inputInstanceId);
+	List<DocumentMetadataDTO> getDocuments(Long inputInstanceId, Long draftId);
 
 }
