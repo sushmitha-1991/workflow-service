@@ -136,13 +136,11 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private String getHouse() {
-        Long house = utils.getHouseIdFromAuthentication();
-        if (house == 1)
-            return "RS";
-        else if (house == 2)
-            return "LS";
-        else
+        Long houseId = utils.getHouseIdFromAuthentication();
+        Optional<String> house = repository.findHouseById(houseId);
+        if (house.isEmpty())
             return "NH";
+        return house.get();
     }
 
     @Override
@@ -490,11 +488,9 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private boolean isBetween(LocalDate fromDate, LocalDate toDate, String targetDateStr) {
-        if (StringUtils.isBlank(targetDateStr) && fromDate == null && toDate == null)
-         {  
-             return true;
-        }
-        else if (StringUtils.isBlank(targetDateStr) && (fromDate != null || toDate != null)) {
+        if (StringUtils.isBlank(targetDateStr) && fromDate == null && toDate == null) {
+            return true;
+        } else if (StringUtils.isBlank(targetDateStr) && (fromDate != null || toDate != null)) {
             return false;
         }
         try {
@@ -543,11 +539,14 @@ public class PublishServiceImpl implements PublishService {
                 folders.add(getYear(response.getForDate()));
                 folders.add(getMonth(response.getForDate()));
             } else {
-                if ("LS".equals(houseAbbr)) {
-                    folders.add(response.getLsNo());
-                }
-                if (StringUtils.isNotBlank(response.getSesNo())) {
-                    folders.add(response.getSesNo());
+                if (response.getSesNo() != null) {
+                    if ("LS".equals(houseAbbr)) {
+
+                        folders.add(response.getLsNo());
+                    }
+                    if (StringUtils.isNotBlank(response.getSesNo())) {
+                        folders.add(response.getSesNo());
+                    }
                 }
             }
 
