@@ -925,10 +925,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					}
 					
-					// B2 - INPUT API for RS
-					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
-						callB2InputAPI();
-					}	
+//					// B2 - INPUT API for RS
+//					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
+//						callB2InputAPI();
+//					}	
 
 				}
 
@@ -949,39 +949,39 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 	}
 
-	/**
-	 * 
-	 */
-	private void callB2InputAPI() {
-		
-		CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
-		DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
-
-		try {
-			callCorrectedDebatesAPI(correctedDebatedDTO);
-
-			try {
-				// Calling Debate Tagging for DTAG
-				debateTaggingDTO.setApplicationId(80L);
-				callDebateTagging(debateTaggingDTO);
-			} catch (Exception e) {
-				System.err.println("Error in first call to callDebateTagging (DTAG):");
-				e.printStackTrace();
-			}
-
-			try {
-				// Calling Debate Tagging for Supplementary Tagging
-				debateTaggingDTO.setApplicationId(81L);
-				callDebateTagging(debateTaggingDTO);
-			} catch (Exception e) {
-				System.err.println("Error in second call to callDebateTagging (Supplementary):");
-				e.printStackTrace();
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+//	/**
+//	 * 
+//	 */
+//	private void callB2InputAPI() {
+//		
+//		CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
+//		DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
+//
+//		try {
+//			callCorrectedDebatesAPI(correctedDebatedDTO);
+//
+//			try {
+//				// Calling Debate Tagging for DTAG
+//				debateTaggingDTO.setApplicationId(80L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in first call to callDebateTagging (DTAG):");
+//				e.printStackTrace();
+//			}
+//
+//			try {
+//				// Calling Debate Tagging for Supplementary Tagging
+//				debateTaggingDTO.setApplicationId(81L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in second call to callDebateTagging (Supplementary):");
+//				e.printStackTrace();
+//			}
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 	
 	/**
 	 * @param debateTaggingDTO
