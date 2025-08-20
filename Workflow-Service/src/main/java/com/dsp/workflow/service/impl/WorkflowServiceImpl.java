@@ -1593,7 +1593,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			parameters.addValue("houseId", houseId);
 		}
 
-		if (queryDto.getApplicationId() != null) {
+		if (queryDto.getApplicationId() != null) { 
 			// qry = qry.append(" and applicationNo =
 			// ").append(queryDto.getApplicationId());
 			qry = qry.append(" and (applicationId = :applicationId or parent_application_id = :applicationId) ");
