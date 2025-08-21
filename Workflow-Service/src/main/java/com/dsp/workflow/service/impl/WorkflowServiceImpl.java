@@ -1590,6 +1590,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.append(allDocumentsQuery1)	
 							.append(" where 1 = 1 ");
 
+		System.out.println("Final Query: " + qry);
+
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
 
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
