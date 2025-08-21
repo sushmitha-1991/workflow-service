@@ -32,7 +32,6 @@ import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
-import com.dsp.workflow.entity.InputWorkflowHistory;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.repository.ApplicationRepository;
@@ -61,15 +60,14 @@ public class WorkflowController {
 
 	@Autowired
 	private PublishService publishService;
-	
+
 	@Autowired
 	private Utils utils;
-	
+
 	@Autowired
 	private ApplicationRepository appRepository;
-	
-	
-	private final static String draftSuccessMsg = "{0} saved as Draft with Ref. No {1}"; 
+
+	private final static String draftSuccessMsg = "{0} saved as Draft with Ref. No {1}";
 
 	@Operation(summary = "Start Workflow Engine", description = "Starts a workflow instance with the provided workflow ID and notesheet details.")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Workflow started successfully"),
@@ -315,7 +313,7 @@ public class WorkflowController {
 		if (data.isEmpty()) {
 			return ResponseEntity.ok(new GenericResponse<>(false, "No records found", data, 200));
 		}
-		
+
 		// Get Document Display name
 		String appName = appRepository.findApplicationDisplayName(draftDataDTO.getApplicationId());
 		String message = MessageFormat.format(draftSuccessMsg, appName, data.get("applicationNo"));
@@ -391,8 +389,7 @@ public class WorkflowController {
 	 * Get the Input History
 	 */
 	@GetMapping("/get-input-history")
-	public ResponseEntity<GenericResponse<List<WorkflowHistory>>> getInputHistory(
-			@RequestParam Long inputInstanceId) {
+	public ResponseEntity<GenericResponse<List<WorkflowHistory>>> getInputHistory(@RequestParam Long inputInstanceId) {
 
 		List<WorkflowHistory> histories = inputWorkflowService.getInputHistoryByInputInstanceId(inputInstanceId);
 
@@ -408,12 +405,12 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
-	
 	@GetMapping("/get-input-documents")
-	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments (
-															@RequestParam Long inputInstanceId) {
+	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments(
+			@RequestParam(required = false) Long inputInstanceId, @RequestParam(required = false) Long draftId) {
 
-		List<com.dsp.workflow.dto.DocumentMetadataDTO> histories = inputWorkflowService.getDocuments(inputInstanceId);
+		List<com.dsp.workflow.dto.DocumentMetadataDTO> histories = inputWorkflowService.getDocuments(inputInstanceId,
+				draftId);
 
 		if (histories.isEmpty()) {
 			GenericResponse<List<DocumentMetadataDTO>> response = new GenericResponse<>(false, "No records found",
@@ -426,8 +423,7 @@ public class WorkflowController {
 
 		return ResponseEntity.ok(response);
 	}
-	
-	
+
 	@GetMapping("/my-task/in-progress-count")
 	public InProgressCountResponse getInProgressStatusCount() {
 		return workflowService.getInProgressCount(utils.getUserIdFromAuthentication(),

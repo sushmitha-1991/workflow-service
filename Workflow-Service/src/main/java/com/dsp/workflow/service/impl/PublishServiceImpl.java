@@ -1220,11 +1220,23 @@ public class PublishServiceImpl implements PublishService {
                 sesNo = repository.findLatestRS();
             }
             responseEntitysAll = repository.findByApplicationIdAndRajyaSabhaSessionNo(appId, sesNo);
+
+
         } else {
             if (sesNo == null) {
                 Map<String, Object> obj = repository.findLatestLS();
                 lsNo = obj.get("lsNo").toString();
                 sesNo = obj.get("sesNo").toString();
+            }
+
+            else {
+                // Convert numeric sesNo from request to Roman for DB query
+                try {
+                    int numericSesNo = Integer.parseInt(sesNo);
+                    sesNo = convertNumberToRoman(numericSesNo);
+                } catch (NumberFormatException e) {
+                    // If it's already a Roman numeral, leave it
+                }
             }
 
             responseEntitysAll = repository.findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(appId, lsNo, sesNo);
@@ -1275,6 +1287,20 @@ public class PublishServiceImpl implements PublishService {
 
         return responseList;
     }
+
+    /**
+     * Converts a number to its Roman numeral representation.
+     */
+    private String convertNumberToRoman(int number) {
+        String[] romans = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX",
+                "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX",
+                "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "XXVIII", "XXIX", "XXX"};
+        if (number >= 1 && number <= 30) {
+            return romans[number];
+        }
+        throw new IllegalArgumentException("Session number must be between 1 and 30");
+    }
+
 
     private static String removeExtraTags(String input) {
         String cleaned = input

@@ -130,6 +130,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
+	
+	private static final String B2_ABBR = "B2";
 
 	private static final String PUBLISHED = "Published";
 
@@ -141,517 +143,522 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 
-						SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-		applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url, uploaded_document_uuid
-		FROM (
-		                            select
-		                    distinct on
-		                    (ai.application_no) ai.application_no as applicationNo,
-		                   case
-		                        when ai.additional_details = 'Supplementary Synopsis' then 'Supplementary Synopsis'
-		                        when (ai.translation_document_type_id is not null) 
-		        							then (select coalesce(app.document_display_name, app."name") from master.applications app 
-		        							where app.id = ai.translation_document_type_id)    
-		                		else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
-		                	end
-		                as documentName,
-		                ai.document_date as date,
-		                ai.lok_sabha_session as LSNo,
-		                ai.lok_sabha_session_number as SSNo,
-		                ai.rajya_sabha_session as RSSNo,
-		                ai.current_status as status,
-		                case
-		                        when ai.current_status = 'Approved' then null
-		                        else CONCAT(wh.pending_with_name)
-		                end as pendingAt,
-		                ai.ref_id as refId,
-		                ai.application_id as applicationId,
-		                ai.id as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                wh.next_task_id as taskId,
-		                'True' as actionPerformed,
-		                a.form_url as formUrl,
-		                wh.action_url as actionUrl,
-		                wh.draft_id as draftId,
-		                a.published_url as publishedUrl,
-		                ai.published_document_uuid_en as documentUUIDEn,
-		                ai.published_document_uuid_hi as documentUUIDHi,
-		                ai.html_content_en as htmlContentEn,
-		                ai.html_content_hi as htmlContentHi,
-		                null as editorId,
-		                ai.uploaded_document_uuid as uploaded_document_uuid
-		        from
-		                workflow.workflow_history wh
-		        join master.application_instance ai on
-		                wh.application_instance_id = ai.id
-		        join master.applications a on
-		                ai.application_id = a.id
-		        where
-		                wh.pending_with = :userId
-		                and wh.action_taken_by is null
-		        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
-		        and a.id not in (select a.id from master.applications a, master.modules m
-		                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId)
-		union
-		        select
-		                distinct on
-		                (ai.application_no) ai.application_no as applicationNo,
-		                case
-		                	when (ai.translation_document_type_id is not null) 
-		        							then (select coalesce(app.document_display_name, app."name") from master.applications app 
-		        							where app.id = ai.translation_document_type_id)    
-		                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
-		        		end
-		        		as documentName,
-		                ai.document_date as date,
-		                ai.lok_sabha_session as LSNo,
-		                ai.lok_sabha_session_number as SSNo,
-		                ai.rajya_sabha_session as RSSNo,
-		                case
-		                        when ai.current_status = 'Returned' then 'In Progress'
-		                        else ai.current_status
-		                end as status,
-		                CONCAT(wh.pending_with_name) as pendingAt,
-		                ai.ref_id as refId,
-		                ai.application_id as applicationId,
-		                ai.id as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                wh.next_task_id as taskId,
-		                'False' as actionPerformed,
-		                a.form_url as formUrl,
-		                wh.action_url as actionUrl,
-		                wh.draft_id as draftId,
-		                a.published_url as publishedUrl,
-		                ai.published_document_uuid_en as documentUUIDEn,
-		                ai.published_document_uuid_hi as documentUUIDHi,
-		                ai.html_content_en as htmlContentEn,
-		                ai.html_content_hi as htmlContentHi,
-		                null as editorId,
-		                ai.uploaded_document_uuid as uploaded_document_uuid
-		        from
-		                (
-		                select
-		                        wh1.*
-		                from
-		                        workflow.workflow_history wh1
-		                where
-		                        wh1.id in (
-		                        select
-		                                max(id)
-		                        from
-		                                workflow.workflow_history wh2
-		                        where
-		                                wh2.application_instance_id in (
-		                                select
-		                                        application_instance_id
-		                                from
-		                                        workflow.workflow_history wh3
-		                                where
-		                                        wh3.action_taken_by = :userId)
-		                        group by
-		                                application_instance_id)
-		                        and (wh1.pending_with != :userId
-		                        or wh1.pending_with is null )) wh
-		        join master.application_instance ai on
-		                wh.application_instance_id = ai.id
-		        join master.applications a on
-		                ai.application_id = a.id
-		                 where (ai.current_status != 'Approved' and ai.current_status != 'Published')
-		                 and a.id not in (select a.id from master.applications a, master.modules m
-		                        where a.module_id = m.id and a.abbr in ('SYN')  and m.house_id = :houseId)
-		union
-		        select
-		                distinct on
-		                (ii.application_no) 
-		                ii.application_no as applicationNo,
-		                coalesce(a.document_display_name, a."name") as documentName,
-		                ii.document_date as date,
-		                ii.lok_sabha_session as LSNo,
-		                ii.lok_sabha_session_number as SSNo,
-		                ii.rajya_sabha_session as RSSNo,
-		                case
-		                        when ii.application_instance_id is not null
-		                        and applicationInstance.id = ii.application_instance_id
-		                        and applicationInstance.current_status not in ('Returned', 'Draft') then applicationInstance.current_status
-		                        else ii.current_status
-		                end as status,
-		                case
-		                        when ii.application_instance_id is not null
-		                        and applicationInstance.id = ii.application_instance_id
-		                        and applicationInstance.current_status in ('Approved', 'Published') then null
-		                        else ii.pending_at
-		                end as pendingAt,
-		                ii.ref_id as refId,
-		                ii.application_id as applicationId,
-		                ii.id as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                null as taskId,
-		                case
-		                        when ii.current_status = 'Returned' then 'True'
-		                        else 'False'
-		                end as actionPerformed,
-		                a.form_url as formUrl,
-		                null as actionUrl,
-		                null as draftId,
-		                a.published_url as publishedUrl,
-		                null as documentUUIDEn,
-		                null as documentUUIDHi,
-		                ii.html_content_en as htmlContentEn,
-		                ii.html_content_hi as htmlContentHi,
-		                null as editorId,
-		                applicationInstance.uploaded_document_uuid as uploaded_document_uuid
-		        from
-		                master.input_instance ii
-		        join master.applications a on
-		                a.id = ii.application_id
-		        join authentication.base_user u on
-		                u.id = ii.created_by
-		        left join master.application_instance applicationInstance on
-		                applicationInstance.id = ii.application_instance_id
-		        where
-		                ii.created_by = :userId
-		union
-		        select
-		                distinct on
-		                (dd.application_no) dd.application_no as applicationNo,
-		                coalesce(a.document_display_name, a."name") as documentName,
-		                dd.for_date as date,
-		                dd.lok_sabha_session as LSNo,
-		                dd.lok_sabha_session_number as SSNo,
-		                dd.rajya_sabha_session as RSSNo,
-		                wh.status as status,
-		                wh.pending_with_name as pendingAt,
-		                null as refId,
-		                dd.application_id as applicationId,
-		                null as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                null as taskId,
-		                'True' as actionPerformed,
-		                a.form_url as formUrl,
-		                wh.action_url as actionUrl,
-		                wh.draft_id as draftId,
-		                a.published_url as publishedUrl,
-		                null as documentUUIDEn,
-		                null as documentUUIDHi,
-		                null as htmlContentEn,
-		                null as htmlContentHi,
-		                null as editorId,
-		                null as uploaded_document_uuid
-		        from
-		                workflow.workflow_history wh
-		        left join workflow.drafted_document dd on
-		                dd.id = wh.draft_id
-		        left join master.applications a on
-		                a.id = dd.application_id
-		        left join authentication.base_user u on
-		                u.id = wh.pending_with
-		        where
-		                wh.pending_with = :userId
-		                AND wh.draft_id IS NOT NULL
-		union
-		        select
-		                distinct on
-		                (ai.application_no) ai.application_no as applicationNo,
-		                
-		                case
-		                	when (ai.translation_document_type_id is not null) 
-		        							then (select coalesce(app.document_display_name, app."name") from master.applications app 
-		        							where app.id = ai.translation_document_type_id)    
-		                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
-		        		end
-		        		as documentName,            
-		                ai.document_date as date,
-		                ai.lok_sabha_session as LSNo,
-		                ai.lok_sabha_session_number as SSNo,
-		                ai.rajya_sabha_session as RSSNo,
-		                ai.current_status as status,
-		                null as pendingAt,
-		                ai.ref_id as refId,
-		                ai.application_id as applicationId,
-		                ai.id as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                wh.next_task_id as taskId,
-		                'False' as actionPerformed,
-		                a.form_url as formUrl,
-		                wh.action_url as actionUrl,
-		                wh.draft_id as draftId,
-		                a.published_url as publishedUrl,
-		                ai.published_document_uuid_en as documentUUIDEn,
-		                ai.published_document_uuid_hi as documentUUIDHi,
-		                ai.html_content_en as htmlContentEn,
-		                ai.html_content_hi as htmlContentHi,
-		                null as editorId,
-		                ai.uploaded_document_uuid as uploaded_document_uuid
-		        from
-		                workflow.workflow_history wh
-		        join master.application_instance ai on
-		                wh.application_instance_id = ai.id
-		        join master.applications a on
-		                ai.application_id = a.id
-		        where
-		                (ai.current_status = 'Approved'
-		                        or ai.current_status = 'Published')
-		                    and a.primary_office_id in (
-		                    select
-		                            office_id
-		                    from
-		                            authentication.user_roles
-		                    where
-		                            user_id = :userId and is_active = true and is_deleted = false) and wh.is_active = true and wh.is_deleted = false
-		
-		union
-		    SELECT
-		                    r.ref_no as applicationNo,
-		                    'Synopsis of Debates' as documentName,
-		                r.roster_date as date,
-		                lsm.lok_sabha_number as LSNo,
-		                lssm.session_number as SSNo,
-		                rssm.session_number as RSSNo,
-		                'In Progress' as status,
-		          		CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
-		                null as refId,
-		                null as applicationId,
-		                null as applicationinstanceId,
-		                'IN-PROCESS' as taskName,
-		                null as taskId,
-		                'True' as actionPerformed,
-		                '/synopsis/synopsis-create' as formUrl,
-		                '/synopsis/synopsis-create' as actionUrl,
-		                null as draftId,
-		                null as publishedUrl,
-		                null as documentUUIDEn,
-		                null as documentUUIDHi,
-		                null as htmlContentEn,
-		                null as htmlContentHi,
-		                CAST(rd.editor_id AS VARCHAR) as editorId,
-		                null as uploaded_document_uuid
-		FROM synopsis.roster_detail rd
-		JOIN synopsis.roster r ON rd.roster_id = r.id
-		left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
-		left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
-		left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
-		left join authentication.base_user bu on bu.id = rd.editor_id
-		
-		left join master.designations d on bu.designation_id = d.id
-			left join authentication.user_roles ur on bu.id = ur.user_id
-			LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
-			LEFT JOIN master.offices o ON o.id = ur.office_id
-		
-		WHERE rd.editor_id = :userId
-		AND r.roster_date IS NOT NULL
-		AND r.roster_type = 'Daily'
-		and rd.task_status <> 'Completed'
-		         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
-		        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
-		
-		union
-		                     SELECT
-		                  ah.ref_no as applicationNo,
-		                  ma.document_display_name as documentName,
-		                  inp.document_date as date,
-		                  lsm.lok_sabha_number as LSNo,
-		                  lssm.session_number as SSNo,
-		                  rssm.session_number as RSSNo,
-          				  case
-							  	when (inp.status = 'Returned') then inp.status
-							  	else 'In Progress'
-						  end
-		                  as status,
-		          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
-		          null as refId,
-		          null as applicationId,
-		          null as applicationinstanceId,
-		          'IN-PROCESS' as taskName,
-		          null as taskId,
-		          'True' as actionPerformed,
-		          '/translation-of-papers/createTranslation' as formUrl,
-		          '/translation-of-papers/createTranslation' as actionUrl,
-		              null as draftId,
-		              null as publishedUrl,
-		              null as documentUUIDEn,
-		              null as documentUUIDHi,
-		              null as htmlContentEn,
-		              null as htmlContentHi,
-		              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
-		              null as uploaded_document_uuid
-		      FROM translation.translation_input inp
-		      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
-		      left join master.applications ma on ma.id = inp.document_type_id
-		      left join master.lok_sabha_session_masters lssm on lssm.id = inp.lok_sabha_session_no
-		      left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
-		  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
-		      left join authentication.base_user bu on bu.id = ah.sent_to_user_id
-		
-		      	left join master.designations d on bu.designation_id = d.id
-		    	left join authentication.user_roles ur on bu.id = ur.user_id
+							SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url, uploaded_document_uuid
+			FROM (
+			                            select
+			                    distinct on
+			                    (ai.application_no) ai.application_no as applicationNo,
+			                   case
+			                        when ai.additional_details = 'Supplementary Synopsis' then 'Supplementary Synopsis'
+			                        when (ai.translation_document_type_id is not null)
+			        							then (select coalesce(app.document_display_name, app."name") from master.applications app
+			        							where app.id = ai.translation_document_type_id)
+			                		else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
+			                	end
+			                as documentName,
+			                ai.document_date as date,
+			                ai.lok_sabha_session as LSNo,
+			                ai.lok_sabha_session_number as SSNo,
+			                ai.rajya_sabha_session as RSSNo,
+			                ai.current_status as status,
+			                case
+			                        when ai.current_status = 'Approved' then null
+			                        else CONCAT(wh.pending_with_name)
+			                end as pendingAt,
+			                ai.ref_id as refId,
+			                ai.application_id as applicationId,
+			                ai.id as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                wh.next_task_id as taskId,
+			                'True' as actionPerformed,
+			                a.form_url as formUrl,
+			                wh.action_url as actionUrl,
+			                wh.draft_id as draftId,
+			                a.published_url as publishedUrl,
+			                ai.published_document_uuid_en as documentUUIDEn,
+			                ai.published_document_uuid_hi as documentUUIDHi,
+			                ai.html_content_en as htmlContentEn,
+			                ai.html_content_hi as htmlContentHi,
+			                null as editorId,
+			                ai.uploaded_document_uuid as uploaded_document_uuid
+			        from
+			                workflow.workflow_history wh
+			        join master.application_instance ai on
+			                wh.application_instance_id = ai.id
+			        join master.applications a on
+			                ai.application_id = a.id
+			        where
+			                wh.pending_with = :userId
+			                and wh.action_taken_by is null
+			        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
+			        and a.id not in (select a.id from master.applications a, master.modules m
+			                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId)
+			union
+			        select
+			                distinct on
+			                (ai.application_no) ai.application_no as applicationNo,
+			                case
+			                	when (ai.translation_document_type_id is not null)
+			        							then (select coalesce(app.document_display_name, app."name") from master.applications app
+			        							where app.id = ai.translation_document_type_id)
+			                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
+			        		end
+			        		as documentName,
+			                ai.document_date as date,
+			                ai.lok_sabha_session as LSNo,
+			                ai.lok_sabha_session_number as SSNo,
+			                ai.rajya_sabha_session as RSSNo,
+			                case
+			                        when ai.current_status = 'Returned' then 'In Progress'
+			                        else ai.current_status
+			                end as status,
+			                CONCAT(wh.pending_with_name) as pendingAt,
+			                ai.ref_id as refId,
+			                ai.application_id as applicationId,
+			                ai.id as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                wh.next_task_id as taskId,
+			                'False' as actionPerformed,
+			                a.form_url as formUrl,
+			                wh.action_url as actionUrl,
+			                wh.draft_id as draftId,
+			                a.published_url as publishedUrl,
+			                ai.published_document_uuid_en as documentUUIDEn,
+			                ai.published_document_uuid_hi as documentUUIDHi,
+			                ai.html_content_en as htmlContentEn,
+			                ai.html_content_hi as htmlContentHi,
+			                null as editorId,
+			                ai.uploaded_document_uuid as uploaded_document_uuid
+			        from
+			                (
+			                select
+			                        wh1.*
+			                from
+			                        workflow.workflow_history wh1
+			                where
+			                        wh1.id in (
+			                        select
+			                                max(id)
+			                        from
+			                                workflow.workflow_history wh2
+			                        where
+			                                wh2.application_instance_id in (
+			                                select
+			                                        application_instance_id
+			                                from
+			                                        workflow.workflow_history wh3
+			                                where
+			                                        wh3.action_taken_by = :userId)
+			                        group by
+			                                application_instance_id)
+			                        and (wh1.pending_with != :userId
+			                        or wh1.pending_with is null )) wh
+			        join master.application_instance ai on
+			                wh.application_instance_id = ai.id
+			        join master.applications a on
+			                ai.application_id = a.id
+			                 where (ai.current_status != 'Approved' and ai.current_status != 'Published')
+			                 and a.id not in (select a.id from master.applications a, master.modules m
+			                        where a.module_id = m.id and a.abbr in ('SYN')  and m.house_id = :houseId)
+			union
+			        select
+			                distinct on
+			                (ii.application_no)
+			                ii.application_no as applicationNo,
+			                coalesce(a.document_display_name, a."name") as documentName,
+			                ii.document_date as date,
+			                ii.lok_sabha_session as LSNo,
+			                ii.lok_sabha_session_number as SSNo,
+			                ii.rajya_sabha_session as RSSNo,
+			                case
+			                        when ii.application_instance_id is not null
+			                        and applicationInstance.id = ii.application_instance_id
+			                        and applicationInstance.current_status not in ('Returned', 'Draft') then applicationInstance.current_status
+			                        else ii.current_status
+			                end as status,
+			                case
+			                        when ii.application_instance_id is not null
+			                        and applicationInstance.id = ii.application_instance_id
+			                        and applicationInstance.current_status in ('Approved', 'Published') then null
+			                        else ii.pending_at
+			                end as pendingAt,
+			                ii.ref_id as refId,
+			                ii.application_id as applicationId,
+			                ii.id as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                null as taskId,
+			                case
+			                        when ii.current_status = 'Returned' then 'True'
+			                        else 'False'
+			                end as actionPerformed,
+			                a.form_url as formUrl,
+			                null as actionUrl,
+			                null as draftId,
+			                a.published_url as publishedUrl,
+			                null as documentUUIDEn,
+			                null as documentUUIDHi,
+			                ii.html_content_en as htmlContentEn,
+			                ii.html_content_hi as htmlContentHi,
+			                null as editorId,
+			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid
+			        from
+			                master.input_instance ii
+			        join master.applications a on
+			                a.id = ii.application_id
+			        join authentication.base_user u on
+			                u.id = ii.created_by
+			        left join master.application_instance applicationInstance on
+			                applicationInstance.id = ii.application_instance_id
+			        where
+			                ii.created_by = :userId
+			union
+			        select
+			                distinct on
+			                (dd.application_no) dd.application_no as applicationNo,
+			                coalesce(a.document_display_name, a."name") as documentName,
+			                dd.for_date as date,
+			                dd.lok_sabha_session as LSNo,
+			                dd.lok_sabha_session_number as SSNo,
+			                dd.rajya_sabha_session as RSSNo,
+			                wh.status as status,
+			                wh.pending_with_name as pendingAt,
+			                null as refId,
+			                dd.application_id as applicationId,
+			                null as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                null as taskId,
+			                'True' as actionPerformed,
+			                a.form_url as formUrl,
+			                wh.action_url as actionUrl,
+			                wh.draft_id as draftId,
+			                a.published_url as publishedUrl,
+			                null as documentUUIDEn,
+			                null as documentUUIDHi,
+			                null as htmlContentEn,
+			                null as htmlContentHi,
+			                null as editorId,
+			                null as uploaded_document_uuid
+			        from
+			                workflow.workflow_history wh
+			        left join workflow.drafted_document dd on
+			                dd.id = wh.draft_id
+			        left join master.applications a on
+			                a.id = dd.application_id
+			        left join authentication.base_user u on
+			                u.id = wh.pending_with
+			        where
+			                wh.pending_with = :userId
+			                AND wh.draft_id IS NOT NULL
+			union
+			        select
+			                distinct on
+			                (ai.application_no) ai.application_no as applicationNo,
+
+			                case
+			                	when (ai.translation_document_type_id is not null)
+			        							then (select coalesce(app.document_display_name, app."name") from master.applications app
+			        							where app.id = ai.translation_document_type_id)
+			                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
+			        		end
+			        		as documentName,
+			                ai.document_date as date,
+			                ai.lok_sabha_session as LSNo,
+			                ai.lok_sabha_session_number as SSNo,
+			                ai.rajya_sabha_session as RSSNo,
+			                ai.current_status as status,
+			                null as pendingAt,
+			                ai.ref_id as refId,
+			                ai.application_id as applicationId,
+			                ai.id as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                wh.next_task_id as taskId,
+			                'False' as actionPerformed,
+			                a.form_url as formUrl,
+			                wh.action_url as actionUrl,
+			                wh.draft_id as draftId,
+			                a.published_url as publishedUrl,
+			                ai.published_document_uuid_en as documentUUIDEn,
+			                ai.published_document_uuid_hi as documentUUIDHi,
+			                ai.html_content_en as htmlContentEn,
+			                ai.html_content_hi as htmlContentHi,
+			                null as editorId,
+			                ai.uploaded_document_uuid as uploaded_document_uuid
+			        from
+			                workflow.workflow_history wh
+			        join master.application_instance ai on
+			                wh.application_instance_id = ai.id
+			        join master.applications a on
+			                ai.application_id = a.id
+			        where
+			                (ai.current_status = 'Approved'
+			                        or ai.current_status = 'Published')
+			                    and a.primary_office_id in (
+			                    select
+			                            office_id
+			                    from
+			                            authentication.user_roles
+			                    where
+			                            user_id = :userId and is_active = true and is_deleted = false) and wh.is_active = true and wh.is_deleted = false
+
+			union
+			    SELECT
+			                    r.ref_no as applicationNo,
+			                    'Synopsis of Debates' as documentName,
+			                r.roster_date as date,
+			                lsm.lok_sabha_number as LSNo,
+			                lssm.session_number as SSNo,
+			                rssm.session_number as RSSNo,
+			                'In Progress' as status,
+			          		CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
+			                null as refId,
+			                null as applicationId,
+			                null as applicationinstanceId,
+			                'IN-PROCESS' as taskName,
+			                null as taskId,
+			                'True' as actionPerformed,
+			                '/synopsis/synopsis-create' as formUrl,
+			                '/synopsis/synopsis-create' as actionUrl,
+			                null as draftId,
+			                null as publishedUrl,
+			                null as documentUUIDEn,
+			                null as documentUUIDHi,
+			                null as htmlContentEn,
+			                null as htmlContentHi,
+			                CAST(rd.editor_id AS VARCHAR) as editorId,
+			                null as uploaded_document_uuid
+			FROM synopsis.roster_detail rd
+			JOIN synopsis.roster r ON rd.roster_id = r.id
+			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
+			left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
+			left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
+			left join authentication.base_user bu on bu.id = rd.editor_id
+
+			left join master.designations d on bu.designation_id = d.id
+				left join authentication.user_roles ur on bu.id = ur.user_id
 				LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
 				LEFT JOIN master.offices o ON o.id = ur.office_id
-		
-		      WHERE ah.sent_to_user_id = :userId
-		      AND inp.document_date IS NOT NULL
-		      and ah.is_active = true
-		      and ah.is_deleted = false
-		
-		    union
-		
-		SELECT
-		            da.ref_no as applicationNo,
-		            'Corrected Debates' as documentName,
-		        da.debate_date as date,
-		        lsm.lok_sabha_number as LSNo,
-		        lssm.session_number as SSNo,
-		        rssm.session_number as RSSNo,
-		        'In Progress' as status,
-		        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-		        null as refId,
-		        null as applicationId,
-		        null as applicationinstanceId,
-		        'IN-PROCESS' as taskName,
-		        null as taskId,
-		        'True' as actionPerformed,
-		        '/corrected-debate-allocation/correct-debate-creation' as formUrl,
-		        '/corrected-debate-allocation/correct-debate-creation' as actionUrl,
-		        null as draftId,
-		        null as publishedUrl,
-		        null as documentUUIDEn,
-		        null as documentUUIDHi,
-		        null as htmlContentEn,
-		        null as htmlContentHi,
-		        CAST(da.allocateto AS VARCHAR) as editorId,
-		        null as uploaded_document_uuid
-		FROM corrected_debate.allocation da
-		left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
-		left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
-		left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
-		left join authentication.base_user bu on bu.id = da.allocateto
-		WHERE da.allocateto = :userId
-		and da.status <> 'Completed'
-		
-		union
-		
-		        SELECT
-		            da.ref_no as applicationNo,
-		            'Corrected Debates' as documentName,
-		    i.document_date as date,
-		    lsm.lok_sabha_number as LSNo,
-		    lssm.session_number as SSNo,
-		    rssm.session_number as RSSNo,
-		    'In Progress' as status,
-		    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-		    null as refId,
-		    null as applicationId,
-		    null as applicationinstanceId,
-		    'IN-PROCESS' as taskName,
-		    null as taskId,
-		    'True' as actionPerformed,
-			case
-		   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-		   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-		    end as formUrl,
-		    case
-		   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-		   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-		    end as actionUrl,
-		    null as draftId,
-		    null as publishedUrl,
-		    null as documentUUIDEn,
-		    null as documentUUIDHi,
-		    null as htmlContentEn,
-		    null as htmlContentHi,
-		    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
-		    null as uploaded_document_uuid
-		FROM corrected_debate.allocation_history da
-		left join corrected_debate.translation_input i on i.id = da.translation_input_id
-		left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
-		left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
-		left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
-		left join authentication.base_user bu on bu.id = da.sent_to_user_id
-		WHERE da.sent_to_user_id = :userId
-		and da.status <> 'Completed'
-		
-		union
-		-- ESummon
-		SELECT
-				       es.application_no as applicationNo,
-				       'E-Summon for MPs' as documentName,
-			       es.e_summon_issuance_date as date,
-			       es.lok_sabha_no  as LSNo,
-			       es.session_no as SSNo,
-			       es.rajya_sabha_session_no  as RSSNo,
-			       'Published' as status,
-			       '' as pendingAt,
-			       es.id as refId,
-			       null as applicationId,
-			       null as applicationinstanceId,
-			       'IN-PROCESS' as taskName,
-			       null as taskId,
-			       'True' as actionPerformed,
-			       '/workflow/mailsentinfo' as formUrl,
-			       '/workflow/mailsentinfo' as actionUrl,
-			       null as draftId,
-			       null as publishedUrl,
-			       null as documentUUIDEn,
-			       null as documentUUIDHi,
-			       null as htmlContentEn,
-			       null as htmlContentHi,
-			       null as editorId,
-			       null as uploaded_document_uuid
-			   FROM agenda_papers.e_summon es
-			   where es.status = 'Published' and es.house_id = :houseId
-			   and es.is_active = true and es.is_deleted = false
-			and exists(select 1 from  authentication.user_roles ur  where ur.user_id = :userId
-			and ur.office_id in (
-			select  a.primary_office_id from master.applications a where a.abbr='ES'))
-		
-		union
-		      select
-		            distinct on
-		    (ai.document_date, ai.application_id, rd.document_type) ai.application_no as applicationNo,
-		            rd.document_type as documentName,
-		            ai.document_date as date,
-		            ai.lok_sabha_session as LSNo,
-		            ai.lok_sabha_session_number as SSNo,
-		            ai.rajya_sabha_session as RSSNo,
-		            ai.current_status as status,
-		            case
-		                    when ai.current_status = 'Approved' then null
-		                else CONCAT(wh.pending_with_name)
-		        end as pendingAt,
-		        ai.ref_id as refId,
-		        ai.application_id as applicationId,
-		        ai.id as applicationinstanceId,
-		        'IN-PROCESS' as taskName,
-		        wh.next_task_id as taskId,
-		        'True' as actionPerformed,
-		        a.form_url as formUrl,
-		        wh.action_url as actionUrl,
-		        wh.draft_id as draftId,
-		        a.published_url as publishedUrl,
-		        ai.published_document_uuid_en as documentUUIDEn,
-		        ai.published_document_uuid_hi as documentUUIDHi,
-		        ai.html_content_en as htmlContentEn,
-		        ai.html_content_hi as htmlContentHi,
-		        null as editorId,
-		                null as uploaded_document_uuid
-		from
-		        workflow.workflow_history wh
-		join master.application_instance ai on
-		        wh.application_instance_id = ai.id
-		join master.applications a on
-		        ai.application_id = a.id
-		join synopsis.synopsis s on s.id = ai.id
-		join synopsis.roster_detail rd on rd.id = s.roster_detail_id
-		where
-		        wh.pending_with = :userId
-		        and wh.action_taken_by is null
-		and (ai.current_status != 'Approved' and ai.current_status != 'Published')
-		 and a.id in (select a.id from master.applications a, master.modules m
-		where a.module_id = m.id and a.abbr in ('SYN'))
-		) A
-		left join master.applications ma on
-		        ma.id = A.applicationId	
 
-				""";
+			WHERE rd.editor_id = :userId
+			AND r.roster_date IS NOT NULL
+			AND r.roster_type = 'Daily'
+			and rd.task_status <> 'Completed'
+			         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
+			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
+
+			union
+			                     SELECT
+			                  ah.ref_no as applicationNo,
+			                  ma.document_display_name as documentName,
+			                  inp.document_date as date,
+			                  lsm.lok_sabha_number as LSNo,
+			                  lssm.session_number as SSNo,
+			                  rssm.session_number as RSSNo,
+			        				  case
+								  	when (inp.status = 'Returned') then inp.status
+								  	else 'In Progress'
+							  end
+			                  as status,
+			          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
+			          null as refId,
+			          null as applicationId,
+			          null as applicationinstanceId,
+			          'IN-PROCESS' as taskName,
+			          null as taskId,
+			          'True' as actionPerformed,
+			          '/translation-of-papers/createTranslation' as formUrl,
+			          '/translation-of-papers/createTranslation' as actionUrl,
+			              null as draftId,
+			              null as publishedUrl,
+			              null as documentUUIDEn,
+			              null as documentUUIDHi,
+			              null as htmlContentEn,
+			              null as htmlContentHi,
+			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
+			              null as uploaded_document_uuid
+			      FROM translation.translation_input inp
+			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
+			      left join master.applications ma on ma.id = inp.document_type_id
+			      left join master.lok_sabha_session_masters lssm on lssm.id = inp.lok_sabha_session_no
+			      left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
+			  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
+			      left join authentication.base_user bu on bu.id = ah.sent_to_user_id
+
+			      	left join master.designations d on bu.designation_id = d.id
+			    	left join authentication.user_roles ur on bu.id = ur.user_id
+					LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
+					LEFT JOIN master.offices o ON o.id = ur.office_id
+
+			      WHERE ah.sent_to_user_id = :userId
+			      AND inp.document_date IS NOT NULL
+			      and ah.is_active = true
+			      and ah.is_deleted = false
+
+			    union 
+
+			SELECT
+			            da.ref_no as applicationNo,
+			            'Corrected Debates' as documentName,
+			        da.debate_date as date,
+			        lsm.lok_sabha_number as LSNo,
+			        lssm.session_number as SSNo,
+			        rssm.session_number as RSSNo,
+			        'In Progress' as status,
+			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+			        null as refId,
+			        136 as applicationId,
+			        null as applicationinstanceId,
+			        'IN-PROCESS' as taskName,
+			        null as taskId,
+			        'True' as actionPerformed,
+			        '/corrected-debate-allocation/correct-debate-creation' as formUrl,
+			        '/corrected-debate-allocation/correct-debate-creation' as actionUrl,
+			        null as draftId,
+			        null as publishedUrl,
+			        null as documentUUIDEn,
+			        null as documentUUIDHi,
+			        null as htmlContentEn,
+			        null as htmlContentHi,
+			        CAST(da.allocateto AS VARCHAR) as editorId,
+			        null as uploaded_document_uuid
+			FROM corrected_debate.allocation da
+			left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
+			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
+			left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
+			left join authentication.base_user bu on bu.id = da.allocateto
+			WHERE da.allocateto = :userId
+			and da.status <> 'Completed'
+
+			union
+
+			        SELECT
+			            da.ref_no as applicationNo,
+			            'Corrected Debates' as documentName,
+			    i.document_date as date,
+			    lsm.lok_sabha_number as LSNo,
+			    lssm.session_number as SSNo,
+			    rssm.session_number as RSSNo,
+				case
+				  	when (da.status = 'Draft') then da.status
+					when (da.status = 'Returned') then da.status
+				  	else 'In Progress'
+				end
+				as status,
+			    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+			    null as refId,
+			    null as applicationId,
+			    null as applicationinstanceId,
+			    'IN-PROCESS' as taskName,
+			    null as taskId,
+			    'True' as actionPerformed,
+				case
+			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			    end as formUrl,
+			    case
+			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+			    end as actionUrl,
+			    null as draftId,
+			    null as publishedUrl,
+			    null as documentUUIDEn,
+			    null as documentUUIDHi,
+			    null as htmlContentEn,
+			    null as htmlContentHi,
+			    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
+			    null as uploaded_document_uuid
+			FROM corrected_debate.allocation_history da
+			left join corrected_debate.translation_input i on i.id = da.translation_input_id
+			left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
+			left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
+			left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
+			left join authentication.base_user bu on bu.id = da.sent_to_user_id
+			WHERE da.sent_to_user_id = :userId
+			and da.status <> 'Completed'
+
+			union
+			-- ESummon
+			SELECT
+					       es.application_no as applicationNo,
+					       'E-Summon for MPs' as documentName,
+				       es.e_summon_issuance_date as date,
+				       es.lok_sabha_no  as LSNo,
+				       es.session_no as SSNo,
+				       es.rajya_sabha_session_no  as RSSNo,
+				       'Published' as status,
+				       '' as pendingAt,
+				       es.id as refId,
+				       null as applicationId,
+				       null as applicationinstanceId,
+				       'IN-PROCESS' as taskName,
+				       null as taskId,
+				       'True' as actionPerformed,
+				       '/workflow/mailsentinfo' as formUrl,
+				       '/workflow/mailsentinfo' as actionUrl,
+				       null as draftId,
+				       null as publishedUrl,
+				       null as documentUUIDEn,
+				       null as documentUUIDHi,
+				       null as htmlContentEn,
+				       null as htmlContentHi,
+				       null as editorId,
+				       null as uploaded_document_uuid
+				   FROM agenda_papers.e_summon es
+				   where es.status = 'Published' and es.house_id = :houseId
+				   and es.is_active = true and es.is_deleted = false
+				and exists(select 1 from  authentication.user_roles ur  where ur.user_id = :userId
+				and ur.office_id in (
+				select  a.primary_office_id from master.applications a where a.abbr='ES'))
+
+			union
+			      select
+			            distinct on
+			    (ai.document_date, ai.application_id, rd.document_type) ai.application_no as applicationNo,
+			            rd.document_type as documentName,
+			            ai.document_date as date,
+			            ai.lok_sabha_session as LSNo,
+			            ai.lok_sabha_session_number as SSNo,
+			            ai.rajya_sabha_session as RSSNo,
+			            ai.current_status as status,
+			            case
+			                    when ai.current_status = 'Approved' then null
+			                else CONCAT(wh.pending_with_name)
+			        end as pendingAt,
+			        ai.ref_id as refId,
+			        ai.application_id as applicationId,
+			        ai.id as applicationinstanceId,
+			        'IN-PROCESS' as taskName,
+			        wh.next_task_id as taskId,
+			        'True' as actionPerformed,
+			        a.form_url as formUrl,
+			        wh.action_url as actionUrl,
+			        wh.draft_id as draftId,
+			        a.published_url as publishedUrl,
+			        ai.published_document_uuid_en as documentUUIDEn,
+			        ai.published_document_uuid_hi as documentUUIDHi,
+			        ai.html_content_en as htmlContentEn,
+			        ai.html_content_hi as htmlContentHi,
+			        null as editorId,
+			                null as uploaded_document_uuid
+			from
+			        workflow.workflow_history wh
+			join master.application_instance ai on
+			        wh.application_instance_id = ai.id
+			join master.applications a on
+			        ai.application_id = a.id
+			join synopsis.synopsis s on s.id = ai.id
+			join synopsis.roster_detail rd on rd.id = s.roster_detail_id
+			where
+			        wh.pending_with = :userId
+			        and wh.action_taken_by is null
+			and (ai.current_status != 'Approved' and ai.current_status != 'Published')
+			 and a.id in (select a.id from master.applications a, master.modules m
+			where a.module_id = m.id and a.abbr in ('SYN'))
+			) A
+			left join master.applications ma on
+			        ma.id = A.applicationId 
+
+					""";
 
 	private final static String orderByClause = """
 			ORDER BY "date" DESC
@@ -740,20 +747,25 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public String completeTask(String taskId, Map<String, Object> variables,
 			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note) {
 		try {
+			System.out.println(">>> checkpoint 1");
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
 			headers.setContentType(MediaType.APPLICATION_JSON);
+			System.out.println(">>> checkpoint 2");
 
 			// Convert variables to a format expected by Camunda REST API
 			Map<String, Object> requestBody = new HashMap<>();
 			requestBody.put("variables", formatVariablesForCamunda(variables));
+			System.out.println(">>> checkpoint 3");
 
 			// Create an HttpEntity with headers and body
 			HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+			System.out.println(">>> checkpoint 4");
 
 			// Execute the REST API call to complete the task
 			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+			System.out.println(">>> checkpoint 5");
 
 			// Extract variables for further processing
 			String userName = utils.getUserFullNameFromAuthentication();
@@ -780,8 +792,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 				if ("INIT".equals(stepType)) {
 					// Entry to Notesheet Table
-					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
-					notesheetRepository.save(notesheet);
+					try {
+						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
+						notesheetRepository.save(notesheet);
+					} catch (Exception e) {
+						System.err.println("Unexpected error in INIT step: " + e.getMessage());
+						e.printStackTrace();
+						throw new RuntimeException("Unexpected error while processing INIT step", e);
+					}
+
+					System.out.println(">>> checkpoint 11");
 
 					// First entry with status = "submitted"
 					WorkflowHistory.WorkflowHistoryBuilder firstEntryBuilder = WorkflowHistory.builder()
@@ -791,6 +811,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.status(status).statusKey(statusKey).actionUrl(actionUrl).pendingWith(receiverUserId)
 							.pendingWithName(receiverUserName).pendingStartDate(LocalDateTime.now())
 							.initalStatusKey(statusKey).note(note).currentTaskId(taskId);
+					System.out.println(">>> checkpoint 12");
 
 					// Second entry, for the next task or status
 					WorkflowHistory.WorkflowHistoryBuilder secondEntryBuilder = WorkflowHistory.builder()
@@ -800,6 +821,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
 							.nextTaskId(nextTaskId).actionUrl(actionUrl);
+					System.out.println(">>> checkpoint 13");
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
@@ -818,11 +840,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					}
 
+					System.out.println(">>> checkpoint 14");
+
 					WorkflowHistory firstEntry = firstEntryBuilder.build();
 					workflowHistoryRepository.save(firstEntry);
 
+					System.out.println(">>> checkpoint 15");
+
 					WorkflowHistory secondEntry = secondEntryBuilder.build();
 					workflowHistoryRepository.save(secondEntry);
+
+					System.out.println(">>> checkpoint 16");
 
 				} else if ("INTER".equals(stepType)) {
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -865,9 +893,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					}
 
 					// Corrected Debates API
-					String correctedDebatesAbbr = workflowHistoryRepository
+					String appAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
-					if (CORRECTED_DEBATES_ABBR.equals(correctedDebatesAbbr)) {
+					if (CORRECTED_DEBATES_ABBR.equals(appAbbr)) {
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
@@ -896,6 +924,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							e.printStackTrace();
 						}
 					}
+					
+//					// B2 - INPUT API for RS
+//					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
+//						callB2InputAPI();
+//					}	
 
 				}
 
@@ -909,11 +942,47 @@ public class WorkflowServiceImpl implements WorkflowService {
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
 
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
 
+//	/**
+//	 * 
+//	 */
+//	private void callB2InputAPI() {
+//		
+//		CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
+//		DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
+//
+//		try {
+//			callCorrectedDebatesAPI(correctedDebatedDTO);
+//
+//			try {
+//				// Calling Debate Tagging for DTAG
+//				debateTaggingDTO.setApplicationId(80L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in first call to callDebateTagging (DTAG):");
+//				e.printStackTrace();
+//			}
+//
+//			try {
+//				// Calling Debate Tagging for Supplementary Tagging
+//				debateTaggingDTO.setApplicationId(81L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in second call to callDebateTagging (Supplementary):");
+//				e.printStackTrace();
+//			}
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	
 	/**
 	 * @param debateTaggingDTO
 	 */
@@ -1166,6 +1235,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private Map<String, Object> formatVariablesForCamunda(Map<String, Object> variables) {
 		Map<String, Object> camundaVariables = new HashMap<>();
 
+		System.out.println(">>> formatVariablesForCamunda");
 		variables.forEach((key, value) -> {
 			if (value instanceof Map) {
 				ObjectMapper objectMapper = new ObjectMapper();
@@ -1186,6 +1256,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				camundaVariables.put(key, variableMap);
 			}
 		});
+		System.out.println(">>> formatVariablesForCamunda completed");
 
 		return camundaVariables;
 	}
@@ -1511,16 +1582,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(" where 1 = 1 ");
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
+
+//		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
+//		System.out.println("Corrected Debate ID: " + corrDebateId);
+//		parameters.addValue("correctedDebateId", corrDebateId);
+
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
 			Long houseId = ((UserDetailsDTO) principal).getHouseId();
 			parameters.addValue("houseId", houseId);
 		}
 
-		if (queryDto.getApplicationId() != null) {
+		if (queryDto.getApplicationId() != null) { 
 			// qry = qry.append(" and applicationNo =
 			// ").append(queryDto.getApplicationId());
-			qry = qry.append(" and applicationId = :applicationId ");
+			qry = qry.append(" and (applicationId = :applicationId or parent_application_id = :applicationId) ");
 			parameters.addValue("applicationId", queryDto.getApplicationId());
 		}
 

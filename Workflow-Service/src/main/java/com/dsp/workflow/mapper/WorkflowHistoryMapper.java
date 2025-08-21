@@ -27,7 +27,7 @@ public class WorkflowHistoryMapper {
 									.status(input.getStatus())
 									.pendingWith(input.getPendingWith())
 									.pendingWithName(input.getPendingWithName())
-									.note(input.getNote())
+									.note(input.getCommentForDisplay())
 									.build();
 		return history;
 	}
