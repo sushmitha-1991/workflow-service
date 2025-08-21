@@ -136,13 +136,11 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private String getHouse() {
-        Long house = utils.getHouseIdFromAuthentication();
-        if (house == 1)
-            return "RS";
-        else if (house == 2)
-            return "LS";
-        else
+        Long houseId = utils.getHouseIdFromAuthentication();
+        Optional<String> house = repository.findHouseById(houseId);
+        if (house.isEmpty())
             return "NH";
+        return house.get();
     }
 
     @Override
@@ -428,14 +426,12 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasLsNo(dto.getLsNo()));
         }
         if (StringUtils.isNotBlank(dto.getSesNo())) {
-            spec = spec.and(hasSessNo(dto.getSesNo()));
+           spec = spec.and(hasSessNo(dto.getSesNo()));
         }
         if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTemp(dto.getLocale()));
         }
-
         List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
-
         List<String> uploadedUuids = new ArrayList<>();
         Long houseId = utils.getHouseIdFromAuthentication();
         System.out.println("urlList " + urlList.size());
@@ -446,9 +442,27 @@ public class PublishServiceImpl implements PublishService {
         int i = 0;
         try {
             for (PublishDocumentTemp response : urlList) {
-                if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate())) {
+                
+                boolean inRange = false;
+                if (response.getForDate() == null) {
+                    inRange = dto.getFromDate()==null && dto.getToDate()==null;
+                } else if (response.getForDate()!= null) {
+                    try{
+                        inRange = betweenDates(dto.getFromDate(), dto.getToDate(),LocalDate.parse(response.getForDate()) );
+                    
+                        }
+                        catch(Exception e){
+                                inRange = isBetween(dto.getFromDate(), dto.getToDate(),response.getForDate() );
+                        }
+                } else {
+                    inRange = false;
+                }
+                if (!inRange) {
                     continue;
                 }
+                // if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate())) {
+                // continue;
+                // }
 
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 byte[] fileData = null;
@@ -489,32 +503,37 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
-    private boolean isBetween(LocalDate fromDate, LocalDate toDate, String targetDateStr) {
-        if (StringUtils.isBlank(targetDateStr) && fromDate == null && toDate == null)
-         {  
-             return true;
-        }
-        else if (StringUtils.isBlank(targetDateStr) && (fromDate != null || toDate != null)) {
+    private boolean betweenDates(LocalDate fromDate, LocalDate toDate, LocalDate targetDate) {
+        if (targetDate == null && fromDate == null && toDate == null) {
+            return true;
+        } else if (targetDate == null && (fromDate != null || toDate != null)) {
             return false;
+        }
+
+        if (fromDate != null && targetDate.isBefore(fromDate)) {
+            return false;
+        }
+
+        if (toDate != null && targetDate.isAfter(toDate)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isBetween(LocalDate fromDate, LocalDate toDate, String targetDateStr) {
+        if (StringUtils.isBlank(targetDateStr)) {
+            return fromDate == null && toDate == null;
         }
         try {
-            // Adjust this format to match the format stored in your DB
+
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
             LocalDate targetDate = LocalDate.parse(targetDateStr.trim(), formatter);
-            System.out.println("date  in entry " + targetDate);
-            if (fromDate != null && targetDate.isBefore(fromDate)) {
-                return false;
-            }
-
-            if (toDate != null && targetDate.isAfter(toDate)) {
-                return false;
-            }
-
-            return true;
+            return betweenDates(fromDate, toDate, targetDate);
         } catch (DateTimeParseException e) {
             System.out.println("Invalid date format: " + targetDateStr);
-            return false;
-        }
+            LocalDate targetDate = LocalDate.parse(targetDateStr.trim());
+            return betweenDates(fromDate, toDate, targetDate);        }
     }
 
     private Specification<PublishDocumentTemp> hasPublishUuid() {
@@ -543,11 +562,17 @@ public class PublishServiceImpl implements PublishService {
                 folders.add(getYear(response.getForDate()));
                 folders.add(getMonth(response.getForDate()));
             } else {
-                if ("LS".equals(houseAbbr)) {
-                    folders.add(response.getLsNo());
-                }
-                if (StringUtils.isNotBlank(response.getSesNo())) {
-                    folders.add(response.getSesNo());
+                if (response.getSesNo() != null) {
+                    if ("LS".equals(houseAbbr)) {
+
+                        folders.add(response.getLsNo());
+                        if (!isRoman(response.getSesNo())) {
+                            response.setSesNo(toRoman(Integer.parseInt(response.getSesNo())));
+                        }
+                    }
+                    if (StringUtils.isNotBlank(response.getSesNo())) {
+                        folders.add(response.getSesNo());
+                    }
                 }
             }
 
