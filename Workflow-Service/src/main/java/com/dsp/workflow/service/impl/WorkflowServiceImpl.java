@@ -1582,7 +1582,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
-		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
+		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR); 
 		System.out.println("Corrected Debate ID: " + corrDebateId);
 		
 		StringBuffer qry = new StringBuffer(allDocumentsQuery)
