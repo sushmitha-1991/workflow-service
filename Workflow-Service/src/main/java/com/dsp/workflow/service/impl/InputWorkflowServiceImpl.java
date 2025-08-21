@@ -46,8 +46,9 @@ public class InputWorkflowServiceImpl implements InputWorkflowService {
 		
 		if (history == null) return Collections.EMPTY_LIST;
 		
-		List<Map<String, Object>>docList = history.getReferenceFiles();
+		List<Map<String, Object>> docList = history.getReferenceFiles();
 		
+		System.out.println("res "+docList);
 		if (docList == null) return Collections.EMPTY_LIST;
 		
 		return docList.stream()
