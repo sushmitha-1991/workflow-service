@@ -505,9 +505,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        rssm.session_number as RSSNo,
 			        'In Progress' as status,
 			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-			        null as refId,
-			        136 as applicationId,
-			        null as applicationinstanceId,
+			        null as refId, 
+			        """;
+			        
+			        
+	String allDocumentsQuery1 = """
+				null as applicationinstanceId,
 			        'IN-PROCESS' as taskName,
 			        null as taskId,
 			        'True' as actionPerformed,
@@ -1579,13 +1582,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
-		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(" where 1 = 1 ");
+		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR); 
+		System.out.println("Corrected Debate ID: " + corrDebateId);
+		
+		StringBuffer qry = new StringBuffer(allDocumentsQuery)
+							.append(corrDebateId).append(" as applicationId, ")
+							.append(allDocumentsQuery1)	
+							.append(" where 1 = 1 ");
+
+		System.out.println("Final Query: " + qry);
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
-
-//		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
-//		System.out.println("Corrected Debate ID: " + corrDebateId);
-//		parameters.addValue("correctedDebateId", corrDebateId);
 
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
