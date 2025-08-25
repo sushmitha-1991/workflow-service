@@ -498,7 +498,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			SELECT
 			            da.ref_no as applicationNo,
-			            'Corrected Debates' as documentName,
+			            'Original Version of Debates' as documentName,
 			        da.debate_date as date,
 			        lsm.lok_sabha_number as LSNo,
 			        lssm.session_number as SSNo,
@@ -536,7 +536,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			        SELECT
 			            da.ref_no as applicationNo,
-			            'Corrected Debates' as documentName,
+			            'Original Version of Debates' as documentName,
 			    i.document_date as date,
 			    lsm.lok_sabha_number as LSNo,
 			    lssm.session_number as SSNo,

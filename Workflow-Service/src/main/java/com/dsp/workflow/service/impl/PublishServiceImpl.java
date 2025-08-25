@@ -1279,6 +1279,8 @@ public class PublishServiceImpl implements PublishService {
                                 .sessNo(sesNo)
                                 .url(entity.getPublishUrl())
                                 .text(removeExtraTags(text))
+                                .refNo(entity.getApplicationNo())
+                                .docDate(entity.getForDate())
                                 .build());
             }
         }
