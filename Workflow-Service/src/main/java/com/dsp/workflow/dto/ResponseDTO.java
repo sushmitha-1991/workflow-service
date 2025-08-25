@@ -16,7 +16,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseDTO {
-    private String applicationName;
+    private String applicationName; // DSP1 name
     private String url;
     private Long appId;
     private String lsNo;
@@ -24,4 +24,5 @@ public class ResponseDTO {
     private String text;
     private LocalDate docDate;
     private String refNo;
+    private String name; // DSP2 name
 }
