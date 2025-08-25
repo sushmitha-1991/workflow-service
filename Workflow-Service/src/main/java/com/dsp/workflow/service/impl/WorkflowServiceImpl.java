@@ -131,6 +131,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
 	
+	private static final String CORRECTED_DEBATES_EN_ABBR = "CDE";
+	
+	private static final String CORRECTED_DEBATES_HI_ABBR = "CDH";
+	
 	private static final String B2_ABBR = "B2";
 
 	private static final String PUBLISHED = "Published";
@@ -549,7 +553,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 				as status,
 			    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
 			    null as refId,
-			    null as applicationId,
+			    case
+			   		when i."language" = 'EN' then (select a.id from master.applications a, master.modules m where a.abbr='CDE' and a.module_id = m.id and m.house_id = :houseId)
+			   		when i."language" = 'HI' then (select a.id from master.applications a, master.modules m where a.abbr='CDH' and a.module_id = m.id and m.house_id = :houseId)
+				end as applicationId,
+	    		case 
+	    		  	when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+	    		end as applicationId,
 			    null as applicationinstanceId,
 			    'IN-PROCESS' as taskName,
 			    null as taskId,
