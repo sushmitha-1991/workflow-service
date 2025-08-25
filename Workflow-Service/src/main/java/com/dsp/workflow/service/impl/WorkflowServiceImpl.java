@@ -538,57 +538,53 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			union
 
-			        SELECT
-			            da.ref_no as applicationNo,
-			            'Original Version of Debates' as documentName,
-			    i.document_date as date,
-			    lsm.lok_sabha_number as LSNo,
-			    lssm.session_number as SSNo,
-			    rssm.session_number as RSSNo,
-				case
-				  	when (da.status = 'Draft') then da.status
-					when (da.status = 'Returned') then da.status
-				  	else 'In Progress'
-				end
-				as status,
-			    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-			    null as refId,
-			    case
-			   		when i."language" = 'EN' then (select a.id from master.applications a, master.modules m where a.abbr='CDE' and a.module_id = m.id and m.house_id = :houseId)
-			   		when i."language" = 'HI' then (select a.id from master.applications a, master.modules m where a.abbr='CDH' and a.module_id = m.id and m.house_id = :houseId)
-				end as applicationId,
-	    		case 
-	    		  	when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-	    		end as applicationId,
-			    null as applicationinstanceId,
-			    'IN-PROCESS' as taskName,
-			    null as taskId,
-			    'True' as actionPerformed,
-				case
-			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-			    end as formUrl,
-			    case
-			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-			    end as actionUrl,
-			    null as draftId,
-			    null as publishedUrl,
-			    null as documentUUIDEn,
-			    null as documentUUIDHi,
-			    null as htmlContentEn,
-			    null as htmlContentHi,
-			    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
-			    null as uploaded_document_uuid
-			FROM corrected_debate.allocation_history da
-			left join corrected_debate.translation_input i on i.id = da.translation_input_id
-			left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
-			left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
-			left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
-			left join authentication.base_user bu on bu.id = da.sent_to_user_id
-			WHERE da.sent_to_user_id = :userId
-			and da.status <> 'Completed'
+       SELECT
+				            da.ref_no as applicationNo,
+				            'Original Version of Debates' as documentName,
+				    i.document_date as date,
+				    lsm.lok_sabha_number as LSNo,
+				    lssm.session_number as SSNo,
+				    rssm.session_number as RSSNo,
+					case
+					  	when (da.status = 'Draft') then da.status
+						when (da.status = 'Returned') then da.status
+					  	else 'In Progress'
+					end
+					as status,
+				    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+				    null as refId,
+				    case
+				   		when i."language" = 'EN' then (select a.id from master.applications a, master.modules m where a.abbr='CDE' and a.is_active = true and a.module_id = m.id and m.house_id = :houseId)
+				   		when i."language" = 'HI' then (select a.id from master.applications a, master.modules m where a.abbr='CDH' and a.is_active = true and a.module_id = m.id and m.house_id = :houseId)
+					end as applicationId,
+				    null as applicationinstanceId,
+				    'IN-PROCESS' as taskName,
+				    null as taskId,
+				    'True' as actionPerformed,
+					case
+				   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+				   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+				    end as formUrl,
+				    case
+				   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+				   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+				    end as actionUrl,
+				    null as draftId,
+				    null as publishedUrl,
+				    null as documentUUIDEn,
+				    null as documentUUIDHi,
+				    null as htmlContentEn,
+				    null as htmlContentHi,
+				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
+				    null as uploaded_document_uuid
+				FROM corrected_debate.allocation_history da
+				left join corrected_debate.translation_input i on i.id = da.translation_input_id
+				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
+				left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
+				left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
+				left join authentication.base_user bu on bu.id = da.sent_to_user_id
+				WHERE da.sent_to_user_id = :userId
+				and da.status <> 'Completed'
 
 			union
 			-- ESummon
