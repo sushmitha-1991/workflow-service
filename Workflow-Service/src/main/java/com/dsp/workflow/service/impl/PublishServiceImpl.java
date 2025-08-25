@@ -58,6 +58,7 @@ import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
+import com.dsp.workflow.repository.ApplicationRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.response.GenericResponse;
@@ -91,6 +92,8 @@ public class PublishServiceImpl implements PublishService {
     private HttpServletRequest httpRequest;
     @Autowired
     private ApplicationInstanceRepository applicationInstanceRepository;
+    @Autowired
+    private ApplicationRepository appRepository;
 
     private final static String OKM_ROOT = "/okm:root";
 
@@ -1281,6 +1284,7 @@ public class PublishServiceImpl implements PublishService {
                                 .text(removeExtraTags(text))
                                 .refNo(entity.getApplicationNo())
                                 .docDate(entity.getForDate())
+                                .name(appRepository.findApplicationDisplayName(entity.getApplicationId()))
                                 .build());
             }
         }
