@@ -1,5 +1,5 @@
 package com.dsp.workflow.dto;
-import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.NoEscape;
 
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +13,6 @@ import lombok.Setter;
 public class ResponseWithId {
     Long id;
     String Url;
-    @AllowHtml
+    @NoEscape
     String completeUrl;
 }

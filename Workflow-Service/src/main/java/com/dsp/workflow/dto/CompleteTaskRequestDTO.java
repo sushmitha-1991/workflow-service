@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.NoEscape;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.util.SendToTypeDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -34,7 +35,7 @@ public class CompleteTaskRequestDTO extends NotesheetDTO {
 	private String stepType;
 	private String status;
 	private List<ProcessStepwiseDocumentsDTO> document;
-	@AllowHtml
+	@NoEscape
 	private String actionUrl;
 
 	/**
