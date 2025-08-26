@@ -8,7 +8,7 @@ package com.dsp.workflow.dto;
 import java.time.LocalDate;
 import java.util.UUID;
 
-//import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +28,7 @@ public class TranslationInputDTO {
 	private Long rajyaSabhaSessionNo;
 	private Long documentTypeId;
 	private LocalDate documentDate;
-//	@AllowHtml
+	@AllowHtml
 	private String inputContent;
 	private Long startingPageNo;
 	private UUID contentUUID;

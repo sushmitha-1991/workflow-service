@@ -7,7 +7,7 @@ package com.dsp.workflow.dto;
 
 import java.time.LocalDate;
 
-//import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,7 +36,7 @@ public class CorrectedDebatedDTO {
 
 	private LocalDate receivedDate;
 
-//	@AllowHtml
+	@AllowHtml
 	private String inputContent;
 
 	private String contentUUID;

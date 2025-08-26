@@ -3,6 +3,8 @@ package com.dsp.workflow.dto;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +30,7 @@ public class PublishHistoryDTO {
     private String applicationNo;
     
     private UUID publishUuid;
+    @AllowHtml
     private String publishUrl;
     private String fileType;
     private String locale;
