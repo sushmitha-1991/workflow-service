@@ -88,4 +88,40 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 						""", nativeQuery = true)
 	List<Object[]> getDebateTaggingByApplicationInstanceId(Long applicationInstanceId);
 
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = """
+			select ai.rajya_sabha_session as rajyaSabhaSessionNo,
+			ai.application_id as documentTypeId,
+			ai.document_date as documentDate,
+			bi."content" as inputContent,
+			bi.subject as subject,
+			bi.bulletin_no as bulletinNo
+			from master.application_instance ai
+			left join bulletin2.bulletin2 b on ai.ref_id = b.id
+			left join bulletin2.bulletin2_input bi on bi.generated_bulletin2_id = b.id
+			where ai.ref_id = :applicationInstanceId
+
+									""", nativeQuery = true)
+	List<Object[]> getSectionBulletin2ByApplicationInstanceId(Long applicationInstanceId);
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = """
+			SELECT
+						    a."name" as applicationName,
+						    h.abbr as house
+						FROM master.application_instance ai
+						left join master.applications a on a.id = ai.application_id
+						left join master.modules m on m.id = a.module_id
+						left join master.houses h on h.id = m.house_id
+						WHERE ai.id = :applicationInstanceId  and h.abbr = 'RS'
+
+						""", nativeQuery = true)
+	List<Object[]> getSectionB2AppHouse(Long applicationInstanceId);
+
 }
