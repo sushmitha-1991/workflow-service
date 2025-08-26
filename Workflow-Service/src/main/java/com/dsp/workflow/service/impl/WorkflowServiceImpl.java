@@ -38,6 +38,8 @@ import com.dsp.workflow.dto.DebateTaggingDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
+import com.dsp.workflow.dto.SectionBulletin2AppHouseDTO;
+import com.dsp.workflow.dto.SectionBulletin2DTO;
 import com.dsp.workflow.dto.SerialNumberRequest;
 import com.dsp.workflow.dto.SerialNumberResponse;
 import com.dsp.workflow.dto.TaskHistoryDTO;
@@ -116,6 +118,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Value("${debate.tagging.url}")
 	private String debateTaggingUrl;
 
+	@Value("${section.b2.rs.url}")
+	private String sectionB2Url;
+
 	@Value("${pdf.upload.url}")
 	private String pdfUploadUrl;
 
@@ -136,6 +141,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private static final String CORRECTED_DEBATES_HI_ABBR = "CDH";
 	
 	private static final String B2_ABBR = "B2";
+
+	private static final String BULLETIN_2_RS = "Bulletin - Part II";
+
+	private static final String RS_HOUSE = "RS";
 
 	private static final String PUBLISHED = "Published";
 
@@ -498,7 +507,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			      and ah.is_active = true
 			      and ah.is_deleted = false
 
-			    union 
+			    union
 
 			SELECT
 			            da.ref_no as applicationNo,
@@ -666,7 +675,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			where a.module_id = m.id and a.abbr in ('SYN'))
 			) A
 			left join master.applications ma on
-			        ma.id = A.applicationId 
+			        ma.id = A.applicationId
 
 					""";
 
@@ -902,6 +911,25 @@ public class WorkflowServiceImpl implements WorkflowService {
 						}
 					}
 
+					// Section Bulletin 2
+					SectionBulletin2AppHouseDTO sectionBulletin2AppHouseDTO = getSectionB2AppHouse(
+							applicationInstanceId);
+					System.out.println(">>> sectionBulletin2AppHouseDTO - " + sectionBulletin2AppHouseDTO);
+
+					if (BULLETIN_2_RS.equals(sectionBulletin2AppHouseDTO.getApplicationName())
+							&& RS_HOUSE.equals(sectionBulletin2AppHouseDTO.getHouse())) {
+						try {
+							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
+									applicationInstanceId);
+							System.out.println(">>> sectionBulletin2DTOs - " + sectionBulletin2DTOs);
+							if (!sectionBulletin2DTOs.isEmpty()) {
+								callSectionB2RS(sectionBulletin2DTOs);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
 					// Corrected Debates API
 					String appAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
@@ -994,6 +1022,60 @@ public class WorkflowServiceImpl implements WorkflowService {
 //	}
 	
 	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	private SectionBulletin2AppHouseDTO getSectionB2AppHouse(Long applicationInstanceId) {
+		List<Object[]> result = applicationInstanceRepository.getSectionB2AppHouse(applicationInstanceId);
+
+		if (result.isEmpty()) {
+			return null;
+		}
+
+		Object[] row = result.get(0);
+
+		return SectionBulletin2AppHouseDTO.builder().applicationName((String) row[0]).house((String) row[1]).build();
+	}
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	private List<SectionBulletin2DTO> getSectionBulletin2Data(Long applicationInstanceId) {
+		List<Object[]> result = applicationInstanceRepository
+				.getSectionBulletin2ByApplicationInstanceId(applicationInstanceId);
+
+		if (result.isEmpty()) {
+			return List.of();
+		}
+
+		return result.stream()
+				.map(row -> SectionBulletin2DTO.builder().rajyaSabhaSessionNo((String) row[0])
+						.documentTypeId(convertToLong(row[1])).documentDate(convertToLocalDate(row[2]))
+						.inputContent((String) row[3]).translatedContent(null) // always null initially
+						.subject((String) row[4]).officeName("Legislative Branch") // fixed value
+						.bulletinNo(convertToInteger(row[5])).build())
+				.toList();
+	}
+
+	private Integer convertToInteger(Object obj) {
+		if (obj == null) {
+			return null;
+		}
+		if (obj instanceof Integer) {
+			return (Integer) obj;
+		}
+		if (obj instanceof Number) {
+			return ((Number) obj).intValue();
+		}
+		try {
+			return Integer.valueOf(obj.toString());
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Cannot convert to Integer: " + obj, e);
+		}
+	}
+
+	/**
 	 * @param debateTaggingDTO
 	 */
 	private void callDebateTagging(DebateTaggingDTO debateTaggingDTO) {
@@ -1016,6 +1098,30 @@ public class WorkflowServiceImpl implements WorkflowService {
 			System.err.println("Unexpected error during debates tagging process.");
 			e.printStackTrace();
 			throw new RuntimeException("Debates Tagging API call failed.", e);
+		}
+	}
+
+	private void callSectionB2RS(List<SectionBulletin2DTO> sectionBulletin2DTOs) {
+		try {
+			String token = getTokenFromRequest();
+
+			HttpHeaders jsonHeaders = new HttpHeaders();
+			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+			jsonHeaders.setBearerAuth(token);
+
+			HttpEntity<List<SectionBulletin2DTO>> jsonRequest = new HttpEntity<>(sectionBulletin2DTOs, jsonHeaders);
+
+			ResponseEntity<String> response = restTemplate.postForEntity(sectionB2Url, jsonRequest, String.class);
+
+			System.out.println("### Section B2 API Response: " + response.getBody());
+
+		} catch (HttpClientErrorException e) {
+			System.err.println("HTTP error during Section B2 API call: " + e.getResponseBodyAsString());
+			throw new RuntimeException("Error calling Section B2 API: " + e.getStatusCode(), e);
+		} catch (Exception e) {
+			System.err.println("Unexpected error during Section B2 process.");
+			e.printStackTrace();
+			throw new RuntimeException("Section B2 API call failed.", e);
 		}
 	}
 
