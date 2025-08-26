@@ -8,6 +8,7 @@ package com.dsp.workflow.entity;
 import java.time.LocalDateTime;
 
 import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.NoEscape;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -86,7 +87,7 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "next_task_id", nullable = true)
 	private String nextTaskId;
 
-	@AllowHtml
+	@NoEscape
 	@Column(name = "action_url")
 	private String actionUrl;
 
