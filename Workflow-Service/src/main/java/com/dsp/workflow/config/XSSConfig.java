@@ -182,6 +182,7 @@ public class XSSConfig {
         @Override
         public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
             if (value == null) { gen.writeNull(); return; }
+            if (value.startsWith("/")) {gen.writeString(value); return;}
             if (allowHtml) gen.writeString(value);
             else gen.writeString(HtmlUtils.htmlEscape(value));
         }
