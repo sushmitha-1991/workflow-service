@@ -2,6 +2,8 @@ package com.dsp.workflow.dto;
 
 import org.joda.time.LocalDate;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +20,7 @@ import lombok.Setter;
 public class UrlDto {
     private String name;
     private String date;
+    @AllowHtml
     private String url;
     private String fileType;
     private String fileName;

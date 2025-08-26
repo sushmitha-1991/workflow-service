@@ -7,6 +7,8 @@ package com.dsp.workflow.dto;
 
 import java.time.LocalDate;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,8 +28,10 @@ public class SectionBulletin2DTO {
 	private String rajyaSabhaSessionNo;
 	private Long documentTypeId;
 	private LocalDate documentDate;
+    @AllowHtml
 	private String inputContent;
-	private String translatedContent;
+    @AllowHtml
+    private String translatedContent;
 	private String subject;
 	private String officeName; // replaced officeId
 	private Integer bulletinNo;
