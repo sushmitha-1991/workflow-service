@@ -1,5 +1,7 @@
 package com.dsp.workflow.dto;
 
+import java.time.LocalDate;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,10 +16,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseDTO {
-    private String applicationName;
+    private String applicationName; // DSP1 name
     private String url;
     private Long appId;
     private String lsNo;
     private String sessNo;
     private String text;
+    private LocalDate docDate;
+    private String refNo;
+    private String name; // DSP2 name
 }

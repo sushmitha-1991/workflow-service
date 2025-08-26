@@ -135,6 +135,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
+	
+	private static final String CORRECTED_DEBATES_EN_ABBR = "CDE";
+	
+	private static final String CORRECTED_DEBATES_HI_ABBR = "CDH";
+	
+	private static final String B2_ABBR = "B2";
 
 	private static final String BULLETIN_2_RS = "Bulletin - Part II";
 
@@ -505,16 +511,19 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			SELECT
 			            da.ref_no as applicationNo,
-			            'Corrected Debates' as documentName,
+			            'Original Version of Debates' as documentName,
 			        da.debate_date as date,
 			        lsm.lok_sabha_number as LSNo,
 			        lssm.session_number as SSNo,
 			        rssm.session_number as RSSNo,
 			        'In Progress' as status,
 			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-			        null as refId,
-			        136 as applicationId,
-			        null as applicationinstanceId,
+			        null as refId, 
+			        """;
+			        
+			        
+	String allDocumentsQuery1 = """
+				null as applicationinstanceId,
 			        'IN-PROCESS' as taskName,
 			        null as taskId,
 			        'True' as actionPerformed,
@@ -538,50 +547,53 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			union
 
-			        SELECT
-			            da.ref_no as applicationNo,
-			            'Corrected Debates' as documentName,
-			    i.document_date as date,
-			    lsm.lok_sabha_number as LSNo,
-			    lssm.session_number as SSNo,
-			    rssm.session_number as RSSNo,
-				case
-				  	when (da.status = 'Draft') then da.status
-					when (da.status = 'Returned') then da.status
-				  	else 'In Progress'
-				end
-				as status,
-			    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-			    null as refId,
-			    null as applicationId,
-			    null as applicationinstanceId,
-			    'IN-PROCESS' as taskName,
-			    null as taskId,
-			    'True' as actionPerformed,
-				case
-			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-			    end as formUrl,
-			    case
-			   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
-			   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
-			    end as actionUrl,
-			    null as draftId,
-			    null as publishedUrl,
-			    null as documentUUIDEn,
-			    null as documentUUIDHi,
-			    null as htmlContentEn,
-			    null as htmlContentHi,
-			    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
-			    null as uploaded_document_uuid
-			FROM corrected_debate.allocation_history da
-			left join corrected_debate.translation_input i on i.id = da.translation_input_id
-			left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
-			left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
-			left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
-			left join authentication.base_user bu on bu.id = da.sent_to_user_id
-			WHERE da.sent_to_user_id = :userId
-			and da.status <> 'Completed'
+       SELECT
+				            da.ref_no as applicationNo,
+				            'Original Version of Debates' as documentName,
+				    i.document_date as date,
+				    lsm.lok_sabha_number as LSNo,
+				    lssm.session_number as SSNo,
+				    rssm.session_number as RSSNo,
+					case
+					  	when (da.status = 'Draft') then da.status
+						when (da.status = 'Returned') then da.status
+					  	else 'In Progress'
+					end
+					as status,
+				    CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
+				    null as refId,
+				    case
+				   		when i."language" = 'EN' then (select a.id from master.applications a, master.modules m where a.abbr='CDE' and a.is_active = true and a.module_id = m.id and m.house_id = :houseId)
+				   		when i."language" = 'HI' then (select a.id from master.applications a, master.modules m where a.abbr='CDH' and a.is_active = true and a.module_id = m.id and m.house_id = :houseId)
+					end as applicationId,
+				    null as applicationinstanceId,
+				    'IN-PROCESS' as taskName,
+				    null as taskId,
+				    'True' as actionPerformed,
+					case
+				   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+				   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+				    end as formUrl,
+				    case
+				   		when i."language" = 'EN' then '/corrected-debate-translation/createTranslation'
+				   		when i."language" = 'HI' then '/corrected-debate-translation/createTranslation?TranslationType=Hindi'
+				    end as actionUrl,
+				    null as draftId,
+				    null as publishedUrl,
+				    null as documentUUIDEn,
+				    null as documentUUIDHi,
+				    null as htmlContentEn,
+				    null as htmlContentHi,
+				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
+				    null as uploaded_document_uuid
+				FROM corrected_debate.allocation_history da
+				left join corrected_debate.translation_input i on i.id = da.translation_input_id
+				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
+				left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
+				left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
+				left join authentication.base_user bu on bu.id = da.sent_to_user_id
+				WHERE da.sent_to_user_id = :userId
+				and da.status <> 'Completed'
 
 			union
 			-- ESummon
@@ -919,9 +931,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					}
 
 					// Corrected Debates API
-					String correctedDebatesAbbr = workflowHistoryRepository
+					String appAbbr = workflowHistoryRepository
 							.getApplicationAbbr(convertToLong(application_no));
-					if (CORRECTED_DEBATES_ABBR.equals(correctedDebatesAbbr)) {
+					if (CORRECTED_DEBATES_ABBR.equals(appAbbr)) {
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
@@ -950,6 +962,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							e.printStackTrace();
 						}
 					}
+					
+//					// B2 - INPUT API for RS
+//					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
+//						callB2InputAPI();
+//					}	
 
 				}
 
@@ -970,6 +987,40 @@ public class WorkflowServiceImpl implements WorkflowService {
 		}
 	}
 
+//	/**
+//	 * 
+//	 */
+//	private void callB2InputAPI() {
+//		
+//		CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
+//		DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
+//
+//		try {
+//			callCorrectedDebatesAPI(correctedDebatedDTO);
+//
+//			try {
+//				// Calling Debate Tagging for DTAG
+//				debateTaggingDTO.setApplicationId(80L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in first call to callDebateTagging (DTAG):");
+//				e.printStackTrace();
+//			}
+//
+//			try {
+//				// Calling Debate Tagging for Supplementary Tagging
+//				debateTaggingDTO.setApplicationId(81L);
+//				callDebateTagging(debateTaggingDTO);
+//			} catch (Exception e) {
+//				System.err.println("Error in second call to callDebateTagging (Supplementary):");
+//				e.printStackTrace();
+//			}
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	
 	/**
 	 * @param applicationInstanceId
 	 * @return
@@ -1644,13 +1695,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
-		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(" where 1 = 1 ");
+		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR); 
+		System.out.println("Corrected Debate ID: " + corrDebateId);
+		
+		StringBuffer qry = new StringBuffer(allDocumentsQuery)
+							.append(corrDebateId).append(" as applicationId, ")
+							.append(allDocumentsQuery1)	
+							.append(" where 1 = 1 ");
+
+		System.out.println("Final Query: " + qry);
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
-
-//		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
-//		System.out.println("Corrected Debate ID: " + corrDebateId);
-//		parameters.addValue("correctedDebateId", corrDebateId);
 
 		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		if (principal instanceof UserDetailsDTO) {
@@ -1658,10 +1713,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			parameters.addValue("houseId", houseId);
 		}
 
-		if (queryDto.getApplicationId() != null) {
+		if (queryDto.getApplicationId() != null) { 
 			// qry = qry.append(" and applicationNo =
 			// ").append(queryDto.getApplicationId());
-			qry = qry.append(" and applicationId = :applicationId ");
+			qry = qry.append(" and (applicationId = :applicationId or parent_application_id = :applicationId) ");
 			parameters.addValue("applicationId", queryDto.getApplicationId());
 		}
 

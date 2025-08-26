@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.entity;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -58,8 +60,10 @@ public class ApplicationInstance extends Auditable {
 //	    @Column(name = "additional_Details", columnDefinition = "jsonb")
 //	    private String additionalDetails;
 
+    @AllowHtml
     @Column(name = "html_content_en", columnDefinition = "text")
     private String htmlContentEnglish;
+    @AllowHtml
     @Column(name = "html_content_hi", columnDefinition = "text")
     private String htmlContentHindi;
 

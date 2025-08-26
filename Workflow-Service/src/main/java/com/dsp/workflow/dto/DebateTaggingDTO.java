@@ -7,6 +7,8 @@ package com.dsp.workflow.dto;
 
 import java.time.LocalDate;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +25,7 @@ public class DebateTaggingDTO {
 
 	private Long id;
 
+	@AllowHtml
 	private String content;
 
 	private LocalDate debateDate;
