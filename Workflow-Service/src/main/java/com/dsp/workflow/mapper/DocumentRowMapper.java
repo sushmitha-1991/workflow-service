@@ -40,7 +40,7 @@ public class DocumentRowMapper {
 	String actionUrl;
 	Boolean translateFlag;
 	Boolean downloadFlag;
-	Long draftId;
+	Long draftId; 
 	@NoEscape
 	String publishedUrl;
 	UUID documentUUIDEn;

@@ -28,7 +28,7 @@ public class NotesheetDTO {
 
 	private Long id; // Add this field
 	@AllowHtml
-	private String note;
+	private String note; 
 	private Long receiverRoleId;
 	private Integer receiverUserId;
 	private String receiverUserName;
