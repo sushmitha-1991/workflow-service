@@ -133,7 +133,8 @@ public class XSSConfig {
             Document.OutputSettings os = new Document.OutputSettings();
             os.prettyPrint(false);
             String cleaned = Jsoup.clean(raw, "", FULL_HTML_SAFELIST, os);
-            return stripHtmlBody(cleaned);
+//            return stripHtmlBody(cleaned);
+            return cleaned;
         }
 
         private static String stripHtmlBody(String html) {

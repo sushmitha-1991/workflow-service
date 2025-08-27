@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
 import com.dsp.workflow.notesheet.entity.Notesheet;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -26,6 +27,7 @@ import lombok.NoArgsConstructor;
 public class NotesheetDTO {
 
 	private Long id; // Add this field
+	@AllowHtml
 	private String note;
 	private Long receiverRoleId;
 	private Integer receiverUserId;

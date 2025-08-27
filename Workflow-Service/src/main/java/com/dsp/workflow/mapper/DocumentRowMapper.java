@@ -8,6 +8,9 @@ package com.dsp.workflow.mapper;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
+import com.dsp.workflow.config.XSSConfig.NoEscape;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,17 +34,23 @@ public class DocumentRowMapper {
 	String taskName;
 	String taskId;
 	String actionPerformed;
+	@NoEscape
 	String formUrl;
+	@NoEscape
 	String actionUrl;
 	Boolean translateFlag;
 	Boolean downloadFlag;
 	Long draftId;
+	@NoEscape
 	String publishedUrl;
 	UUID documentUUIDEn;
 	UUID documentUUIDHi;
+	@AllowHtml
 	String htmlContentEn;
+	@AllowHtml
 	String htmlContentHi;
 	String editorId;
-        String saveAsDraftUrl;
+	@NoEscape
+    String saveAsDraftUrl;
         UUID uploadedDocumentUUID;
 }
