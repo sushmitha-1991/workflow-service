@@ -8,6 +8,7 @@ package com.dsp.workflow.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.dsp.workflow.config.XSSConfig.AllowHtml;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public class DraftDataDTO {
 	private Long rajyaSabhaSession;
 	private Long lokSabhaSessionNumber;
 	private Long lokSabhaSession;
+	@AllowHtml
 	private String actionUrl;
 	private String applicationNo;
 	private Long createdById;
