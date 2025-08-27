@@ -135,11 +135,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private DraftDocumentRepository draftDocumentRepository;
 
 	private static final String CORRECTED_DEBATES_ABBR = "CD";
-	
+
 	private static final String CORRECTED_DEBATES_EN_ABBR = "CDE";
-	
+
 	private static final String CORRECTED_DEBATES_HI_ABBR = "CDH";
-	
+
 	private static final String B2_ABBR = "B2";
 
 	private static final String BULLETIN_2_RS = "Bulletin - Part II";
@@ -518,10 +518,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        rssm.session_number as RSSNo,
 			        'In Progress' as status,
 			        CONCAT(bu.first_name, ' ', bu.last_name) as pendingAt,
-			        null as refId, 
+			        null as refId,
 			        """;
-			        
-			        
+
 	String allDocumentsQuery1 = """
 				null as applicationinstanceId,
 			        'IN-PROCESS' as taskName,
@@ -547,7 +546,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			union
 
-       SELECT
+			    SELECT
 				            da.ref_no as applicationNo,
 				            'Original Version of Debates' as documentName,
 				    i.document_date as date,
@@ -916,7 +915,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							applicationInstanceId);
 					System.out.println(">>> sectionBulletin2AppHouseDTO - " + sectionBulletin2AppHouseDTO);
 
-					if (BULLETIN_2_RS.equals(sectionBulletin2AppHouseDTO.getApplicationName())
+					if (sectionBulletin2AppHouseDTO != null
+							&& BULLETIN_2_RS.equals(sectionBulletin2AppHouseDTO.getApplicationName())
 							&& RS_HOUSE.equals(sectionBulletin2AppHouseDTO.getHouse())) {
 						try {
 							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
@@ -931,8 +931,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					}
 
 					// Corrected Debates API
-					String appAbbr = workflowHistoryRepository
-							.getApplicationAbbr(convertToLong(application_no));
+					String appAbbr = workflowHistoryRepository.getApplicationAbbr(convertToLong(application_no));
 					if (CORRECTED_DEBATES_ABBR.equals(appAbbr)) {
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
@@ -962,7 +961,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 							e.printStackTrace();
 						}
 					}
-					
+
 //					// B2 - INPUT API for RS
 //					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
 //						callB2InputAPI();
@@ -1020,7 +1019,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 //			e.printStackTrace();
 //		}
 //	}
-	
+
 	/**
 	 * @param applicationInstanceId
 	 * @return
@@ -1695,13 +1694,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
-		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR); 
+		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
 		System.out.println("Corrected Debate ID: " + corrDebateId);
-		
-		StringBuffer qry = new StringBuffer(allDocumentsQuery)
-							.append(corrDebateId).append(" as applicationId, ")
-							.append(allDocumentsQuery1)	
-							.append(" where 1 = 1 ");
+
+		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(corrDebateId).append(" as applicationId, ")
+				.append(allDocumentsQuery1).append(" where 1 = 1 ");
 
 		System.out.println("Final Query: " + qry);
 
@@ -1713,10 +1710,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			parameters.addValue("houseId", houseId);
 		}
 
-		if (queryDto.getApplicationId() != null) { 
+		if (queryDto.getApplicationId() != null) {
 			// qry = qry.append(" and applicationNo =
 			// ").append(queryDto.getApplicationId());
-			qry = qry.append(" and (ma.id = :applicationId or ma.parent_application_id = :applicationId) "); 
+			qry = qry.append(" and (ma.id = :applicationId or ma.parent_application_id = :applicationId) ");
 			parameters.addValue("applicationId", queryDto.getApplicationId());
 		}
 
