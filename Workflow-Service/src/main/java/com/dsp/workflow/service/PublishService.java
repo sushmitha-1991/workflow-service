@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
-
+import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.SessionDto;
 
 import com.dsp.workflow.dto.ResponseDTO;
@@ -48,5 +48,8 @@ public interface PublishService {
     
     String createDmsFolderStructure(String root, List<String> folders);
 
+	List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
+			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
+			LocalDate publishDateTo);
 
 }
