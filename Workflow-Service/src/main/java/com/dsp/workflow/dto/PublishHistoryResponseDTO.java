@@ -22,7 +22,7 @@ public class PublishHistoryResponseDTO {
 	private String unpublishByUser;
 	private Long officeId;
 	private Long applicationId;
-	private String officeName;
-	private String documentName;
+	private String branch;
+	private String applicationName;
 
 }

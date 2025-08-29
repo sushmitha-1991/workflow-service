@@ -1404,8 +1404,8 @@ public class PublishServiceImpl implements PublishService {
 		        .unpublishByUser(row[9] != null ? row[9].toString() : "")
 		        .officeId(row[10] != null ? ((Number) row[10]).longValue() : null)
 		        .applicationId(row[11] != null ? ((Number) row[11]).longValue() : null)
-		        .officeName(row[12] != null ? row[12].toString() : "")
-		        .documentName(row[13] != null ? row[13].toString() : "")
+		        .branch(row[12] != null ? row[12].toString() : "")
+		        .applicationName(row[13] != null ? row[13].toString() : "")
 		        .build()
 		).toList();
 	}
