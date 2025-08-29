@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
@@ -49,20 +50,28 @@ public class PublishController {
 	}
 
 	@GetMapping("/get-published-docs")
-	public ResponseEntity<GenericResponse<List<PublishHistoryDTO>>> getPublishedDocs(
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-			@RequestParam(required = false, defaultValue = "") String applicationName,
-			@RequestParam(required = false, defaultValue = "en") String locale) {
+	public ResponseEntity<GenericResponse<List<PublishHistoryResponseDTO>>> getPublishedDocs(
+			@RequestParam(required = false) Long applicationId, @RequestParam(required = false) String lokSabhaNo,
+			@RequestParam(required = false) String lokSabhaSessionNo,
+			@RequestParam(required = false) String rajyaSabhaSessionNo, @RequestParam(required = false) Long officeId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate publishDateFrom,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate publishDateTo) {
+		try {
+			List<PublishHistoryResponseDTO> result = publishService.getFilteredPublishHistory(applicationId, lokSabhaNo,
+					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo);
 
-		List<PublishHistoryDTO> responseDto = publishService.getPublishedDocs(date, applicationName, locale);
+			if (result.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+						.body(new GenericResponse<>(false, "No records found", null, HttpStatus.OK.value()));
+			}
 
-		if (responseDto.isEmpty()) {
-			return ResponseEntity.noContent().build();
+			return ResponseEntity
+					.ok(new GenericResponse<>(true, "Records retrieved successfully", result, HttpStatus.OK.value()));
+
+		} catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new GenericResponse<>(false,
+					"An error occurred: " + ex.getMessage(), null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
 		}
-		GenericResponse<List<PublishHistoryDTO>> response = new GenericResponse<>(true, "Record found", responseDto,
-				HttpStatus.OK.value());
-
-		return ResponseEntity.ok(response);
 	}
 
 	

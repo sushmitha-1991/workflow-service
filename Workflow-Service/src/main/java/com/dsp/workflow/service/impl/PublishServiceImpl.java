@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +48,7 @@ import org.springframework.web.util.UriUtils;
 
 import com.dsp.workflow.dto.FolderCreateDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
+import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.ResponseDTO;
 import com.dsp.workflow.dto.SerialNumberRequest;
@@ -67,6 +69,8 @@ import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.persistence.criteria.Expression;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -77,6 +81,8 @@ public class PublishServiceImpl implements PublishService {
     private PublishRepository repository;
     @Autowired
     private RestTemplate restTemplate;
+    @Autowired
+    private EntityManager entityManager;
 
     @Value("${service.url}")
     private String openKmUrl;
@@ -1319,4 +1325,88 @@ public class PublishServiceImpl implements PublishService {
         return cleaned;
     }
 
+	@Override
+	public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
+			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
+			LocalDate publishDateTo) {
+
+		StringBuilder sql = new StringBuilder("""
+				    SELECT
+						wf.id                         AS id,
+						wf.lok_sabha_no               AS lokSabhaNo,
+						wf.lok_sabha_session_no       AS lokSabhaSessionNo,
+						wf.rajya_sabha_session_no     AS rajyaSabhaSessionNo,
+						wf.publish_date               AS publishDate,
+						wf.publish_by_user            AS publishByUser,
+						wf.publish_uuid               AS publishUuid,
+						wf.publish_status             AS publishStatus,
+						wf.unpublish_date             AS unpublishDate,
+						wf.unpublish_by_user          AS unpublishByUser,
+						wf.office_id                  AS officeId,
+						wf.application_id             AS applicationId,
+						o.office_name                 AS officeName,
+						COALESCE(a.name, wf.application_name) AS documentName
+				    FROM workflow.publish_history wf
+				    JOIN master.offices o ON wf.office_id = o.id
+				    LEFT JOIN master.applications a ON wf.application_id = a.id
+				    WHERE 1=1
+				""");
+
+		Map<String, Object> params = new HashMap<>();
+
+		if (applicationId != null) {
+			sql.append(" AND wf.application_id = :applicationId");
+			params.put("applicationId", applicationId);
+		}
+		if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
+			sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
+			params.put("lokSabhaNo", lokSabhaNo);
+		}
+		if (lokSabhaSessionNo != null && !lokSabhaSessionNo.isBlank()) {
+			sql.append(" AND wf.lok_sabha_session_no = :lokSabhaSessionNo");
+			params.put("lokSabhaSessionNo", lokSabhaSessionNo);
+		}
+		if (rajyaSabhaSessionNo != null && !rajyaSabhaSessionNo.isBlank()) {
+			sql.append(" AND wf.rajya_sabha_session_no = :rajyaSabhaSessionNo");
+			params.put("rajyaSabhaSessionNo", rajyaSabhaSessionNo);
+		}
+		if (officeId != null) {
+			sql.append(" AND wf.office_id = :officeId");
+			params.put("officeId", officeId);
+		}
+		if (publishDateFrom != null) {
+			sql.append(" AND wf.publish_date >= :publishDateFrom");
+			params.put("publishDateFrom", publishDateFrom);
+		}
+		if (publishDateTo != null) {
+			sql.append(" AND wf.publish_date <= :publishDateTo");
+			params.put("publishDateTo", publishDateTo);
+		}
+
+		sql.append(" ORDER BY wf.publish_date DESC");
+
+		Query query = entityManager.createNativeQuery(sql.toString());
+		params.forEach(query::setParameter);
+
+		@SuppressWarnings("unchecked")
+		List<Object[]> rows = query.getResultList();
+
+		return rows.stream().map(row -> PublishHistoryResponseDTO.builder()
+		        .id(row[0] != null ? ((Number) row[0]).longValue() : null)
+		        .lokSabhaNo(row[1] != null ? row[1].toString() : "")
+		        .lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
+		        .rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
+		        .publishDate(row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null)
+		        .publishByUser(row[5] != null ? row[5].toString() : "")
+		        .publishUuid(row[6] != null ? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString())) : null)
+		        .publishStatus(row[7] != null && (Boolean) row[7])
+		        .unpublishDate(row[8] != null ? ((java.sql.Date) row[8]).toLocalDate() : null)
+		        .unpublishByUser(row[9] != null ? row[9].toString() : "")
+		        .officeId(row[10] != null ? ((Number) row[10]).longValue() : null)
+		        .applicationId(row[11] != null ? ((Number) row[11]).longValue() : null)
+		        .branch(row[12] != null ? row[12].toString() : "")
+		        .applicationName(row[13] != null ? row[13].toString() : "")
+		        .build()
+		).toList();
+	}
 }
