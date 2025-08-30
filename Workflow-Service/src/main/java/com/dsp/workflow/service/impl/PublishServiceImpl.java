@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.SignStyle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,20 +52,25 @@ import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.ResponseDTO;
+import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.dto.SerialNumberRequest;
 import com.dsp.workflow.dto.SerialNumberResponse;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
+import com.dsp.workflow.entity.MemberPhotoSignTemp;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.ApplicationRepository;
+import com.dsp.workflow.repository.MemberTempUploadRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.PublishService;
+import com.dsp.workflow.util.FolderCreationUtils;
+import com.dsp.workflow.util.MemberUploadData;
 import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,36 +82,36 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class PublishServiceImpl implements PublishService {
-
     @Autowired
     private PublishRepository repository;
     @Autowired
     private RestTemplate restTemplate;
     @Autowired
     private EntityManager entityManager;
-
+    public static final String PHOTO = "PHOTO";
+    public static final String SIGN = "SIGNATURE";
     @Value("${service.url}")
     private String openKmUrl;
-
-    // private String openKmUrl="http://localhost:8889/dms/openkm";
+    @Autowired
+    private MemberUploadData memberUtils;
+    @Autowired
+    private FolderCreationUtils folderCreationUtils;
+    @Autowired
+    private MemberTempUploadRepository memberTempRepo;
     @Autowired
     private Utils utils;
     @Autowired
     private PublishDocumentTempRepo tempRepo;
     private static final Logger logger = LoggerFactory.getLogger(PublishServiceImpl.class);
-
     @Autowired
     private HttpServletRequest httpRequest;
     @Autowired
     private ApplicationInstanceRepository applicationInstanceRepository;
     @Autowired
     private ApplicationRepository appRepository;
-
     private final static String OKM_ROOT = "/okm:root";
-
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
-
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
         PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
         if (alreadyExists != null) {
@@ -435,7 +441,7 @@ public class PublishServiceImpl implements PublishService {
             spec = spec.and(hasLsNo(dto.getLsNo()));
         }
         if (StringUtils.isNotBlank(dto.getSesNo())) {
-           spec = spec.and(hasSessNo(dto.getSesNo()));
+            spec = spec.and(hasSessNo(dto.getSesNo()));
         }
         if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTemp(dto.getLocale()));
@@ -451,18 +457,18 @@ public class PublishServiceImpl implements PublishService {
         int i = 0;
         try {
             for (PublishDocumentTemp response : urlList) {
-                
+
                 boolean inRange = false;
                 if (response.getForDate() == null) {
-                    inRange = dto.getFromDate()==null && dto.getToDate()==null;
-                } else if (response.getForDate()!= null) {
-                    try{
-                        inRange = betweenDates(dto.getFromDate(), dto.getToDate(),LocalDate.parse(response.getForDate()) );
-                    
-                        }
-                        catch(Exception e){
-                                inRange = isBetween(dto.getFromDate(), dto.getToDate(),response.getForDate() );
-                        }
+                    inRange = dto.getFromDate() == null && dto.getToDate() == null;
+                } else if (response.getForDate() != null) {
+                    try {
+                        inRange = betweenDates(dto.getFromDate(), dto.getToDate(),
+                                LocalDate.parse(response.getForDate()));
+
+                    } catch (Exception e) {
+                        inRange = isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate());
+                    }
                 } else {
                     inRange = false;
                 }
@@ -512,6 +518,74 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
+    @Override
+    public List<ResponseMember> uploadMemberDSP2() {
+        Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
+        List<MemberPhotoSignTemp> urlList = memberTempRepo.findAll(spec);
+        List<ResponseMember> uploadedUuids = new ArrayList<>();
+        Long houseId = utils.getHouseIdFromAuthentication();
+        System.out.println("urlList " + urlList.size());
+        if (urlList != null && urlList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        System.out.println("Url List " + urlList);
+        int i = 0;
+        try {
+            for (MemberPhotoSignTemp response : urlList) {
+                logger.info("Processing document: {}", response.getPhotoUrl());
+                byte[] filePhotoData = null;
+                byte[] fileSignatureData = null;
+
+                try {
+                    filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(), PHOTO);
+                    fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(), SIGN);
+                    System.out.println("fileData " + filePhotoData);
+                    System.out.println("fileData " + fileSignatureData);
+                    
+
+                } catch (Exception e) {
+                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+                    memberUtils.updateNonUuidInMemPhoto(response);
+                    memberUtils.updateNonUuidInMemSignature(response);
+                    continue; // Skip this iteration if download fails
+                }
+                if (filePhotoData == null || filePhotoData.length == 0) {
+                    memberUtils.updateNonUuidInMemPhoto(response);
+                    memberUtils.updateNonUuidInMemSignature(response);
+                    continue;
+                }
+
+                // System.out.println("data " + fileData);
+                ResponseMember uuidPhoto=memberUtils.uploadAndReturnUuidInMem(response, filePhotoData, PHOTO);
+                ResponseMember uuidSign=memberUtils.uploadAndReturnUuidInMem(response, fileSignatureData, SIGN);
+                if(uuidPhoto==null)
+                {
+                    memberUtils.updateNonUuidInMemPhoto(response);
+                }
+                if(uuidSign==null)
+                {
+                    memberUtils.updateNonUuidInMemSignature(response);
+                }
+                uploadedUuids.add(uuidPhoto);
+                uploadedUuids.add(uuidSign);
+
+                // }
+                // if (uuid.isEmpty()) {
+                //     updateNonUuid(response);
+
+                //     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
+                //     continue; // Skip this iteration and move to the next document
+                // }
+                // uploadedUuids.add(uuid);
+            }
+            return uploadedUuids;
+        } catch (Exception e) {
+            logger.error("Error downloading or processing file", e);
+        }
+        return uploadedUuids;
+
+    }
+
     private boolean betweenDates(LocalDate fromDate, LocalDate toDate, LocalDate targetDate) {
         if (targetDate == null && fromDate == null && toDate == null) {
             return true;
@@ -542,11 +616,21 @@ public class PublishServiceImpl implements PublishService {
         } catch (DateTimeParseException e) {
             System.out.println("Invalid date format: " + targetDateStr);
             LocalDate targetDate = LocalDate.parse(targetDateStr.trim());
-            return betweenDates(fromDate, toDate, targetDate);        }
+            return betweenDates(fromDate, toDate, targetDate);
+        }
     }
 
     private Specification<PublishDocumentTemp> hasPublishUuid() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
+    }
+
+    private Specification<MemberPhotoSignTemp> hasHouseInMem(String house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("house"), house);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
     }
 
     public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
@@ -723,107 +807,7 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public String createDmsFolderStructure(String root, List<String> folders) {
-
-        String path = (StringUtils.isEmpty(root)) ? OKM_ROOT : root;
-
-        String token = getTokenFromRequest();
-        if (StringUtils.isBlank(token)) {
-            logger.error("Authorization token is missing. Cannot upload file.");
-            return "";
-        }
-        System.out.println("folder " + folders);
-        String folderName = "";
-        for (int i = 0; i < folders.size(); i++) {
-            int size = folders.size();
-            if (i > 0) {
-                folderName += "/";
-            }
-            folderName += folders.get(i);
-            try {
-                createFolderIfNotExists(path, folderName, token);
-
-            } catch (Exception e) {
-
-                System.out.println(e.getLocalizedMessage());
-            }
-            System.out.println("path " + path);
-            System.out.println("folderName " + folderName);
-
-        }
-
-        System.out.println("complete path " + path + " createdolders " + folderName);
-        if (path.endsWith("/"))
-            return path + "" + folderName;
-        else
-            return path + "/" + folderName;
-    }
-
-    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
-
-        System.out.println("parent path " + parentPath);
-        // System.out.println("folder name "+folderName);
-        if (StringUtils.isBlank(parentPath))
-            parentPath = "/okm:root";
-        String url = openKmUrl + "/folders/create?parentPath=" + parentPath;
-        // System.out.println("Hardcoded Final URL: " + url);
-        // System.out.println("folderName: " + folderName);
-        // System.out.println("token: " + token);
-        if (token == null || token.isBlank()) {
-            throw new IllegalStateException("Authorization token is missing");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        // System.out.println("headers " + headers);
-        FolderCreateDTO dto = FolderCreateDTO.builder()
-                .folderName(folderName)
-                .build();
-        // System.out.println("dto " + dto);
-        HttpEntity<FolderCreateDTO> entity = new HttpEntity<>(dto, headers);
-        String folderPath = parentPath + "/" + folderName;
-        // System.out.println("path " + folderPath);
-        // System.out.println("create api entity " + entity);
-        try {
-            ResponseEntity<GenericResponse<String>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<GenericResponse<String>>() {
-                    });
-            // System.out.println("response of folder creation "+response);
-            GenericResponse<String> responseBody = response.getBody();
-            // System.out.println("status " + responseBody);
-            if (responseBody != null) {
-                System.out.println("status " + responseBody.getStatusCode());
-                if (responseBody.getStatusCode() == 200)
-                // responseBody.isSuccess())
-                {
-                    return responseBody.getData();
-                } else if (responseBody.getStatusCode() == 409) {
-                    return folderPath;
-                } else {
-                    System.out.println("Unexpected response: " + responseBody.getMessage());
-                    return null;
-                }
-            } else {
-                System.out.println("Empty response received from folder creation API");
-                return null;
-            }
-
-        } catch (HttpClientErrorException.Conflict e) {
-            System.out.println("status already exist conflict exception ");
-            // e.printStackTrace();
-            return folderPath;
-        } catch (HttpClientErrorException e) {
-            System.out.println("status already exist exception");
-            // e.printStackTrace();
-            return folderPath;
-        } catch (Exception e) {
-            // e.printStackTrace();
-            System.out.println("Error occurred while creating folder: ");
-            throw e;
-            // return folderPath;
-        }
+        return folderCreationUtils.createDmsFolderStructure(root, folders);
     }
 
     public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
@@ -1230,7 +1214,6 @@ public class PublishServiceImpl implements PublishService {
             }
             responseEntitysAll = repository.findByApplicationIdAndRajyaSabhaSessionNo(appId, sesNo);
 
-
         } else {
             if (sesNo == null) {
                 Map<String, Object> obj = repository.findLatestLS();
@@ -1304,15 +1287,14 @@ public class PublishServiceImpl implements PublishService {
      * Converts a number to its Roman numeral representation.
      */
     private String convertNumberToRoman(int number) {
-        String[] romans = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX",
+        String[] romans = { "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX",
                 "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX",
-                "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "XXVIII", "XXIX", "XXX"};
+                "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "XXVIII", "XXIX", "XXX" };
         if (number >= 1 && number <= 30) {
             return romans[number];
         }
         throw new IllegalArgumentException("Session number must be between 1 and 30");
     }
-
 
     private static String removeExtraTags(String input) {
         String cleaned = input
@@ -1325,88 +1307,89 @@ public class PublishServiceImpl implements PublishService {
         return cleaned;
     }
 
-	@Override
-	public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
-			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
-			LocalDate publishDateTo) {
+    @Override
+    public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
+            String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
+            LocalDate publishDateTo) {
 
-		StringBuilder sql = new StringBuilder("""
-				    SELECT
-						wf.id                         AS id,
-						wf.lok_sabha_no               AS lokSabhaNo,
-						wf.lok_sabha_session_no       AS lokSabhaSessionNo,
-						wf.rajya_sabha_session_no     AS rajyaSabhaSessionNo,
-						wf.publish_date               AS publishDate,
-						wf.publish_by_user            AS publishByUser,
-						wf.publish_uuid               AS publishUuid,
-						wf.publish_status             AS publishStatus,
-						wf.unpublish_date             AS unpublishDate,
-						wf.unpublish_by_user          AS unpublishByUser,
-						wf.office_id                  AS officeId,
-						wf.application_id             AS applicationId,
-						o.office_name                 AS officeName,
-						COALESCE(a.name, wf.application_name) AS documentName
-				    FROM workflow.publish_history wf
-				    JOIN master.offices o ON wf.office_id = o.id
-				    LEFT JOIN master.applications a ON wf.application_id = a.id
-				    WHERE 1=1
-				""");
+        StringBuilder sql = new StringBuilder("""
+                    SELECT
+                		wf.id                         AS id,
+                		wf.lok_sabha_no               AS lokSabhaNo,
+                		wf.lok_sabha_session_no       AS lokSabhaSessionNo,
+                		wf.rajya_sabha_session_no     AS rajyaSabhaSessionNo,
+                		wf.publish_date               AS publishDate,
+                		wf.publish_by_user            AS publishByUser,
+                		wf.publish_uuid               AS publishUuid,
+                		wf.publish_status             AS publishStatus,
+                		wf.unpublish_date             AS unpublishDate,
+                		wf.unpublish_by_user          AS unpublishByUser,
+                		wf.office_id                  AS officeId,
+                		wf.application_id             AS applicationId,
+                		o.office_name                 AS officeName,
+                		COALESCE(a.name, wf.application_name) AS documentName
+                    FROM workflow.publish_history wf
+                    JOIN master.offices o ON wf.office_id = o.id
+                    LEFT JOIN master.applications a ON wf.application_id = a.id
+                    WHERE 1=1
+                """);
 
-		Map<String, Object> params = new HashMap<>();
+        Map<String, Object> params = new HashMap<>();
 
-		if (applicationId != null) {
-			sql.append(" AND wf.application_id = :applicationId");
-			params.put("applicationId", applicationId);
-		}
-		if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
-			sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
-			params.put("lokSabhaNo", lokSabhaNo);
-		}
-		if (lokSabhaSessionNo != null && !lokSabhaSessionNo.isBlank()) {
-			sql.append(" AND wf.lok_sabha_session_no = :lokSabhaSessionNo");
-			params.put("lokSabhaSessionNo", lokSabhaSessionNo);
-		}
-		if (rajyaSabhaSessionNo != null && !rajyaSabhaSessionNo.isBlank()) {
-			sql.append(" AND wf.rajya_sabha_session_no = :rajyaSabhaSessionNo");
-			params.put("rajyaSabhaSessionNo", rajyaSabhaSessionNo);
-		}
-		if (officeId != null) {
-			sql.append(" AND wf.office_id = :officeId");
-			params.put("officeId", officeId);
-		}
-		if (publishDateFrom != null) {
-			sql.append(" AND wf.publish_date >= :publishDateFrom");
-			params.put("publishDateFrom", publishDateFrom);
-		}
-		if (publishDateTo != null) {
-			sql.append(" AND wf.publish_date <= :publishDateTo");
-			params.put("publishDateTo", publishDateTo);
-		}
+        if (applicationId != null) {
+            sql.append(" AND wf.application_id = :applicationId");
+            params.put("applicationId", applicationId);
+        }
+        if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
+            sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
+            params.put("lokSabhaNo", lokSabhaNo);
+        }
+        if (lokSabhaSessionNo != null && !lokSabhaSessionNo.isBlank()) {
+            sql.append(" AND wf.lok_sabha_session_no = :lokSabhaSessionNo");
+            params.put("lokSabhaSessionNo", lokSabhaSessionNo);
+        }
+        if (rajyaSabhaSessionNo != null && !rajyaSabhaSessionNo.isBlank()) {
+            sql.append(" AND wf.rajya_sabha_session_no = :rajyaSabhaSessionNo");
+            params.put("rajyaSabhaSessionNo", rajyaSabhaSessionNo);
+        }
+        if (officeId != null) {
+            sql.append(" AND wf.office_id = :officeId");
+            params.put("officeId", officeId);
+        }
+        if (publishDateFrom != null) {
+            sql.append(" AND wf.publish_date >= :publishDateFrom");
+            params.put("publishDateFrom", publishDateFrom);
+        }
+        if (publishDateTo != null) {
+            sql.append(" AND wf.publish_date <= :publishDateTo");
+            params.put("publishDateTo", publishDateTo);
+        }
 
-		sql.append(" ORDER BY wf.publish_date DESC");
+        sql.append(" ORDER BY wf.publish_date DESC");
 
-		Query query = entityManager.createNativeQuery(sql.toString());
-		params.forEach(query::setParameter);
+        Query query = entityManager.createNativeQuery(sql.toString());
+        params.forEach(query::setParameter);
 
-		@SuppressWarnings("unchecked")
-		List<Object[]> rows = query.getResultList();
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = query.getResultList();
 
-		return rows.stream().map(row -> PublishHistoryResponseDTO.builder()
-		        .id(row[0] != null ? ((Number) row[0]).longValue() : null)
-		        .lokSabhaNo(row[1] != null ? row[1].toString() : "")
-		        .lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
-		        .rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
-		        .publishDate(row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null)
-		        .publishByUser(row[5] != null ? row[5].toString() : "")
-		        .publishUuid(row[6] != null ? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString())) : null)
-		        .publishStatus(row[7] != null && (Boolean) row[7])
-		        .unpublishDate(row[8] != null ? ((java.sql.Date) row[8]).toLocalDate() : null)
-		        .unpublishByUser(row[9] != null ? row[9].toString() : "")
-		        .officeId(row[10] != null ? ((Number) row[10]).longValue() : null)
-		        .applicationId(row[11] != null ? ((Number) row[11]).longValue() : null)
-		        .branch(row[12] != null ? row[12].toString() : "")
-		        .applicationName(row[13] != null ? row[13].toString() : "")
-		        .build()
-		).toList();
-	}
+        return rows.stream().map(row -> PublishHistoryResponseDTO.builder()
+                .id(row[0] != null ? ((Number) row[0]).longValue() : null)
+                .lokSabhaNo(row[1] != null ? row[1].toString() : "")
+                .lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
+                .rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
+                .publishDate(row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null)
+                .publishByUser(row[5] != null ? row[5].toString() : "")
+                .publishUuid(
+                        row[6] != null ? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString()))
+                                : null)
+                .publishStatus(row[7] != null && (Boolean) row[7])
+                .unpublishDate(row[8] != null ? ((java.sql.Date) row[8]).toLocalDate() : null)
+                .unpublishByUser(row[9] != null ? row[9].toString() : "")
+                .officeId(row[10] != null ? ((Number) row[10]).longValue() : null)
+                .applicationId(row[11] != null ? ((Number) row[11]).longValue() : null)
+                .branch(row[12] != null ? row[12].toString() : "")
+                .applicationName(row[13] != null ? row[13].toString() : "")
+                .build()).toList();
+    }
 }
