@@ -180,7 +180,6 @@ public class MemberUploadData {
                             ResponseMember res = updateMemTableUuid(uuid, fileType, response);
                             return res;
                         } catch (IllegalArgumentException ex) {
-
                             logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
                         }
                     } else {
@@ -201,6 +200,7 @@ public class MemberUploadData {
         } catch (IOException e) {
             logger.error("Error writing temp file: ", e);
         } catch (Exception e) {
+            
             logger.error("Error uploading file: ", e.getMessage());
         }
         return null;
