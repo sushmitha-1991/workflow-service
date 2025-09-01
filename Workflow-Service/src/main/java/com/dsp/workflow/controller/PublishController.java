@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
+import com.dsp.workflow.dto.ResponseDocsUuids;
 import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
@@ -219,6 +220,13 @@ public class PublishController {
         List<ResponseMember> res = publishService.uploadMemberDSP2();
         return ResponseEntity.ok(res);
     }
+	@GetMapping("/uploadTransmissionDsp2")
+    public ResponseEntity<List<ResponseDocsUuids>> uploadTransmissionDocs() {
+        System.out.println("Received in Controller: ");
+        List<ResponseDocsUuids> res = publishService.uploadTransmissionDocs();
+        return ResponseEntity.ok(res);
+    }
+	
 	
    	@GetMapping("/create-folder-structure")
     public ResponseEntity<String> folderStructure(

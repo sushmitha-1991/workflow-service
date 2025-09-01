@@ -1,22 +1,13 @@
 package com.dsp.workflow.service.impl;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.StringBufferInputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.lang.reflect.Field;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.format.SignStyle;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +15,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,20 +33,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriUtils;
 
-import com.dsp.workflow.dto.FolderCreateDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
-import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.ResponseDTO;
+import com.dsp.workflow.dto.ResponseDocsUuids;
 import com.dsp.workflow.dto.ResponseMember;
-import com.dsp.workflow.dto.SerialNumberRequest;
-import com.dsp.workflow.dto.SerialNumberResponse;
+import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
+import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
@@ -64,20 +51,19 @@ import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.ApplicationRepository;
+import com.dsp.workflow.repository.ETransmissionRepository;
 import com.dsp.workflow.repository.MemberTempUploadRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
-import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.PublishService;
+import com.dsp.workflow.util.ConstantsUtility;
+import com.dsp.workflow.util.ETransmissionDataUpload;
 import com.dsp.workflow.util.FolderCreationUtils;
 import com.dsp.workflow.util.MemberUploadData;
 import com.dsp.workflow.util.Utils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import jakarta.persistence.criteria.Expression;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
@@ -88,10 +74,12 @@ public class PublishServiceImpl implements PublishService {
     private RestTemplate restTemplate;
     @Autowired
     private EntityManager entityManager;
-    public static final String PHOTO = "PHOTO";
-    public static final String SIGN = "SIGNATURE";
     @Value("${service.url}")
     private String openKmUrl;
+    @Autowired
+    private ETransmissionRepository eTransmissionRepository;
+    @Autowired
+    private ETransmissionDataUpload eTransmissionUtils;
     @Autowired
     private MemberUploadData memberUtils;
     @Autowired
@@ -110,6 +98,7 @@ public class PublishServiceImpl implements PublishService {
     @Autowired
     private ApplicationRepository appRepository;
     private final static String OKM_ROOT = "/okm:root";
+
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
         PublishHistoryEntity entity = PublishMapper.toEntity(dto);
@@ -518,6 +507,101 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
+    // uploadTransmissionDocs
+    @Override
+    public List<ResponseDocsUuids> uploadTransmissionDocs() {
+        Long houseId = utils.getHouseIdFromAuthentication();
+        Specification<ETransmissionUploadTempEntity> spec = Specification.where(hasHouseId(houseId));
+        List<ETransmissionUploadTempEntity> urlList = eTransmissionRepository.findAll(spec);
+        List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
+        System.out.println("urlList " + urlList.size());
+        if (urlList != null && urlList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // System.out.println("Url List " + urlList);
+        int i = 0;
+        try {
+            for (ETransmissionUploadTempEntity response : urlList) {
+                byte[] errataEngData = null;
+                byte[] errataHiData = null;
+                byte[] fileEngData = null;
+                byte[] fileHindiData = null;
+                String existE_ENUuid = response.getEngErrataUuid();
+                String existE_HIUuid = response.getEngErrataUuid();
+                String existF_ENUuid = response.getEngErrataUuid();
+                String existF_HIUuid = response.getEngErrataUuid();
+
+                try {
+                    errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+                            ConstantsUtility.E_EN);
+                    errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+                            ConstantsUtility.E_HI);
+                    fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+                            ConstantsUtility.F_EN);
+                    fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+                            ConstantsUtility.F_HI);
+                } catch (Exception e) {
+                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                    continue; // Skip this iteration if download fails
+                }
+
+                if ((fileEngData == null || fileEngData.length == 0)
+                        && (fileHindiData == null || fileHindiData.length == 0)) {
+                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                    continue;
+                }
+                // Handle Errata English
+                eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
+                        response.getEngErrataUrl(), uploadedUuids);
+
+                // Handle Errata Hindi
+                eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
+                        response.getHindiErrataUrl(), uploadedUuids);
+
+                // Handle File English
+                eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
+                        response.getList1EngUrl(), uploadedUuids);
+
+                // Handle File Hindi
+                eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
+                        response.getList1HindiUrl(), uploadedUuids);
+                // System.out.println("data " + fileData);
+                // if (StringUtils.isBlank(existE_ENUuid) && errataEngData != null &&
+                // errataEngData.length > 0) {
+                // uploadedUuids.add(eTransmissionUtils.uploadAndReturnUuidResp(response,
+                // errataEngData, ConstantsUtility.E_EN, response.getEngErrataUrl()));
+                // }
+                // if (StringUtils.isBlank(existE_HIUuid) && errataHiData != null &&
+                // errataHiData.length > 0) {
+                // uploadedUuids.add(eTransmissionUtils.uploadAndReturnUuidResp(response,
+                // errataHiData, ConstantsUtility.E_HI, response.getHindiErrataUrl()));
+                // }
+                // if (StringUtils.isBlank(existF_ENUuid)) {
+                // ResponseDocsUuids respFileEn = eTransmissionUtils
+                // .uploadAndReturnUuidResp(response, fileEngData, ConstantsUtility.F_EN,
+                // response.getList1Eng());
+                // uploadedUuids.add(respFileEn);
+                // } else {
+
+                // }
+                // if (StringUtils.isBlank(existF_HIUuid)) {
+                // ResponseDocsUuids respFileHi = eTransmissionUtils
+                // .uploadAndReturnUuidResp(response, fileHindiData, ConstantsUtility.F_HI,
+                // response.getList1HindiUrl());
+                // uploadedUuids.add(respFileHi);
+                // }
+                System.out.println("uploadedUuids");
+                System.out.println(uploadedUuids);
+            }
+            return uploadedUuids;
+        } catch (Exception e) {
+            logger.error("Error downloading or processing file", e);
+        }
+        return uploadedUuids;
+
+    }
+
     @Override
     public List<ResponseMember> uploadMemberDSP2() {
         Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
@@ -528,55 +612,76 @@ public class PublishServiceImpl implements PublishService {
         if (urlList != null && urlList.isEmpty()) {
             return new ArrayList<>();
         }
-        System.out.println("Url List " + urlList);
+        // System.out.println("Url List " + urlList);
         int i = 0;
         try {
             for (MemberPhotoSignTemp response : urlList) {
-                logger.info("Processing document: {}", response.getPhotoUrl());
+                // logger.info("Processing document: {}", response.getPhotoUrl());
                 byte[] filePhotoData = null;
                 byte[] fileSignatureData = null;
-
+                UUID existingPhUuid = response.getPhotoUuid();
+                UUID existingSgUuid = response.getSignatureUuid();
                 try {
-                    filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(), PHOTO);
-                    fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(), SIGN);
-                    System.out.println("fileData " + filePhotoData);
-                    System.out.println("fileData " + fileSignatureData);
-                    
-
+                    if (existingPhUuid==null) {
+                        filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
+                                ConstantsUtility.PHOTO);
+                        System.out.println("fileData " + filePhotoData);
+                    }
+                    if (existingSgUuid==null) {
+                        fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
+                                ConstantsUtility.SIGN);
+                        System.out.println("fileData " + fileSignatureData);
+                    }
                 } catch (Exception e) {
                     System.out.println("ERROR While Fetching data from URl " + e.getMessage());
-                    memberUtils.updateNonUuidInMemPhoto(response);
-                    memberUtils.updateNonUuidInMemSignature(response);
-                    continue; // Skip this iteration if download fails
-                }
-                if (filePhotoData == null || filePhotoData.length == 0) {
-                    memberUtils.updateNonUuidInMemPhoto(response);
-                    memberUtils.updateNonUuidInMemSignature(response);
+                    if (existingPhUuid==null) {
+                        memberUtils.updateNonUuidInMemPhoto(response);
+                    }
+                    if (existingSgUuid==null) {
+                        memberUtils.updateNonUuidInMemSignature(response);
+                    }
                     continue;
                 }
-
-                // System.out.println("data " + fileData);
-                ResponseMember uuidPhoto=memberUtils.uploadAndReturnUuidInMem(response, filePhotoData, PHOTO);
-                ResponseMember uuidSign=memberUtils.uploadAndReturnUuidInMem(response, fileSignatureData, SIGN);
-                if(uuidPhoto==null)
-                {
-                    memberUtils.updateNonUuidInMemPhoto(response);
-                }
-                if(uuidSign==null)
-                {
-                    memberUtils.updateNonUuidInMemSignature(response);
-                }
-                uploadedUuids.add(uuidPhoto);
-                uploadedUuids.add(uuidSign);
-
+                // Handle Photo
+                memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
+                // Handle Signature
+                memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
+                // if (StringUtils.isBlank(existingPhUuid)) {
+                // if ((filePhotoData == null || filePhotoData.length == 0)) {
+                // memberUtils.updateNonUuidInMemPhoto(response);
                 // }
-                // if (uuid.isEmpty()) {
-                //     updateNonUuid(response);
-
-                //     logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
-                //     continue; // Skip this iteration and move to the next document
+                // ResponseMember uuidPhoto = memberUtils.uploadAndReturnUuidInMem(response,
+                // filePhotoData,
+                // ConstantsUtility.PHOTO);
+                // if (uuidPhoto == null) {
+                // memberUtils.updateNonUuidInMemPhoto(response);
                 // }
-                // uploadedUuids.add(uuid);
+                // else
+                // uploadedUuids.add(uuidPhoto);
+                // }
+                // else
+                // {
+                // uploadedUuids.add(memberUtils.mapMemberDataToRes(response));
+                // }
+                // if (StringUtils.isBlank(existingSgUuid)) {
+                // if (fileSignatureData == null || fileSignatureData.length == 0) {
+                // memberUtils.updateNonUuidInMemSignature(response);
+                // }
+                // ResponseMember uuidSign = memberUtils.uploadAndReturnUuidInMem(response,
+                // fileSignatureData,
+                // ConstantsUtility.SIGN);
+                // if (uuidSign == null) {
+                // memberUtils.updateNonUuidInMemSignature(response);
+                // }
+                // else{
+                // uploadedUuids.add(uuidSign);
+                // }
+                // }
+                // else{
+                // uploadedUuids.add(memberUtils.mapMemberDataToRes(response));
+                // }
+                System.out.println("uploadedUuids");
+                System.out.println(uploadedUuids);
             }
             return uploadedUuids;
         } catch (Exception e) {
@@ -622,6 +727,15 @@ public class PublishServiceImpl implements PublishService {
 
     private Specification<PublishDocumentTemp> hasPublishUuid() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
+    }
+
+    private Specification<ETransmissionUploadTempEntity> hasHouseId(Long house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("houseId"), house);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
     }
 
     private Specification<MemberPhotoSignTemp> hasHouseInMem(String house) {

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,56 +21,37 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.dto.ResponseDocsUuids;
 import com.dsp.workflow.dto.ResponseMember;
+import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
-import com.dsp.workflow.repository.ApplicationInstanceRepository;
-import com.dsp.workflow.repository.ApplicationRepository;
-import com.dsp.workflow.repository.MemberTempUploadRepository;
-import com.dsp.workflow.repository.PublishDocumentTempRepo;
-import com.dsp.workflow.repository.PublishRepository;
-import com.dsp.workflow.service.PublishService;
-import com.dsp.workflow.service.impl.PublishServiceImpl;
+import com.dsp.workflow.repository.ETransmissionRepository;
 
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 
+@Component
 public class ETransmissionDataUpload {
-@Autowired
-    private PublishRepository repository;
+    @Autowired
+    private ETransmissionRepository eTransmissionRepository;
     @Autowired
     private RestTemplate restTemplate;
-    @Autowired
-    private EntityManager entityManager;
-    public static final String PHOTO = "PHOTO";
-    public static final String SIGN = "SIGNATURE";
 
+    @Autowired
+    private FolderCreationUtils folderCreationUtils;
     @Value("${service.url}")
     private String openKmUrl;
-    @Autowired
-    private MemberUploadData memberUtils;
-    @Autowired 
-    private PublishService publishService;
 
-    @Autowired
-    private MemberTempUploadRepository memberTempRepo;
-
-    // private String openKmUrl="http://localhost:8889/dms/openkm";
     @Autowired
     private Utils utils;
-    @Autowired
-    private PublishDocumentTempRepo tempRepo;
-    private static final Logger logger = LoggerFactory.getLogger(PublishServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ETransmissionDataUpload.class);
 
     @Autowired
     private HttpServletRequest httpRequest;
-    @Autowired
-    private ApplicationInstanceRepository applicationInstanceRepository;
-    @Autowired
-    private ApplicationRepository appRepository;
 
     private final static String OKM_ROOT = "/okm:root";
 
@@ -80,35 +62,23 @@ public class ETransmissionDataUpload {
             if (fileData == null || fileData.length == 0) {
                 throw new RuntimeException("Empty file retrieved for " + typeOfDoc + " from URL: " + url);
             }
-            return fileData;        
+            return fileData;
         } catch (Exception e) {
             throw new RuntimeException("file not found!!");
         }
     }
 
-
-    
-    public void updateNonUuidInMemPhoto(MemberPhotoSignTemp response) {
-        Optional<MemberPhotoSignTemp> entity = memberTempRepo
+    public void updateNonUuidInTransmission(ETransmissionUploadTempEntity response) {
+        Optional<ETransmissionUploadTempEntity> entity = eTransmissionRepository
                 .findById(response.getId());
         if (entity.isPresent()) {
-            MemberPhotoSignTemp entitys = entity.get();
-            // entitys.setIsUpdatedUuid(false);
-            entitys = memberTempRepo.save(entitys);
+            ETransmissionUploadTempEntity entitys = entity.get();
+            entitys.setIsUpdatedAllUuid(false);
+            entitys = eTransmissionRepository.save(entitys);
             System.out.println("entity " + entity);
         }
     }
 
-    public void updateNonUuidInMemSignature(MemberPhotoSignTemp response) {
-        Optional<MemberPhotoSignTemp> entity = memberTempRepo
-                .findById(response.getId());
-        if (entity.isPresent()) {
-            MemberPhotoSignTemp entitys = entity.get();
-            // entitys.setIsUpdatedUuid(false);
-            entitys = memberTempRepo.save(entitys);
-            System.out.println("entity " + entity);
-        }
-    }
     public String getTokenFromRequest() {
 
         String authorizationHeader = httpRequest.getHeader("Authorization");
@@ -117,15 +87,15 @@ public class ETransmissionDataUpload {
         }
         return null;
     }
-    public ResponseMember uploadAndReturnUuidInMem(MemberPhotoSignTemp response, byte[] fileData, String fileType) {
+
+    public ResponseDocsUuids uploadAndReturnUuidResp(ETransmissionUploadTempEntity response,
+            byte[] fileData, String fileType, String url) {
         try {
             System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
-                if (PHOTO.equalsIgnoreCase(fileType))
-                    updateNonUuidInMemPhoto(response);
-                if (SIGN.equalsIgnoreCase(fileType))
-                    updateNonUuidInMemSignature(response);
+                updateNonUuidInTransmission(response);
+                return null;
             }
             // // Set Authorization Token
             String token = getTokenFromRequest();
@@ -136,22 +106,25 @@ public class ETransmissionDataUpload {
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
-            folders.add("MEMBER");
-            folders.add(response.getMpcode().toString());
+            folders.add("E_Papers");
             folders.add(fileType);
             System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
-            String folderPath = publishService.createDmsFolderStructure(rootPath, folders);
+            String folderPath = folderCreationUtils.createDmsFolderStructure(rootPath, folders);
             System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
             System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
             String fileNameWithoutExt = "";
-            if (PHOTO.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getPhoto();
-            if (SIGN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getSignature();
+            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = response.getList1Eng();
+            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = response.getList1Hindi();
+            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = response.getEngErrata();
+            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = response.getHindiErrata();
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
@@ -163,7 +136,7 @@ public class ETransmissionDataUpload {
             String updatedFileName = fileNameWithoutExt;
             // Create a temporary file
 
-            File tempFile = File.createTempFile(fileNameWithoutExt, ".jpg");
+            File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
@@ -208,7 +181,7 @@ public class ETransmissionDataUpload {
                         String uuidString = generatedUuid.toString().trim();
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            ResponseMember res = updateMemTableUuid(uuid, fileType, response);
+                            ResponseDocsUuids res = updateTransmTableUuid(uuid, fileType, response, url, houseAbbr);
                             return res;
                         } catch (IllegalArgumentException ex) {
                             logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
@@ -230,33 +203,48 @@ public class ETransmissionDataUpload {
         return null;
     }
 
-    private ResponseMember updateMemTableUuid(UUID uuid, String fileType, MemberPhotoSignTemp response) {
-        // TODO Auto-generated method stub
-        Optional<MemberPhotoSignTemp> entity = memberTempRepo
-                .findById(response.getId());
-        if (entity.isPresent()) {
-            MemberPhotoSignTemp entitys = entity.get();
-            if (PHOTO.equalsIgnoreCase(fileType))
-                entitys.setPhotoUuid(uuid);
-            if (SIGN.equalsIgnoreCase(fileType))
-                entitys.setSignatureUuid(uuid);
-            entitys = memberTempRepo.save(entitys);
-            System.out.println("entity " + entity);
-            return mapMemberDataToRes(entitys);
+    public void processErrata(ETransmissionUploadTempEntity response, String existingUuid,
+            byte[] data, String type, String url,
+            List<ResponseDocsUuids> uploadedUuids) {
+        if (StringUtils.isBlank(existingUuid) && data != null && data.length > 0) {
+            uploadedUuids.add(uploadAndReturnUuidResp(response, data, type, url));
         }
-        return null;
     }
 
-    private ResponseMember mapMemberDataToRes(MemberPhotoSignTemp entitys) {
+    public void processFile(ETransmissionUploadTempEntity response, String existingUuid,
+            byte[] data, String type, String url,
+            List<ResponseDocsUuids> uploadedUuids) {
+        if (StringUtils.isBlank(existingUuid)) {
+            ResponseDocsUuids respFile = uploadAndReturnUuidResp(response, data, type, url);
+            uploadedUuids.add(respFile);
+        }
+    }
+
+    public ResponseDocsUuids updateTransmTableUuid(UUID uuid, String fileType,
+            ETransmissionUploadTempEntity response, String url, String house) {
         // TODO Auto-generated method stub
-        ResponseMember res = new ResponseMember();
-        res.setHouse(entitys.getHouse());
-        res.setId(entitys.getId());
-        res.setMemberCode(entitys.getMpcode().toString());
-        res.setPhotoUrl(entitys.getPhotoUrl());
-        res.setPhotoUuid(entitys.getPhotoUuid());
-        res.setSignUrl(entitys.getSignatureUrl());
-        res.setSignUuid(entitys.getSignatureUuid());
-        return res;
+        Optional<ETransmissionUploadTempEntity> entity = eTransmissionRepository
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            ETransmissionUploadTempEntity entitys = entity.get();
+            entitys.setIsUpdatedAllUuid(true);
+            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                entitys.setEngErrataUuid(uuid.toString());
+            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                entitys.setHindiErrataUuid(uuid.toString());
+            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                entitys.setList1EngUuid(uuid.toString());
+            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                entitys.setList1HindiUuid(uuid.toString());
+            entitys = eTransmissionRepository.save(entitys);
+            System.out.println("entity " + entity);
+            ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
+                    .fileType(fileType)
+                    .url(url)
+                    .uuid(uuid).build();
+            return res;
+
+        }
+        return null;
     }
 }

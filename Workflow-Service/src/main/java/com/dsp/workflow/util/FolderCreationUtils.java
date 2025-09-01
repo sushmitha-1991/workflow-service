@@ -18,9 +18,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.FolderCreateDTO;
-import com.dsp.workflow.repository.MemberTempUploadRepository;
 import com.dsp.workflow.response.GenericResponse;
-import com.dsp.workflow.service.impl.PublishServiceImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -30,7 +28,7 @@ public class FolderCreationUtils {
     private RestTemplate restTemplate;
     @Value("${service.url}")
     private String openKmUrl;
-    private static final Logger logger = LoggerFactory.getLogger(PublishServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(FolderCreationUtils.class);
     @Autowired
     private HttpServletRequest httpRequest;
     private final static String OKM_ROOT = "/okm:root";
@@ -79,7 +77,7 @@ public class FolderCreationUtils {
             return path + "/" + folderName;
     }
 
-    private String createFolderIfNotExists(String parentPath, String folderName, String token) {
+    public String createFolderIfNotExists(String parentPath, String folderName, String token) {
 
         System.out.println("parent path " + parentPath);
         // System.out.println("folder name "+folderName);

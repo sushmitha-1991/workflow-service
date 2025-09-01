@@ -37,4 +37,6 @@ public class MemberPhotoSignTemp {
     private LocalDate updatedAt;
 
     private String updatedBy;
+    private Boolean isPhotoUploaded;
+    private Boolean isSignUploaded;
 }

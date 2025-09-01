@@ -24,34 +24,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import com.dsp.workflow.dto.FolderCreateDTO;
 import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
-import com.dsp.workflow.repository.ApplicationInstanceRepository;
-import com.dsp.workflow.repository.ApplicationRepository;
 import com.dsp.workflow.repository.MemberTempUploadRepository;
-import com.dsp.workflow.repository.PublishDocumentTempRepo;
-import com.dsp.workflow.response.GenericResponse;
-import com.dsp.workflow.service.impl.PublishServiceImpl;
 
-import jakarta.servlet.http.HttpServletRequest;
 @Component
 public class MemberUploadData {
 
     @Autowired
     private RestTemplate restTemplate;
 
-    public static final String PHOTO = "PHOTO";
-    public static final String SIGN = "SIGNATURE";
-
     @Value("${service.url}")
     private String openKmUrl;
- 
-    // @Autowired 
-    // private PublishService publishService;
 
     @Autowired
     private MemberTempUploadRepository memberTempRepo;
@@ -60,11 +46,8 @@ public class MemberUploadData {
     // private String openKmUrl="http://localhost:8889/dms/openkm";
     @Autowired
     private Utils utils;
-   
-    private static final Logger logger = LoggerFactory.getLogger(PublishServiceImpl.class);
 
-    @Autowired
-    private HttpServletRequest httpRequest;
+    private static final Logger logger = LoggerFactory.getLogger(FolderCreationUtils.class);
 
     private final static String OKM_ROOT = "/okm:root";
 
@@ -75,20 +58,18 @@ public class MemberUploadData {
             if (fileData == null || fileData.length == 0) {
                 throw new RuntimeException("Empty file retrieved for " + typeOfDoc + " from URL: " + url);
             }
-            return fileData;        
+            return fileData;
         } catch (Exception e) {
             throw new RuntimeException("file not found!!");
         }
     }
 
-
-    
     public void updateNonUuidInMemPhoto(MemberPhotoSignTemp response) {
         Optional<MemberPhotoSignTemp> entity = memberTempRepo
                 .findById(response.getId());
         if (entity.isPresent()) {
             MemberPhotoSignTemp entitys = entity.get();
-            // entitys.setIsUpdatedUuid(false);
+            entitys.setIsPhotoUploaded(false);
             entitys = memberTempRepo.save(entitys);
             System.out.println("entity " + entity);
         }
@@ -99,20 +80,20 @@ public class MemberUploadData {
                 .findById(response.getId());
         if (entity.isPresent()) {
             MemberPhotoSignTemp entitys = entity.get();
-            // entitys.setIsUpdatedUuid(false);
+            entitys.setIsSignUploaded(false);
             entitys = memberTempRepo.save(entitys);
             System.out.println("entity " + entity);
         }
     }
-    
+
     public ResponseMember uploadAndReturnUuidInMem(MemberPhotoSignTemp response, byte[] fileData, String fileType) {
         try {
             System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
-                if (PHOTO.equalsIgnoreCase(fileType))
+                if (ConstantsUtility.PHOTO.equalsIgnoreCase(fileType))
                     updateNonUuidInMemPhoto(response);
-                if (SIGN.equalsIgnoreCase(fileType))
+                if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType))
                     updateNonUuidInMemSignature(response);
             }
             // // Set Authorization Token
@@ -136,9 +117,9 @@ public class MemberUploadData {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
             String fileNameWithoutExt = "";
-            if (PHOTO.equalsIgnoreCase(fileType))
+            if (ConstantsUtility.PHOTO.equalsIgnoreCase(fileType))
                 fileNameWithoutExt = response.getPhoto();
-            if (SIGN.equalsIgnoreCase(fileType))
+            if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType))
                 fileNameWithoutExt = response.getSignature();
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
@@ -199,9 +180,16 @@ public class MemberUploadData {
                             ResponseMember res = updateMemTableUuid(uuid, fileType, response);
                             return res;
                         } catch (IllegalArgumentException ex) {
+
                             logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
                         }
                     } else {
+                        if (ConstantsUtility.PHOTO.equalsIgnoreCase(fileType)) {
+                            updateNonUuidInMemPhoto(response);
+                        }
+                        if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType)) {
+                            updateNonUuidInMemSignature(response);
+                        }
                         logger.warn("Received empty or null UUID from OpenKM: {}", dataMap);
                     }
                 } else {
@@ -218,16 +206,59 @@ public class MemberUploadData {
         return null;
     }
 
-    private ResponseMember updateMemTableUuid(UUID uuid, String fileType, MemberPhotoSignTemp response) {
+    public void processPhoto(MemberPhotoSignTemp response, UUID existingPhUuid,
+            byte[] filePhotoData, List<ResponseMember> uploadedUuids) {
+        System.out.println("existingPhUuid"+existingPhUuid);
+        if (existingPhUuid==null) {
+            if (filePhotoData == null || filePhotoData.length == 0) {
+                updateNonUuidInMemPhoto(response);
+                return;
+            }
+            ResponseMember uuidPhoto = uploadAndReturnUuidInMem(response, filePhotoData, ConstantsUtility.PHOTO);
+            if (uuidPhoto == null) {
+                updateNonUuidInMemPhoto(response);
+            } else {
+                uploadedUuids.add(uuidPhoto);
+            }
+        } else {
+            uploadedUuids.add(mapMemberDataToRes(response));
+        }
+    }
+
+    public void processSignature(MemberPhotoSignTemp response, UUID existingSgUuid,
+            byte[] fileSignatureData, List<ResponseMember> uploadedUuids) {
+        System.out.println("existingSgUuid"+existingSgUuid);
+
+        if (existingSgUuid==null) {
+            if (fileSignatureData == null || fileSignatureData.length == 0) {
+                updateNonUuidInMemSignature(response);
+                return;
+            }
+            ResponseMember uuidSign = uploadAndReturnUuidInMem(response, fileSignatureData, ConstantsUtility.SIGN);
+            if (uuidSign == null) {
+                updateNonUuidInMemSignature(response);
+            } else {
+                uploadedUuids.add(uuidSign);
+            }
+        } else {
+            uploadedUuids.add(mapMemberDataToRes(response));
+        }
+    }
+
+    public ResponseMember updateMemTableUuid(UUID uuid, String fileType, MemberPhotoSignTemp response) {
         // TODO Auto-generated method stub
         Optional<MemberPhotoSignTemp> entity = memberTempRepo
                 .findById(response.getId());
         if (entity.isPresent()) {
             MemberPhotoSignTemp entitys = entity.get();
-            if (PHOTO.equalsIgnoreCase(fileType))
+            if (ConstantsUtility.PHOTO.equalsIgnoreCase(fileType)) {
                 entitys.setPhotoUuid(uuid);
-            if (SIGN.equalsIgnoreCase(fileType))
+                entitys.setIsPhotoUploaded(true);
+            }
+            if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType)) {
                 entitys.setSignatureUuid(uuid);
+                entitys.setIsSignUploaded(true);
+            }
             entitys = memberTempRepo.save(entitys);
             System.out.println("entity " + entity);
             return mapMemberDataToRes(entitys);
@@ -235,7 +266,7 @@ public class MemberUploadData {
         return null;
     }
 
-    private ResponseMember mapMemberDataToRes(MemberPhotoSignTemp entitys) {
+    public ResponseMember mapMemberDataToRes(MemberPhotoSignTemp entitys) {
         // TODO Auto-generated method stub
         ResponseMember res = new ResponseMember();
         res.setHouse(entitys.getHouse());
@@ -248,6 +279,4 @@ public class MemberUploadData {
         return res;
     }
 
-    
 }
-
