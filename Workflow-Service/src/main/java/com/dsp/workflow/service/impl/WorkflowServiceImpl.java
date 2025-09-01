@@ -1829,6 +1829,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 			draftDocument.setForDate(draftDataDTO.getForDate());
+			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -1923,6 +1924,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			responseMap.put("lokSabhaSession", draftDataRow[2]); // lokSabhaSession
 			responseMap.put("lokSabhaSessionNumber", draftDataRow[3]); // lokSabhaSessionNumber
 			responseMap.put("rajyaSabhaSession", draftDataRow[4]); // rajyaSabhaSession
+			responseMap.put("dsp2key", draftDataRow[5]); // dsp2Key
 			return responseMap;
 		}
 

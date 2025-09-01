@@ -8,7 +8,8 @@ import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.SessionDto;
 
 import com.dsp.workflow.dto.ResponseDTO;
-
+import com.dsp.workflow.dto.ResponseDocsUuids;
+import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 
@@ -51,5 +52,9 @@ public interface PublishService {
 	List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
 			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
 			LocalDate publishDateTo);
+
+    List<ResponseMember> uploadMemberDSP2();
+
+    List<ResponseDocsUuids> uploadTransmissionDocs();
 
 }

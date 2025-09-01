@@ -25,7 +25,7 @@ public interface DraftDocumentRepository extends JpaRepository<DraftDocument, Lo
          * @param applicationId
          * @return
          */
-        @Query("SELECT  d.draftData, d.applicationNo, d.lokSabhaSession, d.lokSabhaSessionNumber, d.rajyaSabhaSession "
+        @Query("SELECT  d.draftData, d.applicationNo, d.lokSabhaSession, d.lokSabhaSessionNumber, d.rajyaSabhaSession, d.onlyOfficeDsp2Key "
                         + "FROM DraftDocument d "
                         + "WHERE d.isActive = true AND d.isDeleted = false AND d.id = :draftId")
         List<Object[]> findDraftDataByUserAndApplication(@Param("draftId") Long draftId);

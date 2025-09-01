@@ -42,5 +42,6 @@ public class DraftDataDTO {
     private LocalDate createdAtWithoutTime;
     private String createdBy;
     private LocalDate forDate;
+    private String dsp2key;
 
 }
