@@ -3,6 +3,7 @@ package com.dsp.workflow.dto;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -14,12 +15,13 @@ public class PublishHistoryResponseDTO {
 	private String lokSabhaNo;
 	private String lokSabhaSessionNo;
 	private String rajyaSabhaSessionNo;
-	private LocalDate publishDate;
+	private LocalDateTime publishDate;
 	private String publishByUser;
 	private UUID publishUuid;
 	private Boolean publishStatus;
-	private LocalDate unpublishDate;
+	private LocalDateTime unpublishDate;
 	private String unpublishByUser;
+	private LocalDate documentDate;
 	private Long officeId;
 	private Long applicationId;
 	private String branch;
