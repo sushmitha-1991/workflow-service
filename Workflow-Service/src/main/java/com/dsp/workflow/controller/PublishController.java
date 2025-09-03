@@ -1,6 +1,7 @@
 package com.dsp.workflow.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,11 +55,13 @@ public class PublishController {
 			@RequestParam(required = false) Long applicationId, @RequestParam(required = false) String lokSabhaNo,
 			@RequestParam(required = false) String lokSabhaSessionNo,
 			@RequestParam(required = false) String rajyaSabhaSessionNo, @RequestParam(required = false) Long officeId,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate publishDateFrom,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate publishDateTo) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateFrom,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateTo,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateFrom,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateTo) {
 		try {
 			List<PublishHistoryResponseDTO> result = publishService.getFilteredPublishHistory(applicationId, lokSabhaNo,
-					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo);
+					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo, documentDateFrom, documentDateTo);
 
 			if (result.isEmpty()) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND)
