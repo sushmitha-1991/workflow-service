@@ -216,7 +216,13 @@ public class PublishController {
         List<String> uuidString = publishService.uploadToDsp2(appName,dto);
         return ResponseEntity.ok(uuidString);
     }
-	//HttpServletRequest
+	@PostMapping("/uploadDocDSP2/rs/{appName}")
+    public ResponseEntity<List<String>> uploadToDsp2Rs(@PathVariable String appName,
+    @RequestBody SessionDto dto) {
+        System.out.println("Received in Controller: ");
+        List<String> uuidString = publishService.uploadToDsp2Rs(appName,dto);
+        return ResponseEntity.ok(uuidString);
+    }
 	@GetMapping("/uploadMemberDSP2")
     public ResponseEntity<List<ResponseMember>> uploadMembersToDsp2() {
         System.out.println("Received in Controller: ");

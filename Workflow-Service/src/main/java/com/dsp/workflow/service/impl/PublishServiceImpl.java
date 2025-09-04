@@ -56,6 +56,7 @@ import com.dsp.workflow.repository.ETransmissionRepository;
 import com.dsp.workflow.repository.MemberTempUploadRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
+import com.dsp.workflow.repository.PublishTempDocsRsRepository;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.util.ConstantsUtility;
 import com.dsp.workflow.util.ETransmissionDataUpload;
@@ -71,6 +72,8 @@ import jakarta.servlet.http.HttpServletRequest;
 public class PublishServiceImpl implements PublishService {
     @Autowired
     private PublishRepository repository;
+    @Autowired
+    private PublishTempDocsRsRepository rsDocRepo;
     @Autowired
     private RestTemplate restTemplate;
     @Autowired
@@ -98,7 +101,6 @@ public class PublishServiceImpl implements PublishService {
     private ApplicationInstanceRepository applicationInstanceRepository;
     @Autowired
     private ApplicationRepository appRepository;
-    private final static String OKM_ROOT = "/okm:root";
 
     @Override
     public PublishHistoryDTO save(PublishHistoryDTO dto) {
@@ -424,6 +426,14 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(utils.getHouseAbbr())) {
+            return uploadToDsp2Ls(applicationName, dto);
+        } else {
+            return uploadToDsp2Ls(applicationName, dto);
+        }
+    }
+
+    public List<String> uploadToDsp2Ls(String applicationName, SessionDto dto) {
         Specification<PublishDocumentTemp> spec = Specification.where(hasAppName(applicationName));
 
         spec = spec.and(hasPublishUuid());
@@ -491,7 +501,7 @@ public class PublishServiceImpl implements PublishService {
                 }
 
                 // System.out.println("data " + fileData);
-                String uuid = uploadAndReturnUuid(response, fileData);
+                String uuid = uploadAndReturnUuid(response, null, fileData);
                 // }
                 if (uuid.isEmpty()) {
                     updateNonUuid(response);
@@ -506,6 +516,158 @@ public class PublishServiceImpl implements PublishService {
             logger.error("Error downloading or processing file", e);
         }
         return uploadedUuids;
+    }
+
+    public List<String> uploadToDsp2RS(String applicationName, SessionDto dto) {
+        Specification<PublishDocumentTempRS> spec = Specification.where(hasAppNameRs(applicationName));
+
+        spec = spec.and(hasPublishUuidRs());
+
+        if (StringUtils.isNotBlank(dto.getLocale())) {
+            spec = spec.and(hasLocaleTempRs(dto.getLocale()));
+        }
+        List<PublishDocumentTempRS> urlList = rsDocRepo.findAll(spec);
+        List<String> uploadedUuids = new ArrayList<>();
+        Long houseId = utils.getHouseIdFromAuthentication();
+        System.out.println("urlList " + urlList.size());
+        if (urlList.isEmpty()) {
+            return uploadedUuids;
+        }
+        System.out.println("Url List " + urlList);
+        int i = 0;
+        try {
+            for (PublishDocumentTempRS response : urlList) {
+                logger.info("Processing document: {}", response.getCompleteUrl());
+                byte[] fileData = null;
+                try {
+                    fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
+                    // System.out.println("fileData " + fileData);
+                } catch (Exception e) {
+                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+                    updateNonUuidRs(response);
+                    logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
+                    continue; // Skip this iteration if download fails
+                }
+                logger.info("Processing document: {}", response.getCompleteUrl());
+                if (fileData == null || fileData.length == 0) {
+                    updateNonUuidRs(response);
+
+                    System.out.println("iteration inside filedata null " + i++);
+                    logger.warn("File data is null for URL: {}", response.getCompleteUrl());
+                    logger.warn("File data is null for URL: {}", response.getCompleteUrl());
+                    continue;
+                }
+
+                // System.out.println("data " + fileData);
+                String uuid = uploadAndReturnUuid(null, response, fileData);
+                // }
+                if (uuid.isEmpty()) {
+                    updateNonUuidRs(response);
+
+                    logger.warn("Upload failed or UUID is empty for document: {}", response.getId());
+                    continue; // Skip this iteration and move to the next document
+                }
+                uploadedUuids.add(uuid);
+            }
+            return uploadedUuids;
+        } catch (Exception e) {
+            logger.error("Error downloading or processing file", e);
+        }
+        return uploadedUuids;
+    }
+
+    @Override
+
+    public List<String> uploadToDsp2Rs(String applicationName, SessionDto dto) {
+
+        // Specification<PublishDocumentTemp> spec =
+        // Specification.where(hasAppName(applicationName));
+
+        // spec = spec.and(hasPublishUuid());
+        // if (StringUtils.isNotBlank(dto.getLsNo())) {
+        // spec = spec.and(hasLsNo(dto.getLsNo()));
+        // }
+        // if (StringUtils.isNotBlank(dto.getSesNo())) {
+        // spec = spec.and(hasSessNo(dto.getSesNo()));
+        // }
+        // if (StringUtils.isNotBlank(dto.getLocale())) {
+        // spec = spec.and(hasLocaleTemp(dto.getLocale()));
+        // }
+        // List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
+        List<String> uploadedUuids = new ArrayList<>();
+        // Long houseId = utils.getHouseIdFromAuthentication();
+        // System.out.println("urlList " + urlList.size());
+        // if (urlList.isEmpty()) {
+        // return uploadedUuids;
+        // }
+        // System.out.println("Url List " + urlList);
+        // int i = 0;
+        // try {
+        // for (PublishDocumentTemp response : urlList) {
+
+        // boolean inRange = false;
+        // if (response.getForDate() == null) {
+        // inRange = dto.getFromDate() == null && dto.getToDate() == null;
+        // } else if (response.getForDate() != null) {
+        // try {
+        // inRange = betweenDates(dto.getFromDate(), dto.getToDate(),
+        // LocalDate.parse(response.getForDate()));
+
+        // } catch (Exception e) {
+        // inRange = isBetween(dto.getFromDate(), dto.getToDate(),
+        // response.getForDate());
+        // }
+        // } else {
+        // inRange = false;
+        // }
+        // if (!inRange) {
+        // continue;
+        // }
+        // // if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate()))
+        // {
+        // // continue;
+        // // }
+
+        // logger.info("Processing document: {}", response.getCompleteUrl());
+        // byte[] fileData = null;
+        // try {
+        // fileData = restTemplate.getForObject(response.getCompleteUrl(),
+        // byte[].class);
+        // // System.out.println("fileData " + fileData);
+        // } catch (Exception e) {
+        // System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+        // updateNonUuid(response);
+        // logger.warn("Incorrect URL or failed to fetch: {}",
+        // response.getCompleteUrl(), e);
+        // continue; // Skip this iteration if download fails
+        // }
+        // logger.info("Processing document: {}", response.getCompleteUrl());
+        // if (fileData == null || fileData.length == 0) {
+        // updateNonUuid(response);
+
+        // System.out.println("iteration inside filedata null " + i++);
+        // logger.warn("File data is null for URL: {}", response.getCompleteUrl());
+        // logger.warn("File data is null for URL: {}", response.getCompleteUrl());
+        // continue;
+        // }
+
+        // // System.out.println("data " + fileData);
+        // String uuid = uploadAndReturnUuid(response,null, fileData);
+        // // }
+        // if (uuid.isEmpty()) {
+        // updateNonUuid(response);
+
+        // logger.warn("Upload failed or UUID is empty for document: {}",
+        // response.getId());
+        // continue; // Skip this iteration and move to the next document
+        // }
+        // uploadedUuids.add(uuid);
+        // }
+        return uploadedUuids;
+        // } catch (Exception e) {
+        // logger.error("Error downloading or processing file", e);
+        // }
+        // return uploadedUuids;
     }
 
     // uploadTransmissionDocs
@@ -533,18 +695,64 @@ public class PublishServiceImpl implements PublishService {
                 String existF_HIUuid = response.getEngErrataUuid();
 
                 try {
-                    errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
-                            ConstantsUtility.E_EN);
-                    errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
-                            ConstantsUtility.E_HI);
-                    fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
-                            ConstantsUtility.F_EN);
-                    fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
-                            ConstantsUtility.F_HI);
+                    if (response.getEngErrataUrl() != null) {
+                        errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+                                ConstantsUtility.E_EN);
+                        eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
+                                response.getEngErrataUrl(), uploadedUuids);
+                    }
+
                 } catch (Exception e) {
-                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+                    System.out.println(
+                            "ERROR While Fetching data from " + ConstantsUtility.E_EN + " URl " + e.getMessage());
                     eTransmissionUtils.updateNonUuidInTransmission(response);
-                    continue; // Skip this iteration if download fails
+                    // continue; // Skip this iteration if download fails
+                }
+                try {
+                    if (response.getHindiErrataUrl() != null) {
+                        errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+                                ConstantsUtility.E_HI);
+                        // Handle Errata Hindi
+                        eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
+                                response.getHindiErrataUrl(), uploadedUuids);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println(
+                            "ERROR While Fetching data from " + ConstantsUtility.E_HI + " URl " + e.getMessage());
+                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                    // continue; // Skip this iteration if download fails
+                }
+
+                try {
+                    if (response.getList1EngUrl() != null) {
+                        fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+                                ConstantsUtility.F_EN);
+                        // Handle File English
+                        eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
+                                response.getList1EngUrl(), uploadedUuids);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println(
+                            "ERROR While Fetching data from " + ConstantsUtility.F_EN + " URl " + e.getMessage());
+                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                    // continue; // Skip this iteration if download fails
+                }
+
+                try {
+                    if (response.getList1HindiUrl() != null) {
+                        fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+                                ConstantsUtility.F_HI);
+                        // Handle File Hindi
+                        eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
+                                response.getList1HindiUrl(), uploadedUuids);
+                    }
+                } catch (Exception e) {
+                    System.out.println(
+                            "ERROR While Fetching data from " + ConstantsUtility.F_HI + " URl " + e.getMessage());
+                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                    // continue; // Skip this iteration if download fails
                 }
 
                 if ((fileEngData == null || fileEngData.length == 0)
@@ -552,46 +760,6 @@ public class PublishServiceImpl implements PublishService {
                     eTransmissionUtils.updateNonUuidInTransmission(response);
                     continue;
                 }
-                // Handle Errata English
-                eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
-                        response.getEngErrataUrl(), uploadedUuids);
-
-                // Handle Errata Hindi
-                eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
-                        response.getHindiErrataUrl(), uploadedUuids);
-
-                // Handle File English
-                eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
-                        response.getList1EngUrl(), uploadedUuids);
-
-                // Handle File Hindi
-                eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
-                        response.getList1HindiUrl(), uploadedUuids);
-                // System.out.println("data " + fileData);
-                // if (StringUtils.isBlank(existE_ENUuid) && errataEngData != null &&
-                // errataEngData.length > 0) {
-                // uploadedUuids.add(eTransmissionUtils.uploadAndReturnUuidResp(response,
-                // errataEngData, ConstantsUtility.E_EN, response.getEngErrataUrl()));
-                // }
-                // if (StringUtils.isBlank(existE_HIUuid) && errataHiData != null &&
-                // errataHiData.length > 0) {
-                // uploadedUuids.add(eTransmissionUtils.uploadAndReturnUuidResp(response,
-                // errataHiData, ConstantsUtility.E_HI, response.getHindiErrataUrl()));
-                // }
-                // if (StringUtils.isBlank(existF_ENUuid)) {
-                // ResponseDocsUuids respFileEn = eTransmissionUtils
-                // .uploadAndReturnUuidResp(response, fileEngData, ConstantsUtility.F_EN,
-                // response.getList1Eng());
-                // uploadedUuids.add(respFileEn);
-                // } else {
-
-                // }
-                // if (StringUtils.isBlank(existF_HIUuid)) {
-                // ResponseDocsUuids respFileHi = eTransmissionUtils
-                // .uploadAndReturnUuidResp(response, fileHindiData, ConstantsUtility.F_HI,
-                // response.getList1HindiUrl());
-                // uploadedUuids.add(respFileHi);
-                // }
                 System.out.println("uploadedUuids");
                 System.out.println(uploadedUuids);
             }
@@ -623,22 +791,22 @@ public class PublishServiceImpl implements PublishService {
                 UUID existingPhUuid = response.getPhotoUuid();
                 UUID existingSgUuid = response.getSignatureUuid();
                 try {
-                    if (existingPhUuid==null) {
+                    if (existingPhUuid == null) {
                         filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
                                 ConstantsUtility.PHOTO);
                         System.out.println("fileData " + filePhotoData);
                     }
-                    if (existingSgUuid==null) {
+                    if (existingSgUuid == null) {
                         fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
                                 ConstantsUtility.SIGN);
                         System.out.println("fileData " + fileSignatureData);
                     }
                 } catch (Exception e) {
                     System.out.println("ERROR While Fetching data from URl " + e.getMessage());
-                    if (existingPhUuid==null) {
+                    if (existingPhUuid == null) {
                         memberUtils.updateNonUuidInMemPhoto(response);
                     }
-                    if (existingSgUuid==null) {
+                    if (existingSgUuid == null) {
                         memberUtils.updateNonUuidInMemSignature(response);
                     }
                     continue;
@@ -647,40 +815,7 @@ public class PublishServiceImpl implements PublishService {
                 memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
                 // Handle Signature
                 memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
-                // if (StringUtils.isBlank(existingPhUuid)) {
-                // if ((filePhotoData == null || filePhotoData.length == 0)) {
-                // memberUtils.updateNonUuidInMemPhoto(response);
-                // }
-                // ResponseMember uuidPhoto = memberUtils.uploadAndReturnUuidInMem(response,
-                // filePhotoData,
-                // ConstantsUtility.PHOTO);
-                // if (uuidPhoto == null) {
-                // memberUtils.updateNonUuidInMemPhoto(response);
-                // }
-                // else
-                // uploadedUuids.add(uuidPhoto);
-                // }
-                // else
-                // {
-                // uploadedUuids.add(memberUtils.mapMemberDataToRes(response));
-                // }
-                // if (StringUtils.isBlank(existingSgUuid)) {
-                // if (fileSignatureData == null || fileSignatureData.length == 0) {
-                // memberUtils.updateNonUuidInMemSignature(response);
-                // }
-                // ResponseMember uuidSign = memberUtils.uploadAndReturnUuidInMem(response,
-                // fileSignatureData,
-                // ConstantsUtility.SIGN);
-                // if (uuidSign == null) {
-                // memberUtils.updateNonUuidInMemSignature(response);
-                // }
-                // else{
-                // uploadedUuids.add(uuidSign);
-                // }
-                // }
-                // else{
-                // uploadedUuids.add(memberUtils.mapMemberDataToRes(response));
-                // }
+
                 System.out.println("uploadedUuids");
                 System.out.println(uploadedUuids);
             }
@@ -730,6 +865,10 @@ public class PublishServiceImpl implements PublishService {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
     }
 
+    private Specification<PublishDocumentTempRS> hasPublishUuidRs() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
+    }
+
     private Specification<ETransmissionUploadTempEntity> hasHouseId(Long house) {
         return (root, query, criteriaBuilder) -> {
             if (house != null) {
@@ -748,63 +887,71 @@ public class PublishServiceImpl implements PublishService {
         };
     }
 
-    public String uploadAndReturnUuid(PublishDocumentTemp response, byte[] fileData) {
+    public String uploadAndReturnUuid(PublishDocumentTemp response, PublishDocumentTempRS responseRs, byte[] fileData) {
         try {
+            String houseAbbr = utils.getHouseAbbr();
+
             System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
-                updateNonUuid(response);
+                if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
+                    updateNonUuid(response);
+                else
+                    updateNonUuidRs(responseRs);
+                return "file data null";
             }
             // // Set Authorization Token
             String token = getTokenFromRequest();
             if (token == null || token.isEmpty()) {
                 logger.error("Authorization token is missing. Cannot upload file.");
-                return "";
+                return "token null";
             }
             String appAbbr = repository.getAbbrByApplicationId(response.getApplicationId());
             System.out.println("appAbbr " + appAbbr);
             List<String> folders = new ArrayList();
-            String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
             if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
                 folders.add(getYear(response.getForDate()));
                 folders.add(getMonth(response.getForDate()));
             } else {
                 if (response.getSesNo() != null) {
-                    if ("LS".equals(houseAbbr)) {
+                    if (ConstantsUtility.LOK_SABHA.equals(houseAbbr)) {
 
                         folders.add(response.getLsNo());
                         if (!isRoman(response.getSesNo())) {
                             response.setSesNo(toRoman(Integer.parseInt(response.getSesNo())));
                         }
-                    }
-                    if (StringUtils.isNotBlank(response.getSesNo())) {
                         folders.add(response.getSesNo());
+                    } else if (StringUtils.isNotBlank(responseRs.getRsesNo())) {
+                        folders.add(responseRs.getRsesNo());
                     }
                 }
             }
 
             folders.add(appAbbr);
             System.out.println("folders " + folders);
-            String rootPath = OKM_ROOT;
-
+            String rootPath = ConstantsUtility.OKM_ROOT;
             String folderPath = createDmsFolderStructure(rootPath, folders);
             System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
             System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
-            String originalFileName = response.getUrl();
-            int lastDotIndex = originalFileName.lastIndexOf(".");
-            String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
-                    : originalFileName.substring(0, lastDotIndex);
+            // String originalFileName = response.getUrl();
+            // int lastDotIndex = originalFileName.lastIndexOf(".");
+            // String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
+            // : originalFileName.substring(0, lastDotIndex);
+            String fileNameWithoutExt = "";
+            if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
+                response.getUrl();
+            else
+                responseRs.getUrl();
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
                 fileNameWithoutExt = fileNameWithoutExt
                         .replace(" ", "-")
-                        .replace("/", "-")
-                        .replace(".", "-");
+                        .replace("/", "-");
             }
             System.out.println("file Name after slash and space update" + fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + ".pdf";
@@ -828,6 +975,7 @@ public class PublishServiceImpl implements PublishService {
             body.add("folderPath", folderPath);
             body.add("documentName", updatedFileName);
             body.add("masterId", 231);
+
             body.add("applicationNo", response.getApplicationId());
             body.add("referenceId", 1);
             body.add("referenceType", "ApplicationInstance");
@@ -854,7 +1002,11 @@ public class PublishServiceImpl implements PublishService {
                         String uuidString = generatedUuid.toString().trim();
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            updatePublishTempTable(response, "" + uuid);
+                            if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
+                                updatePublishTempTable(response, "" + uuid);
+                            else
+                                updatePublishTempTableRs(responseRs, "" + uuid);
+
                             logger.info("entity after saving");
                             return uuidString;
                         } catch (IllegalArgumentException ex) {
@@ -905,6 +1057,18 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
+    private void updatePublishTempTableRs(PublishDocumentTempRS response, String uuid) {
+        Optional<PublishDocumentTempRS> entity = rsDocRepo
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            PublishDocumentTempRS entitys = entity.get();
+            entitys.setPublishUuid(stringToUuid(uuid));
+            entitys.setIsUuidUpdated(true);
+            entitys = rsDocRepo.save(entitys);
+            System.out.println("entity " + entity);
+        }
+    }
+
     private void updateNonUuid(PublishDocumentTemp response) {
         Optional<PublishDocumentTemp> entity = tempRepo
                 .findById(response.getId());
@@ -912,6 +1076,17 @@ public class PublishServiceImpl implements PublishService {
             PublishDocumentTemp entitys = entity.get();
             entitys.setIsUpdatedUuid(false);
             entitys = tempRepo.save(entitys);
+            System.out.println("entity " + entity);
+        }
+    }
+
+    private void updateNonUuidRs(PublishDocumentTempRS response) {
+        Optional<PublishDocumentTempRS> entity = rsDocRepo
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            PublishDocumentTempRS entitys = entity.get();
+            entitys.setIsUuidUpdated(false);
+            entitys = rsDocRepo.save(entitys);
             System.out.println("entity " + entity);
         }
     }
@@ -925,129 +1100,133 @@ public class PublishServiceImpl implements PublishService {
         return folderCreationUtils.createDmsFolderStructure(root, folders);
     }
 
-    public String uploadAndReturnUuidRs(PublishDocumentTemp response, byte[] fileData) {
-        try {
-            String folderPath = "/okm:root/";
-            String folderCheckUrl = openKmUrl + "/folder/getPath?path=" + folderPath;
-            // + URLEncoder.encode(folderPath, StandardCharsets.UTF_8);
-            System.out.println("folder   " + folderPath);
-            System.out.println("folder url " + folderCheckUrl);
-            System.out.println("response   " + response);
-            System.out.println("fileData  " + fileData);
-            String uploadUrl = openKmUrl + "/document/upload";
-            HttpHeaders headers = new HttpHeaders();
-            System.out.println("uploadUrl  " + uploadUrl);
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            // Set Authorization Token
-            String token = getTokenFromRequest();
-            if (token == null || token.isEmpty()) {
-                logger.error("Authorization token is missing. Cannot upload file.");
-                return "";
-            }
-            headers.set("Authorization", "Bearer " + token);
-            // Extract filename and ensure .pdf extension
+    public String uploadAndReturnUuidRs(PublishDocumentTempRS response, byte[] fileData) {
+        // try {
 
-            // adding specific folders
-            try {
-                HttpEntity<String> checkEntity = new HttpEntity<>(headers);
-                restTemplate.exchange(folderCheckUrl, HttpMethod.GET, checkEntity, String.class);
-                logger.info("Folder exists: {}", folderPath);
-            } catch (HttpClientErrorException.NotFound ex) {
-                // Folder does not exist - create it
-                logger.info("Folder not found, creating: {}", folderPath);
-                String createFolderUrl = openKmUrl + "/folder/createSimple";
-                MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
-                createFolderBody.add("parentPath", "/okm:root");
-                createFolderBody.add("name", "PC");
-                HttpEntity<MultiValueMap<String, String>> createFolderEntity = new HttpEntity<>(createFolderBody,
-                        headers);
-                ResponseEntity<String> createFolderResponse = restTemplate.postForEntity(createFolderUrl,
-                        createFolderEntity, String.class);
-                if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
-                    logger.info("Folder created successfully: {}", folderPath);
-                } else {
-                    logger.error("Failed to create folder: {}", createFolderResponse.getStatusCode());
-                    return "";
-                }
-            } catch (Exception e) {
-                logger.error("Error while checking or creating folder: ", e);
-                return "";
-            }
-            //
-            //
-            String originalFileName = response.getUrl();
-            int lastDotIndex = originalFileName.lastIndexOf(".");
-            String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
-                    : originalFileName.substring(0, lastDotIndex);
-            String updatedFileName = fileNameWithoutExt + ".pdf";
-            // Create a temporary file
-            File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                fos.write(fileData);
-            }
-            // Create file resource
-            ByteArrayResource resource = new ByteArrayResource(fileData) {
-                @Override
-                public String getFilename() {
-                    return updatedFileName;
-                }
-            };
-            // Prepare request body
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", resource);
-            body.add("folderPath", folderPath);
-            body.add("documentName", updatedFileName);
-            body.add("masterId", 231);
-            body.add("applicationNo", response.getApplicationId());
-            body.add("referenceId", 1);
-            body.add("referenceType", "ApplicationInstance");
+        // System.out.println("response " + response);
+        // System.out.println("fileData " + fileData);
+        // String uploadUrl = openKmUrl + "/document/upload";
+        // HttpHeaders headers = new HttpHeaders();
+        // System.out.println("uploadUrl " + uploadUrl);
+        // headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        // // Set Authorization Token
+        // String token = getTokenFromRequest();
+        // if (token == null || token.isEmpty()) {
+        // logger.error("Authorization token is missing. Cannot upload file.");
+        // return "";
+        // }
+        // headers.set("Authorization", "Bearer " + token);
+        // // Extract filename and ensure .pdf extension
 
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
-                    requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
-                    });
+        // // adding specific folders
+        // try {
+        // HttpEntity<String> checkEntity = new HttpEntity<>(headers);
+        // restTemplate.exchange(folderCheckUrl, HttpMethod.GET, checkEntity,
+        // String.class);
+        // logger.info("Folder exists: {}", folderPath);
+        // } catch (HttpClientErrorException.NotFound ex) {
+        // // Folder does not exist - create it
+        // logger.info("Folder not found, creating: {}", folderPath);
+        // String createFolderUrl = openKmUrl + "/folder/createSimple";
+        // MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
+        // createFolderBody.add("parentPath", "/okm:root");
+        // createFolderBody.add("name", "PC");
+        // HttpEntity<MultiValueMap<String, String>> createFolderEntity = new
+        // HttpEntity<>(createFolderBody,
+        // headers);
+        // ResponseEntity<String> createFolderResponse =
+        // restTemplate.postForEntity(createFolderUrl,
+        // createFolderEntity, String.class);
+        // if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
+        // logger.info("Folder created successfully: {}", folderPath);
+        // } else {
+        // logger.error("Failed to create folder: {}",
+        // createFolderResponse.getStatusCode());
+        // return "";
+        // }
+        // } catch (Exception e) {
+        // logger.error("Error while checking or creating folder: ", e);
+        // return "";
+        // }
+        // //
+        // //
+        // String originalFileName = response.getUrl();
+        // int lastDotIndex = originalFileName.lastIndexOf(".");
+        // String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
+        // : originalFileName.substring(0, lastDotIndex);
+        // String updatedFileName = fileNameWithoutExt + ".pdf";
+        // // Create a temporary file
+        // File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
+        // try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+        // fos.write(fileData);
+        // }
+        // // Create file resource
+        // ByteArrayResource resource = new ByteArrayResource(fileData) {
+        // @Override
+        // public String getFilename() {
+        // return updatedFileName;
+        // }
+        // };
+        // // Prepare request body
+        // MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        // body.add("file", resource);
+        // body.add("folderPath", folderPath);
+        // body.add("documentName", updatedFileName);
+        // body.add("masterId", 231);
+        // body.add("applicationNo", response.getApplicationId());
+        // body.add("referenceId", 1);
+        // body.add("referenceType", "ApplicationInstance");
 
-            logger.info("Response from OpenKM: {}", responseEntity);
+        // HttpEntity<MultiValueMap<String, Object>> requestEntity = new
+        // HttpEntity<>(body, headers);
+        // ResponseEntity<Map<String, Object>> responseEntity =
+        // restTemplate.exchange(uploadUrl, HttpMethod.POST,
+        // requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
+        // });
 
-            // Check response status
-            if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-                Map<String, Object> responseBody = responseEntity.getBody();
-                logger.info("Response Body: {}", responseBody);
-                // Extract "data"
-                Object dataObject = responseBody.get("data");
-                if (dataObject instanceof Map) {
-                    Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-                    // Extract "documentUuid"
-                    Object generatedUuid = dataMap.get("documentUuid");
-                    logger.info("Extracted documentUuid: {}", generatedUuid);
-                    if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
-                        String uuidString = generatedUuid.toString().trim();
-                        try {
-                            UUID uuid = UUID.fromString(uuidString);
-                            Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
-                            if (entity.isPresent()) {
-                                PublishDocumentTemp temp = tempRepo.save(entity.get());
-                            }
-                            logger.info("entity after saving");
-                            // repository.saveUuidById(uuid, response.getId());
-                            return uuidString;
-                        } catch (IllegalArgumentException ex) {
-                            logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
-                        }
-                    } else {
-                        logger.warn("Received empty or null UUID from OpenKM: {}", dataMap);
-                    }
-                } else {
-                    logger.warn("Response does not contain 'data' field: {}", responseBody);
-                }
-            } else {
-                logger.error("Failed to upload document. HTTP Status: {}", responseEntity.getStatusCode());
-            }
-        } catch (IOException e) {
-            logger.error("Error writing temp file: ", e);
-        } catch (Exception e) {
-            logger.error("Error uploading file: ", e);
-        }
+        // logger.info("Response from OpenKM: {}", responseEntity);
+
+        // // Check response status
+        // if (responseEntity.getStatusCode().is2xxSuccessful() &&
+        // responseEntity.getBody() != null) {
+        // Map<String, Object> responseBody = responseEntity.getBody();
+        // logger.info("Response Body: {}", responseBody);
+        // // Extract "data"
+        // Object dataObject = responseBody.get("data");
+        // if (dataObject instanceof Map) {
+        // Map<String, Object> dataMap = (Map<String, Object>) dataObject;
+        // // Extract "documentUuid"
+        // Object generatedUuid = dataMap.get("documentUuid");
+        // logger.info("Extracted documentUuid: {}", generatedUuid);
+        // if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
+        // String uuidString = generatedUuid.toString().trim();
+        // try {
+        // UUID uuid = UUID.fromString(uuidString);
+        // Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
+        // if (entity.isPresent()) {
+        // PublishDocumentTemp temp = tempRepo.save(entity.get());
+        // }
+        // logger.info("entity after saving");
+        // // repository.saveUuidById(uuid, response.getId());
+        // return uuidString;
+        // } catch (IllegalArgumentException ex) {
+        // logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
+        // }
+        // } else {
+        // logger.warn("Received empty or null UUID from OpenKM: {}", dataMap);
+        // }
+        // } else {
+        // logger.warn("Response does not contain 'data' field: {}", responseBody);
+        // }
+        // } else {
+        // logger.error("Failed to upload document. HTTP Status: {}",
+        // responseEntity.getStatusCode());
+        // }
+        // } catch (IOException e) {
+        // logger.error("Error writing temp file: ", e);
+        // } catch (Exception e) {
+        // logger.error("Error uploading file: ", e);
+        // }
         return "";
     }
 
@@ -1071,6 +1250,15 @@ public class PublishServiceImpl implements PublishService {
     }
 
     public static Specification<PublishDocumentTemp> hasLocaleTemp(String locale) {
+        return (root, query, criteriaBuilder) -> {
+            if (locale != null) {
+                return criteriaBuilder.equal(root.get("locale"), locale);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
+    public static Specification<PublishDocumentTempRS> hasLocaleTempRs(String locale) {
         return (root, query, criteriaBuilder) -> {
             if (locale != null) {
                 return criteriaBuilder.equal(root.get("locale"), locale);

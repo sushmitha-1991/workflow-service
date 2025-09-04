@@ -10,4 +10,9 @@ public class ConstantsUtility {
     public static final String F_EN="File_eng";
     public static final String E_EN="Errata_eng";
     public static final String E_HI="Errata_hin";
+    public final static String LOK_SABHA = "LS";
+    public final static String RAJYA_SABHA = "RS";
+    public final static String OKM_ROOT = "/okm:root";
+
+
 }
