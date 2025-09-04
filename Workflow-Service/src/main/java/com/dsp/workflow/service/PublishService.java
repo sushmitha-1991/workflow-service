@@ -1,6 +1,7 @@
 package com.dsp.workflow.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -48,9 +49,10 @@ public interface PublishService {
 
         String createDmsFolderStructure(String root, List<String> folders);
 
-        List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
-                        String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDate publishDateFrom,
-                        LocalDate publishDateTo);
+	List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
+			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
+			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo);
+;
 
         List<String> uploadToDsp2Rs(String applicationName, SessionDto dto);
 
