@@ -3,6 +3,7 @@ package com.dsp.workflow.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +108,7 @@ public class ETransmissionDataUpload {
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
             folders.add("E_Papers");
+            folders.add(getYear(response.getDateOfCirculation()));
             folders.add(fileType);
             System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
@@ -201,6 +203,15 @@ public class ETransmissionDataUpload {
             logger.error("Error uploading file: ", e.getMessage());
         }
         return null;
+    }
+
+    private String getYear(LocalDate dateOfCirculation) {
+        // TODO Auto-generated method stub
+        if(dateOfCirculation!=null)
+        {
+            return ""+dateOfCirculation.getYear();
+        }
+        return ""+LocalDate.now().getYear();
     }
 
     public void processErrata(ETransmissionUploadTempEntity response, String existingUuid,

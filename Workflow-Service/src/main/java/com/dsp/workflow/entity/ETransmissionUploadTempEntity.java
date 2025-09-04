@@ -73,4 +73,7 @@ public class ETransmissionUploadTempEntity {
 
     @Column(name = "is_updated_uuid")
     private Boolean isUpdatedAllUuid;
+    
+    @Column(name = "dateofcirculation")
+    private LocalDate dateOfCirculation;
 }

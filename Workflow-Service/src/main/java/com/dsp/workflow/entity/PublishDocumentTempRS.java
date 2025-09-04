@@ -29,4 +29,7 @@ public class PublishDocumentTempRS {
     private Long applicationId;
     private String rsesNo;
     private String applicationName;
+    private Boolean isUuidUpdated;
+    private String locale;
+    private String forDate;
 } 
