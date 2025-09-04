@@ -1451,7 +1451,12 @@ public class PublishServiceImpl implements PublishService {
 				""");
 
         Map<String, Object> params = new HashMap<>();
-
+        
+        String house = utils.getHouseAbbr();
+        if(house != null && !house.isBlank()) {
+        	sql.append(" AND wf.house = :house");
+        	params.put("house", house);
+        }
 		if (applicationId != null) {
 			sql.append(" AND wf.application_id = :applicationId");
 			params.put("applicationId", applicationId);
