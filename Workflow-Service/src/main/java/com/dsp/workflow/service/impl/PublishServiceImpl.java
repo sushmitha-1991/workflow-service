@@ -686,6 +686,9 @@ public class PublishServiceImpl implements PublishService {
         int i = 0;
         try {
             for (ETransmissionUploadTempEntity response : urlList) {
+                if (existsUrlAndUuid(response)) {
+                    continue;
+                }
                 try {
                     uploadedUuids.addAll(fetchAndUploadDocument(response));
                 } catch (Exception e) {
@@ -782,6 +785,20 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
+    private Boolean existsUrlAndUuid(ETransmissionUploadTempEntity response) {
+        Boolean isTrueOrFalse = true;
+        if (response.getList1EngUrl() != null && response.getList1EngUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
+            isTrueOrFalse = false;
+    System.out.println("isTrueOrFalse "+isTrueOrFalse);
+        return isTrueOrFalse;
+    }
+
     @Override
     public List<ResponseMember> uploadMemberDSP2() {
         Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
@@ -801,32 +818,32 @@ public class PublishServiceImpl implements PublishService {
                 byte[] fileSignatureData = null;
                 UUID existingPhUuid = response.getPhotoUuid();
                 UUID existingSgUuid = response.getSignatureUuid();
-                try {
-                    if (existingPhUuid == null) {
-                        filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
-                                ConstantsUtility.PHOTO);
-                        System.out.println("fileData " + filePhotoData);
-                    }
-                    if (existingSgUuid == null) {
-                        fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
-                                ConstantsUtility.SIGN);
-                        System.out.println("fileData " + fileSignatureData);
-                    }
-                } catch (Exception e) {
-                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
-                    if (existingPhUuid == null) {
-                        memberUtils.updateNonUuidInMemPhoto(response);
-                    }
-                    if (existingSgUuid == null) {
-                        memberUtils.updateNonUuidInMemSignature(response);
-                    }
+                if (existingPhUuid != null && existingSgUuid != null) {
                     continue;
+                } else {
+                    if (existingPhUuid == null) {
+                        try {
+                            filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
+                                    ConstantsUtility.PHOTO);
+                            System.out.println("fileData " + filePhotoData);
+                            memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemPhoto(response);
+                        }
+                    }
+                    if (existingPhUuid == null) {
+                        try {
+                            fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
+                                    ConstantsUtility.SIGN);
+                            System.out.println("fileData " + fileSignatureData);
+                            memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemSignature(response);
+                        }
+                    }
                 }
-                // Handle Photo
-                memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
-                // Handle Signature
-                memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
-
                 System.out.println("uploadedUuids");
                 System.out.println(uploadedUuids);
             }
@@ -835,7 +852,6 @@ public class PublishServiceImpl implements PublishService {
             logger.error("Error downloading or processing file", e);
         }
         return uploadedUuids;
-
     }
 
     private boolean betweenDates(LocalDate fromDate, LocalDate toDate, LocalDate targetDate) {
