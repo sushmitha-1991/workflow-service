@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -685,81 +686,15 @@ public class PublishServiceImpl implements PublishService {
         int i = 0;
         try {
             for (ETransmissionUploadTempEntity response : urlList) {
-                byte[] errataEngData = null;
-                byte[] errataHiData = null;
-                byte[] fileEngData = null;
-                byte[] fileHindiData = null;
-                String existE_ENUuid = response.getEngErrataUuid();
-                String existE_HIUuid = response.getEngErrataUuid();
-                String existF_ENUuid = response.getEngErrataUuid();
-                String existF_HIUuid = response.getEngErrataUuid();
-
-                try {
-                    if (response.getEngErrataUrl() != null) {
-                        errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
-                                ConstantsUtility.E_EN);
-                        eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
-                                response.getEngErrataUrl(), uploadedUuids);
-                    }
-
-                } catch (Exception e) {
-                    System.out.println(
-                            "ERROR While Fetching data from " + ConstantsUtility.E_EN + " URl " + e.getMessage());
-                    eTransmissionUtils.updateNonUuidInTransmission(response);
-                    // continue; // Skip this iteration if download fails
-                }
-                try {
-                    if (response.getHindiErrataUrl() != null) {
-                        errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
-                                ConstantsUtility.E_HI);
-                        // Handle Errata Hindi
-                        eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
-                                response.getHindiErrataUrl(), uploadedUuids);
-                    }
-
-                } catch (Exception e) {
-                    System.out.println(
-                            "ERROR While Fetching data from " + ConstantsUtility.E_HI + " URl " + e.getMessage());
-                    eTransmissionUtils.updateNonUuidInTransmission(response);
-                    // continue; // Skip this iteration if download fails
-                }
-
-                try {
-                    if (response.getList1EngUrl() != null) {
-                        fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
-                                ConstantsUtility.F_EN);
-                        // Handle File English
-                        eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
-                                response.getList1EngUrl(), uploadedUuids);
-                    }
-
-                } catch (Exception e) {
-                    System.out.println(
-                            "ERROR While Fetching data from " + ConstantsUtility.F_EN + " URl " + e.getMessage());
-                    eTransmissionUtils.updateNonUuidInTransmission(response);
-                    // continue; // Skip this iteration if download fails
-                }
-
-                try {
-                    if (response.getList1HindiUrl() != null) {
-                        fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
-                                ConstantsUtility.F_HI);
-                        // Handle File Hindi
-                        eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
-                                response.getList1HindiUrl(), uploadedUuids);
-                    }
-                } catch (Exception e) {
-                    System.out.println(
-                            "ERROR While Fetching data from " + ConstantsUtility.F_HI + " URl " + e.getMessage());
-                    eTransmissionUtils.updateNonUuidInTransmission(response);
-                    // continue; // Skip this iteration if download fails
-                }
-
-                if ((fileEngData == null || fileEngData.length == 0)
-                        && (fileHindiData == null || fileHindiData.length == 0)) {
-                    eTransmissionUtils.updateNonUuidInTransmission(response);
+                if (existsUrlAndUuid(response)) {
                     continue;
                 }
+                try {
+                    uploadedUuids.addAll(fetchAndUploadDocument(response));
+                } catch (Exception e) {
+                    System.out.println("Exception " + e.getMessage());
+                }
+
                 System.out.println("uploadedUuids");
                 System.out.println(uploadedUuids);
             }
@@ -769,6 +704,99 @@ public class PublishServiceImpl implements PublishService {
         }
         return uploadedUuids;
 
+    }
+
+    private Collection<? extends ResponseDocsUuids> fetchAndUploadDocument(ETransmissionUploadTempEntity response) {
+        // TODO Auto-generated method stub
+        List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
+        byte[] errataEngData = null;
+        byte[] errataHiData = null;
+        byte[] fileEngData = null;
+        byte[] fileHindiData = null;
+        String existE_ENUuid = response.getEngErrataUuid();
+        String existE_HIUuid = response.getEngErrataUuid();
+        String existF_ENUuid = response.getEngErrataUuid();
+        String existF_HIUuid = response.getEngErrataUuid();
+
+        try {
+            if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null) {
+                errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+                        ConstantsUtility.E_EN);
+                eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
+                        response.getEngErrataUrl(), uploadedUuids);
+            }
+
+        } catch (Exception e) {
+            System.out.println(
+                    "ERROR While Fetching data from " + ConstantsUtility.E_EN + " URl " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInTransmission(response);
+            // continue; // Skip this iteration if download fails
+        }
+        try {
+            if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null) {
+                errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+                        ConstantsUtility.E_HI);
+                // Handle Errata Hindi
+                eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
+                        response.getHindiErrataUrl(), uploadedUuids);
+            }
+
+        } catch (Exception e) {
+            System.out.println(
+                    "ERROR While Fetching data from " + ConstantsUtility.E_HI + " URl " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInTransmission(response);
+            // continue; // Skip this iteration if download fails
+        }
+        try {
+            if (response.getList1EngUrl() != null && response.getList1EngUuid() == null) {
+                fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+                        ConstantsUtility.F_EN);
+                // Handle File English
+                eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
+                        response.getList1EngUrl(), uploadedUuids);
+            }
+
+        } catch (Exception e) {
+            System.out.println(
+                    "ERROR While Fetching data from " + ConstantsUtility.F_EN + " URl " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInTransmission(response);
+            // continue; // Skip this iteration if download fails
+        }
+
+        try {
+            if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null) {
+                fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+                        ConstantsUtility.F_HI);
+                // Handle File Hindi
+                eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
+                        response.getList1HindiUrl(), uploadedUuids);
+            }
+        } catch (Exception e) {
+            System.out.println(
+                    "ERROR While Fetching data from " + ConstantsUtility.F_HI + " URl " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInTransmission(response);
+            // continue; // Skip this iteration if download fails
+        }
+
+        if ((fileEngData == null || fileEngData.length == 0)
+                && (fileHindiData == null || fileHindiData.length == 0)) {
+            eTransmissionUtils.updateNonUuidInTransmission(response);
+        }
+        return uploadedUuids;
+    }
+
+    private Boolean existsUrlAndUuid(ETransmissionUploadTempEntity response) {
+        Boolean isTrueOrFalse = true;
+        if (response.getList1EngUrl() != null && response.getList1EngUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
+            isTrueOrFalse = false;
+    System.out.println("isTrueOrFalse "+isTrueOrFalse);
+        return isTrueOrFalse;
     }
 
     @Override
@@ -790,32 +818,32 @@ public class PublishServiceImpl implements PublishService {
                 byte[] fileSignatureData = null;
                 UUID existingPhUuid = response.getPhotoUuid();
                 UUID existingSgUuid = response.getSignatureUuid();
-                try {
-                    if (existingPhUuid == null) {
-                        filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
-                                ConstantsUtility.PHOTO);
-                        System.out.println("fileData " + filePhotoData);
-                    }
-                    if (existingSgUuid == null) {
-                        fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
-                                ConstantsUtility.SIGN);
-                        System.out.println("fileData " + fileSignatureData);
-                    }
-                } catch (Exception e) {
-                    System.out.println("ERROR While Fetching data from URl " + e.getMessage());
-                    if (existingPhUuid == null) {
-                        memberUtils.updateNonUuidInMemPhoto(response);
-                    }
-                    if (existingSgUuid == null) {
-                        memberUtils.updateNonUuidInMemSignature(response);
-                    }
+                if (existingPhUuid != null && existingSgUuid != null) {
                     continue;
+                } else {
+                    if (existingPhUuid == null) {
+                        try {
+                            filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
+                                    ConstantsUtility.PHOTO);
+                            System.out.println("fileData " + filePhotoData);
+                            memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemPhoto(response);
+                        }
+                    }
+                    if (existingPhUuid == null) {
+                        try {
+                            fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
+                                    ConstantsUtility.SIGN);
+                            System.out.println("fileData " + fileSignatureData);
+                            memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemSignature(response);
+                        }
+                    }
                 }
-                // Handle Photo
-                memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
-                // Handle Signature
-                memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
-
                 System.out.println("uploadedUuids");
                 System.out.println(uploadedUuids);
             }
@@ -824,7 +852,6 @@ public class PublishServiceImpl implements PublishService {
             logger.error("Error downloading or processing file", e);
         }
         return uploadedUuids;
-
     }
 
     private boolean betweenDates(LocalDate fromDate, LocalDate toDate, LocalDate targetDate) {
@@ -1610,77 +1637,77 @@ public class PublishServiceImpl implements PublishService {
         return cleaned;
     }
 
-	@Override
-	public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
-			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
-			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo) {
+    @Override
+    public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
+            String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
+            LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo) {
 
-		StringBuilder sql = new StringBuilder("""
-				    SELECT
-						wf.id                         AS id,
-						wf.lok_sabha_no               AS lokSabhaNo,
-						wf.lok_sabha_session_no       AS lokSabhaSessionNo,
-						wf.rajya_sabha_session_no     AS rajyaSabhaSessionNo,
-						wf.created_at                 AS publishDate,
-						wf.publish_by_user            AS publishByUser,
-						wf.publish_uuid               AS publishUuid,
-						wf.publish_status             AS publishStatus,
-						wf.unpublish_date             AS unpublishDate,
-						wf.unpublish_by_user          AS unpublishByUser,
-						wf.for_date					  AS documentDate,
-						wf.office_id                  AS officeId,
-						wf.application_id             AS applicationId,
-						o.office_name                 AS officeName,
-						COALESCE(a.name, wf.application_name) AS documentName
-				    FROM workflow.publish_history wf
-				    JOIN master.offices o ON wf.office_id = o.id
-				    LEFT JOIN master.applications a ON wf.application_id = a.id
-				    WHERE 1=1
-				""");
+        StringBuilder sql = new StringBuilder("""
+                    SELECT
+                		wf.id                         AS id,
+                		wf.lok_sabha_no               AS lokSabhaNo,
+                		wf.lok_sabha_session_no       AS lokSabhaSessionNo,
+                		wf.rajya_sabha_session_no     AS rajyaSabhaSessionNo,
+                		wf.created_at                 AS publishDate,
+                		wf.publish_by_user            AS publishByUser,
+                		wf.publish_uuid               AS publishUuid,
+                		wf.publish_status             AS publishStatus,
+                		wf.unpublish_date             AS unpublishDate,
+                		wf.unpublish_by_user          AS unpublishByUser,
+                		wf.for_date					  AS documentDate,
+                		wf.office_id                  AS officeId,
+                		wf.application_id             AS applicationId,
+                		o.office_name                 AS officeName,
+                		COALESCE(a.name, wf.application_name) AS documentName
+                    FROM workflow.publish_history wf
+                    JOIN master.offices o ON wf.office_id = o.id
+                    LEFT JOIN master.applications a ON wf.application_id = a.id
+                    WHERE 1=1
+                """);
 
         Map<String, Object> params = new HashMap<>();
-        
+
         String house = utils.getHouseAbbr();
-        if(house != null && !house.isBlank()) {
-        	sql.append(" AND wf.house = :house");
-        	params.put("house", house);
+        if (house != null && !house.isBlank()) {
+            sql.append(" AND wf.house = :house");
+            params.put("house", house);
         }
-		if (applicationId != null) {
-			sql.append(" AND wf.application_id = :applicationId");
-			params.put("applicationId", applicationId);
-		}
-		if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
-			sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
-			params.put("lokSabhaNo", lokSabhaNo);
-		}
-		if (lokSabhaSessionNo != null && !lokSabhaSessionNo.isBlank()) {
-			sql.append(" AND wf.lok_sabha_session_no = :lokSabhaSessionNo");
-			params.put("lokSabhaSessionNo", lokSabhaSessionNo);
-		}
-		if (rajyaSabhaSessionNo != null && !rajyaSabhaSessionNo.isBlank()) {
-			sql.append(" AND wf.rajya_sabha_session_no = :rajyaSabhaSessionNo");
-			params.put("rajyaSabhaSessionNo", rajyaSabhaSessionNo);
-		}
-		if (officeId != null) {
-			sql.append(" AND wf.office_id = :officeId");
-			params.put("officeId", officeId);
-		}
-		if (publishDateFrom != null) {
-			sql.append(" AND wf.created_at >= :publishDateFrom");
-			params.put("publishDateFrom", publishDateFrom);
-		}
-		if (publishDateTo != null) {
-			sql.append(" AND wf.created_at <= :publishDateTo");
-			params.put("publishDateTo", publishDateTo);
-		}
-		if (documentDateFrom != null) {
-			sql.append(" AND wf.for_date >= :documentDateFrom");
-			params.put("documentDateFrom", documentDateFrom);
-		}
-		if (documentDateTo != null) {
-			sql.append(" AND wf.for_date <= :documentDateTo");
-			params.put("documentDateTo", documentDateTo);
-		}
+        if (applicationId != null) {
+            sql.append(" AND wf.application_id = :applicationId");
+            params.put("applicationId", applicationId);
+        }
+        if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
+            sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
+            params.put("lokSabhaNo", lokSabhaNo);
+        }
+        if (lokSabhaSessionNo != null && !lokSabhaSessionNo.isBlank()) {
+            sql.append(" AND wf.lok_sabha_session_no = :lokSabhaSessionNo");
+            params.put("lokSabhaSessionNo", lokSabhaSessionNo);
+        }
+        if (rajyaSabhaSessionNo != null && !rajyaSabhaSessionNo.isBlank()) {
+            sql.append(" AND wf.rajya_sabha_session_no = :rajyaSabhaSessionNo");
+            params.put("rajyaSabhaSessionNo", rajyaSabhaSessionNo);
+        }
+        if (officeId != null) {
+            sql.append(" AND wf.office_id = :officeId");
+            params.put("officeId", officeId);
+        }
+        if (publishDateFrom != null) {
+            sql.append(" AND wf.created_at >= :publishDateFrom");
+            params.put("publishDateFrom", publishDateFrom);
+        }
+        if (publishDateTo != null) {
+            sql.append(" AND wf.created_at <= :publishDateTo");
+            params.put("publishDateTo", publishDateTo);
+        }
+        if (documentDateFrom != null) {
+            sql.append(" AND wf.for_date >= :documentDateFrom");
+            params.put("documentDateFrom", documentDateFrom);
+        }
+        if (documentDateTo != null) {
+            sql.append(" AND wf.for_date <= :documentDateTo");
+            params.put("documentDateTo", documentDateTo);
+        }
 
         sql.append(" ORDER BY wf.publish_date DESC");
 
@@ -1690,23 +1717,24 @@ public class PublishServiceImpl implements PublishService {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
 
-		return rows.stream().map(row -> PublishHistoryResponseDTO.builder()
-		        .id(row[0] != null ? ((Number) row[0]).longValue() : null)
-		        .lokSabhaNo(row[1] != null ? row[1].toString() : "")
-		        .lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
-		        .rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
-		        .publishDate(row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime() : null)
-		        .publishByUser(row[5] != null ? row[5].toString() : "")
-		        .publishUuid(row[6] != null ? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString())) : null)
-		        .publishStatus(row[7] != null && (Boolean) row[7])
-		        .unpublishDate(row[8] != null ? ((java.sql.Timestamp) row[8]).toLocalDateTime() : null)
-		        .unpublishByUser(row[9] != null ? row[9].toString() : "")
-		        .documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
-		        .officeId(row[11] != null ? ((Number) row[11]).longValue() : null)
-		        .applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
-		        .branch(row[13] != null ? row[13].toString() : "")
-		        .applicationName(row[14] != null ? row[14].toString() : "")
-		        .build()
-		).toList();
-	}
+        return rows.stream().map(row -> PublishHistoryResponseDTO.builder()
+                .id(row[0] != null ? ((Number) row[0]).longValue() : null)
+                .lokSabhaNo(row[1] != null ? row[1].toString() : "")
+                .lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
+                .rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
+                .publishDate(row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime() : null)
+                .publishByUser(row[5] != null ? row[5].toString() : "")
+                .publishUuid(
+                        row[6] != null ? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString()))
+                                : null)
+                .publishStatus(row[7] != null && (Boolean) row[7])
+                .unpublishDate(row[8] != null ? ((java.sql.Timestamp) row[8]).toLocalDateTime() : null)
+                .unpublishByUser(row[9] != null ? row[9].toString() : "")
+                .documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
+                .officeId(row[11] != null ? ((Number) row[11]).longValue() : null)
+                .applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
+                .branch(row[13] != null ? row[13].toString() : "")
+                .applicationName(row[14] != null ? row[14].toString() : "")
+                .build()).toList();
+    }
 }
