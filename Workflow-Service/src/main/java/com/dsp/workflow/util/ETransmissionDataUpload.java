@@ -120,13 +120,13 @@ public class ETransmissionDataUpload {
             headers.set("Authorization", "Bearer " + token);
             String fileNameWithoutExt = "";
             if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getList1Eng();
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Eng());
             if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getList1Hindi();
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Hindi());
             if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getEngErrata();
+                fileNameWithoutExt =getFileNameWithOutExtension(response.getEngErrata());
             if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getHindiErrata();
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getHindiErrata());
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
@@ -135,7 +135,9 @@ public class ETransmissionDataUpload {
                         .replace("/", "-");
             }
             System.out.println("file Name after slash and space update" + fileNameWithoutExt);
-            String updatedFileName = fileNameWithoutExt;
+            String updatedFileName = fileNameWithoutExt+"_dsp1.pdf";
+            // String updatedFileName = fileNameWithoutExt+".pdf";
+
             // Create a temporary file
 
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
@@ -205,13 +207,21 @@ public class ETransmissionDataUpload {
         return null;
     }
 
+    public String getFileNameWithOutExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return fileName.substring(0, dotIndex);
+        } else {
+            return fileName;
+        }
+    }
+
     private String getYear(LocalDate dateOfCirculation) {
         // TODO Auto-generated method stub
-        if(dateOfCirculation!=null)
-        {
-            return ""+dateOfCirculation.getYear();
+        if (dateOfCirculation != null) {
+            return "" + dateOfCirculation.getYear();
         }
-        return ""+LocalDate.now().getYear();
+        return "" + LocalDate.now().getYear();
     }
 
     public ResponseDocsUuids processErrata(ETransmissionUploadTempEntity response, String existingUuid,
