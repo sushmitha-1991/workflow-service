@@ -982,6 +982,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		} catch (
 
 		Exception e) {
+			e.printStackTrace();
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
@@ -1178,7 +1179,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
-				.contentUUID(UUID.fromString(convertToString(row[7])))
+				.contentUUID(convertToString(row[7]) != null ? UUID.fromString(convertToString(row[7])) : null)
 				.build();
 	}
 
