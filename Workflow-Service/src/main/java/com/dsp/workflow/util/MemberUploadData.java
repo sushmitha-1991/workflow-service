@@ -86,6 +86,15 @@ public class MemberUploadData {
         }
     }
 
+    public String getFileNameWithOutExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return fileName.substring(0, dotIndex);
+        } else {
+            return fileName;
+        }
+    }
+
     public ResponseMember uploadAndReturnUuidInMem(MemberPhotoSignTemp response, byte[] fileData, String fileType) {
         try {
             System.out.println("response " + response);
@@ -105,7 +114,7 @@ public class MemberUploadData {
             List<String> folders = new ArrayList();
             String houseAbbr = utils.getHouseAbbr();
             folders.add(houseAbbr);
-            folders.add("MEMBER");
+            folders.add("Member");
             folders.add(response.getMpcode().toString());
             folders.add(fileType);
             System.out.println("folders " + folders);
@@ -118,9 +127,9 @@ public class MemberUploadData {
             headers.set("Authorization", "Bearer " + token);
             String fileNameWithoutExt = "";
             if (ConstantsUtility.PHOTO.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getPhoto();
+                fileNameWithoutExt =getFileNameWithOutExtension(response.getPhoto());
             if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = response.getSignature();
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getSignature());
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
@@ -129,7 +138,7 @@ public class MemberUploadData {
                         .replace("/", "-");
             }
             System.out.println("file Name after slash and space update" + fileNameWithoutExt);
-            String updatedFileName = fileNameWithoutExt;
+            String updatedFileName = fileNameWithoutExt+"_dsp1.jpg";
             // Create a temporary file
 
             File tempFile = File.createTempFile(fileNameWithoutExt, ".jpg");
