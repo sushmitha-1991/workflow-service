@@ -476,9 +476,7 @@ public class PublishServiceImpl implements PublishService {
                 if (!inRange) {
                     continue;
                 }
-                // if (!isBetween(dto.getFromDate(), dto.getToDate(), response.getForDate())) {
-                // continue;
-                // }
+                
 
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 byte[] fileData = null;
@@ -687,6 +685,7 @@ public class PublishServiceImpl implements PublishService {
         try {
             for (ETransmissionUploadTempEntity response : urlList) {
                 if (existsUrlAndUuid(response)) {
+                    System.out.println("skip");
                     continue;
                 }
                 try {
@@ -717,13 +716,18 @@ public class PublishServiceImpl implements PublishService {
         String existE_HIUuid = response.getEngErrataUuid();
         String existF_ENUuid = response.getEngErrataUuid();
         String existF_HIUuid = response.getEngErrataUuid();
-
+        
         try {
             if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null) {
                 errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
                         ConstantsUtility.E_EN);
-                eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData, ConstantsUtility.E_EN,
+                ResponseDocsUuids res = eTransmissionUtils.processErrata(response, existE_ENUuid, errataEngData,
+                        ConstantsUtility.E_EN,
                         response.getEngErrataUrl(), uploadedUuids);
+                if (res != null) {
+                    existE_ENUuid = res.getUuid().toString();
+                    uploadedUuids.add(res);
+                }
             }
 
         } catch (Exception e) {
@@ -737,8 +741,14 @@ public class PublishServiceImpl implements PublishService {
                 errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
                         ConstantsUtility.E_HI);
                 // Handle Errata Hindi
-                eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData, ConstantsUtility.E_HI,
+                ResponseDocsUuids res = eTransmissionUtils.processErrata(response, existE_HIUuid, errataHiData,
+                        ConstantsUtility.E_HI,
                         response.getHindiErrataUrl(), uploadedUuids);
+                if (res != null) {
+                    existE_HIUuid = res.getUuid().toString();
+                    uploadedUuids.add(res);
+                }
+
             }
 
         } catch (Exception e) {
@@ -752,8 +762,13 @@ public class PublishServiceImpl implements PublishService {
                 fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
                         ConstantsUtility.F_EN);
                 // Handle File English
-                eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData, ConstantsUtility.F_EN,
+                ResponseDocsUuids res = eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData,
+                        ConstantsUtility.F_EN,
                         response.getList1EngUrl(), uploadedUuids);
+                if (res != null) {
+                    existF_ENUuid = res.getUuid().toString();
+                    uploadedUuids.add(res);
+                }
             }
 
         } catch (Exception e) {
@@ -768,8 +783,13 @@ public class PublishServiceImpl implements PublishService {
                 fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
                         ConstantsUtility.F_HI);
                 // Handle File Hindi
-                eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData, ConstantsUtility.F_HI,
+                ResponseDocsUuids res = eTransmissionUtils.processFile(response, existF_HIUuid, fileHindiData,
+                        ConstantsUtility.F_HI,
                         response.getList1HindiUrl(), uploadedUuids);
+                if (res != null) {
+                    existF_HIUuid = res.getUuid().toString();
+                    uploadedUuids.add(res);
+                }
             }
         } catch (Exception e) {
             System.out.println(
@@ -787,6 +807,7 @@ public class PublishServiceImpl implements PublishService {
 
     private Boolean existsUrlAndUuid(ETransmissionUploadTempEntity response) {
         Boolean isTrueOrFalse = true;
+        
         if (response.getList1EngUrl() != null && response.getList1EngUuid() == null)
             isTrueOrFalse = false;
         if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null)
@@ -795,7 +816,7 @@ public class PublishServiceImpl implements PublishService {
             isTrueOrFalse = false;
         if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
             isTrueOrFalse = false;
-    System.out.println("isTrueOrFalse "+isTrueOrFalse);
+        System.out.println("isTrueOrFalse " + isTrueOrFalse);
         return isTrueOrFalse;
     }
 
@@ -818,26 +839,34 @@ public class PublishServiceImpl implements PublishService {
                 byte[] fileSignatureData = null;
                 UUID existingPhUuid = response.getPhotoUuid();
                 UUID existingSgUuid = response.getSignatureUuid();
-                if (existingPhUuid != null && existingSgUuid != null) {
+                if (existingPhUuid != null && existingSgUuid != null ) {
+                    System.out.println("skip");
                     continue;
                 } else {
-                    if (existingPhUuid == null) {
+                    if (existingPhUuid == null && response.getPhotoUrl() != null) {
                         try {
                             filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
                                     ConstantsUtility.PHOTO);
                             System.out.println("fileData " + filePhotoData);
-                            memberUtils.processPhoto(response, existingPhUuid, filePhotoData, uploadedUuids);
+                            ResponseMember memPhoto = memberUtils.processPhoto(response, existingPhUuid, filePhotoData,
+                                    uploadedUuids);
+                            existingPhUuid = memPhoto.getPhotoUuid();
+                            uploadedUuids.add(memPhoto);
                         } catch (Exception e) {
                             System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
                             memberUtils.updateNonUuidInMemPhoto(response);
                         }
                     }
-                    if (existingPhUuid == null) {
+
+                    if (existingSgUuid == null && response.getSignatureUrl() != null) {
                         try {
                             fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
                                     ConstantsUtility.SIGN);
                             System.out.println("fileData " + fileSignatureData);
-                            memberUtils.processSignature(response, existingSgUuid, fileSignatureData, uploadedUuids);
+                            ResponseMember memSign = memberUtils.processSignature(response, existingSgUuid,
+                                    fileSignatureData, uploadedUuids);
+                            existingSgUuid = memSign.getSignUuid();
+                            uploadedUuids.add(memSign);
                         } catch (Exception e) {
                             System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
                             memberUtils.updateNonUuidInMemSignature(response);

@@ -206,43 +206,36 @@ public class MemberUploadData {
         return null;
     }
 
-    public void processPhoto(MemberPhotoSignTemp response, UUID existingPhUuid,
+    public ResponseMember processPhoto(MemberPhotoSignTemp response, UUID existingPhUuid,
             byte[] filePhotoData, List<ResponseMember> uploadedUuids) {
         System.out.println("existingPhUuid"+existingPhUuid);
         if (existingPhUuid==null) {
             if (filePhotoData == null || filePhotoData.length == 0) {
                 updateNonUuidInMemPhoto(response);
-                return;
+                return null; 
             }
-            ResponseMember uuidPhoto = uploadAndReturnUuidInMem(response, filePhotoData, ConstantsUtility.PHOTO);
-            if (uuidPhoto == null) {
-                updateNonUuidInMemPhoto(response);
-            } else {
-                uploadedUuids.add(uuidPhoto);
-            }
+            return uploadAndReturnUuidInMem(response, filePhotoData, ConstantsUtility.PHOTO);
+           
         } else {
-            uploadedUuids.add(mapMemberDataToRes(response));
+            return mapMemberDataToRes(response);
         }
     }
 
-    public void processSignature(MemberPhotoSignTemp response, UUID existingSgUuid,
+    public ResponseMember processSignature(MemberPhotoSignTemp response, UUID existingSgUuid,
             byte[] fileSignatureData, List<ResponseMember> uploadedUuids) {
         System.out.println("existingSgUuid"+existingSgUuid);
 
         if (existingSgUuid==null) {
             if (fileSignatureData == null || fileSignatureData.length == 0) {
                 updateNonUuidInMemSignature(response);
-                return;
+                return null;
             }
-            ResponseMember uuidSign = uploadAndReturnUuidInMem(response, fileSignatureData, ConstantsUtility.SIGN);
-            if (uuidSign == null) {
-                updateNonUuidInMemSignature(response);
-            } else {
-                uploadedUuids.add(uuidSign);
-            }
+             return uploadAndReturnUuidInMem(response, fileSignatureData, ConstantsUtility.SIGN);
+        
         } else {
-            uploadedUuids.add(mapMemberDataToRes(response));
+            return mapMemberDataToRes(response);
         }
+        
     }
 
     public ResponseMember updateMemTableUuid(UUID uuid, String fileType, MemberPhotoSignTemp response) {

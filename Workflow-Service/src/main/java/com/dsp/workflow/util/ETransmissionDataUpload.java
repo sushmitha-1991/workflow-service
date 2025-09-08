@@ -214,21 +214,23 @@ public class ETransmissionDataUpload {
         return ""+LocalDate.now().getYear();
     }
 
-    public void processErrata(ETransmissionUploadTempEntity response, String existingUuid,
+    public ResponseDocsUuids processErrata(ETransmissionUploadTempEntity response, String existingUuid,
             byte[] data, String type, String url,
             List<ResponseDocsUuids> uploadedUuids) {
         if (StringUtils.isBlank(existingUuid) && data != null && data.length > 0) {
-            uploadedUuids.add(uploadAndReturnUuidResp(response, data, type, url));
+            return uploadAndReturnUuidResp(response, data, type, url);
         }
+        return null;
     }
 
-    public void processFile(ETransmissionUploadTempEntity response, String existingUuid,
+    public ResponseDocsUuids processFile(ETransmissionUploadTempEntity response, String existingUuid,
             byte[] data, String type, String url,
             List<ResponseDocsUuids> uploadedUuids) {
         if (StringUtils.isBlank(existingUuid)) {
-            ResponseDocsUuids respFile = uploadAndReturnUuidResp(response, data, type, url);
-            uploadedUuids.add(respFile);
+            return uploadAndReturnUuidResp(response, data, type, url);
+            // uploadedUuids.add(respFile);
         }
+        return null;
     }
 
     public ResponseDocsUuids updateTransmTableUuid(UUID uuid, String fileType,
