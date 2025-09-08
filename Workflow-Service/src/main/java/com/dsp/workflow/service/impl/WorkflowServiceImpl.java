@@ -1177,7 +1177,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return TranslationInputDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
-				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null).build();
+				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
+				.contentUUID(UUID.fromString(convertToString(row[7])))
+				.build();
 	}
 
 	private LocalDate convertToLocalDate(Object dateObj) {
@@ -1206,47 +1208,62 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return null;
 	}
 
+	private String convertToString(Object obj) {
+		if (obj instanceof String) {
+			return obj.toString();
+		}
+		return null;
+	}
+
+	
 	public void callTranslationAPI(TranslationInputDTO translationInputDTO) {
 		try {
+			
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
-			// Step 1: Call upload-html-english API
-			HttpHeaders formHeaders = new HttpHeaders();
-			formHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-			formHeaders.setBearerAuth(token);
-
-			// Check if startingPageNo is null, if so set to "1"
-			String startingPageNo = (translationInputDTO.getStartingPageNo() != null)
-					? translationInputDTO.getStartingPageNo().toString()
-					: "1";
-
-			MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
-			formParams.add("htmlContentEn", translationInputDTO.getInputContent());
-			formParams.add("startingPageNo", startingPageNo);
-			formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
-			formParams.add("locale", "en");
-			System.out.println("PARAMS: " + formParams);
-
-			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
-
-			System.out.println(">>> upload failing - ");
-			ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
-
-			System.out.println("### upload completed");
-			// Parse documentUuid from response
-			ObjectMapper objectMapper = new ObjectMapper();
-			JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
-
-			if (!responseJson.has("documentUuid") || responseJson.get("documentUuid").isNull()) {
-				throw new RuntimeException("documentUuid not found in upload-html-english response");
+			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
+			
+			if (translationInputDTO.getContentUUID() != null) {
+			
+				// Step 1: Call upload-html-english API
+				HttpHeaders formHeaders = new HttpHeaders();
+				formHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+				formHeaders.setBearerAuth(token);
+	
+				// Check if startingPageNo is null, if so set to "1"
+				String startingPageNo = (translationInputDTO.getStartingPageNo() != null)
+						? translationInputDTO.getStartingPageNo().toString()
+						: "1";
+	
+				MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
+				formParams.add("htmlContentEn", translationInputDTO.getInputContent());
+				formParams.add("startingPageNo", startingPageNo);
+				formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
+				formParams.add("locale", "en");
+				
+				System.out.println("PARAMS: " + formParams);
+	
+				HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
+	
+				System.out.println(">>> upload failing - ");
+				ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
+	
+				System.out.println("### upload completed");
+				// Parse documentUuid from response
+				ObjectMapper objectMapper = new ObjectMapper();
+				JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
+	
+				if (!responseJson.has("documentUuid") || responseJson.get("documentUuid").isNull()) {
+					throw new RuntimeException("documentUuid not found in upload-html-english response");
+				}
+	
+				UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
+	
+				System.out.println("### doc - " + documentUuid);
+	
+				translationInputDTO.setContentUUID(documentUuid); // directly set it
 			}
-
-			UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
-
-			System.out.println("### doc - " + documentUuid);
-
-			translationInputDTO.setContentUUID(documentUuid); // directly set it
-
+			
 			// Step 2: Call translation API
 			HttpHeaders jsonHeaders = new HttpHeaders();
 			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
