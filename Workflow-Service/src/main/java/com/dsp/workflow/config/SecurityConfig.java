@@ -67,7 +67,9 @@ public class SecurityConfig {
 		http.authorizeHttpRequests((authz) -> authz
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/workflow/**", "/camunda/**",
 						"/notesheet/**", "/publish-history/getAll/publishedDocs")
-				.permitAll().requestMatchers("/**").hasRole("ADMIN").anyRequest().authenticated())
+				.permitAll()
+				.requestMatchers("/**").hasRole("ADMIN")
+				.anyRequest().authenticated())
 				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
