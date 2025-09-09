@@ -68,9 +68,11 @@ public class SecurityConfig {
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/workflow/**", "/camunda/**",
 						"/notesheet/**", "/publish-history/getAll/publishedDocs")
 				.permitAll()
+				// Save as
+				.requestMatchers("/save-as-draft", "/get-save-as-draft", "/delete-save-as-draft").hasRole("ADMIN")
 //				.requestMatchers("/**").hasRole("ADMIN")
-				.anyRequest().authenticated())
-				.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider())
+				.anyRequest().authenticated()).csrf(AbstractHttpConfigurer::disable)
+				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
 		http.exceptionHandling((ex) -> ex.authenticationEntryPoint(new JwtAuthenticationEntryPoint())
