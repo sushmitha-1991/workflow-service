@@ -5,6 +5,8 @@
  */
 package com.dsp.workflow.response;
 
+import com.dsp.workflow.config.XSSConfig.NoEscape;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,6 +16,7 @@ public class GenericResponse<T> {
 
 	private int statusCode;
 	private boolean success;
+	@NoEscape
 	private String message;
 	private T data;
 
