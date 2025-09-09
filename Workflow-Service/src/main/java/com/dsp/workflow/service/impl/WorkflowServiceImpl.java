@@ -1180,7 +1180,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
 				.contentUUID(convertToString(row[7]) != null ? UUID.fromString(convertToString(row[7])) : null)
-				.build();
+				.build(); 
 	}
 
 	private LocalDate convertToLocalDate(Object dateObj) {
