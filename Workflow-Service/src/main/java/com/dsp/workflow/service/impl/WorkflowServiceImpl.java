@@ -850,6 +850,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> " + translationInputDTO);
+					
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
 							callTranslationAPI(translationInputDTO);
@@ -1186,7 +1188,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
-				.contentUUID(convertToString(row[7]) != null ? UUID.fromString(convertToString(row[7])) : null)
+				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
 				.build(); 
 	}
 
@@ -1230,6 +1232,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
+			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 			
 			if (translationInputDTO.getContentUUID() != null) {
 			
