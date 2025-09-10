@@ -3,6 +3,7 @@ package com.dsp.workflow.service.impl;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -30,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -153,6 +155,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private HttpServletRequest httpRequest;
+	
+    private final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
 	private final static String allDocumentsQuery = """
 
@@ -2003,5 +2008,29 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
+	
+	@Override
+	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+								LocalDate docDate) {
+		
+		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
+
+		if (result.isEmpty()) {
+			return null;
+		}
+
+		return null;
+		
+//		Object[] row = result.get(0);
+//
+//	    Date dbDate = Date.parse((String)row[2]);
+//	        
+//		return TaskResponseDTO.builder()
+//				.applicationId((Long) row[0])
+//				.status((String) row[1])
+//				.date(dbDate)
+//				.build();
+	}
+	
 
 }
