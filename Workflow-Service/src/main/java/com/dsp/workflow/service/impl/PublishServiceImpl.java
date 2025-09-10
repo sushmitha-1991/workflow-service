@@ -947,8 +947,10 @@ public class PublishServiceImpl implements PublishService {
                     System.out.println("skip");
                     continue;
                 } else {
-                    if (isUploadAllowed(""+existingPhUuid ,response.getPhotoUrl(),response.getPhoto() ) ){
+                    if (existingPhUuid==null && StringUtils.isNotBlank(response.getPhotoUrl())){
                         try {
+                            System.out.println("file "+response.getPhotoUrl());
+
                             filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
                                     ConstantsUtility.PHOTO);
                             System.out.println("fileData " + filePhotoData);
@@ -956,15 +958,16 @@ public class PublishServiceImpl implements PublishService {
                                     uploadedUuids);
                             existingPhUuid = memPhoto.getPhotoUuid();
                             uploadedUuids.add(memPhoto);
-                            processedUrls.add(response.getPhotoUrl());
+                            // processedUrls.add(response.getPhotoUrl());
 
                         } catch (Exception e) {
                             System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
                             memberUtils.updateNonUuidInMemPhoto(response);
                         }
                     }
-                    if (isUploadAllowed(""+existingSgUuid ,response.getSignatureUrl(),response.getSignature())) {
+                    if (existingSgUuid==null && StringUtils.isNotBlank(response.getSignatureUrl())) {
                         try {
+                            System.out.println("file "+response.getSignatureUrl());
                             fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
                                     ConstantsUtility.SIGN);
                             System.out.println("fileData " + fileSignatureData);
@@ -973,7 +976,6 @@ public class PublishServiceImpl implements PublishService {
                             existingSgUuid = memSign.getSignUuid();
                             uploadedUuids.add(memSign);
                             processedUrls.add(response.getSignatureUrl());
-
                         } catch (Exception e) {
                             System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
                             memberUtils.updateNonUuidInMemSignature(response);

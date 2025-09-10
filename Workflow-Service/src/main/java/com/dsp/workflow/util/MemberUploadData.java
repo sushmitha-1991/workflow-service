@@ -219,10 +219,10 @@ public class MemberUploadData {
             byte[] filePhotoData, List<ResponseMember> uploadedUuids) {
         System.out.println("existingPhUuid"+existingPhUuid);
         if (existingPhUuid==null) {
-            if (filePhotoData == null || filePhotoData.length == 0) {
-                updateNonUuidInMemPhoto(response);
-                return null; 
-            }
+            // if (filePhotoData == null || filePhotoData.length == 0) {
+            //     updateNonUuidInMemPhoto(response);
+            //     return null; 
+            // }
             return uploadAndReturnUuidInMem(response, filePhotoData, ConstantsUtility.PHOTO);
            
         } else {
@@ -235,10 +235,10 @@ public class MemberUploadData {
         System.out.println("existingSgUuid"+existingSgUuid);
 
         if (existingSgUuid==null) {
-            if (fileSignatureData == null || fileSignatureData.length == 0) {
-                updateNonUuidInMemSignature(response);
-                return null;
-            }
+            // if (fileSignatureData == null || fileSignatureData.length == 0) {
+            //     updateNonUuidInMemSignature(response);
+            //     return null;
+            // }
              return uploadAndReturnUuidInMem(response, fileSignatureData, ConstantsUtility.SIGN);
         
         } else {
