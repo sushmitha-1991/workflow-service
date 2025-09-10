@@ -2011,17 +2011,17 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
 	
-	@Override
-	public TaskResponseDTO getDocStatusForDate (long applicationId, 
-								LocalDate docDate) {
-		
-		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
-
-		if (result.isEmpty()) {
-			return null;
-		}
-
-		return null;
+//	@Override
+//	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+//								LocalDate docDate) {
+//		
+//		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
+//
+//		if (result.isEmpty()) {
+//			return null;
+//		}
+//
+//		return null;
 		
 //		Object[] row = result.get(0);
 //
@@ -2032,7 +2032,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 //				.status((String) row[1])
 //				.date(dbDate)
 //				.build();
-	}
+//	}
 	
 
 }

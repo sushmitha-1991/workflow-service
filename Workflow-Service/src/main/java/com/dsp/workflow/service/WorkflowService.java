@@ -150,5 +150,5 @@ public interface WorkflowService {
 	 */
 	InProgressCountResponse getInProgressCount(Long userIdFromAuthentication, Long houseIdFromAuthentication);
 
-	TaskResponseDTO getDocStatusForDate (long applicationId, LocalDate docDate);
+//	TaskResponseDTO getDocStatusForDate (long applicationId, LocalDate docDate);
 }

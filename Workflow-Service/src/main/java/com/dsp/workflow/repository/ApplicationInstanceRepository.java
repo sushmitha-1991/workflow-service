@@ -19,10 +19,6 @@ import com.dsp.workflow.entity.ApplicationInstance;
 /**
  * 
  */
-//oom.dsp2_key as dsp2key
-//left join onlyoffice.only_office_metadata oom on ai.only_office_dsp2_key = oom.dsp2_key
-
-
 @Repository
 public interface ApplicationInstanceRepository extends JpaRepository<ApplicationInstance, Long> { 
 
@@ -131,14 +127,14 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 	List<Object[]> getSectionB2AppHouse(Long applicationInstanceId);
 
 	
-	@Query(value = """
-				select ai.application_id, ai.current_status, ai.document_date 
-				from master.application_instance ai 
-				where ai.application_id = :applicationId
-				and ai.document_date = :docDate 
-				and ai.is_active = true 
-				order by ai.created_at desc limit 1
-			""", nativeQuery = true)
-	List<Object[]> getDocStatusByDate(Long applicationInstanceId, LocalDate docDate);
+//	@Query(value = """
+//				select ai.application_id, ai.current_status, ai.document_date 
+//				from master.application_instance ai 
+//				where ai.application_id = :applicationId
+//				and ai.document_date = :docDate 
+//				and ai.is_active = true 
+//				order by ai.created_at desc limit 1
+//			""", nativeQuery = true)
+//	List<Object[]> getDocStatusByDate(Long applicationInstanceId, LocalDate docDate);
 
 }
