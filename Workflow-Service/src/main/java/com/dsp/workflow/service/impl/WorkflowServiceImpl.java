@@ -461,17 +461,19 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			union
 			                     SELECT
+			                     distinct on (ah.ref_no)
 			                  ah.ref_no as applicationNo,
 			                  ma.document_display_name as documentName,
 			                  inp.document_date as date,
 			                  lsm.lok_sabha_number as LSNo,
 			                  lssm.session_number as SSNo,
 			                  rssm.session_number as RSSNo,
-			        				  case
-								  	when (inp.status = 'Returned') then inp.status
-								  	else 'In Progress'
-							  end
-			                  as status,
+			                  ah.status as status,
+			        				  --case
+								  	--when (inp.status = 'Returned') then inp.status
+								  	--else 'In Progress'
+							  --end
+			                  --as status,
 			          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			          null as refId,
 			          null as applicationId,
