@@ -24,7 +24,7 @@ import com.dsp.workflow.entity.ApplicationInstance;
 
 
 @Repository
-public interface ApplicationInstanceRepository extends JpaRepository<ApplicationInstance, Long> {
+public interface ApplicationInstanceRepository extends JpaRepository<ApplicationInstance, Long> { 
 
 	@Query(value = """
 									SELECT

@@ -14,7 +14,7 @@ import lombok.Data;
 
 @Data
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL) 
+@JsonInclude(JsonInclude.Include.NON_NULL)  
 public class TaskResponseDTO {
 	private String applicationNo; // application_no from application_instance
 	private String documentName; // name from master.application

@@ -1171,7 +1171,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
 	}
 
-	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
+	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) { 
 		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);

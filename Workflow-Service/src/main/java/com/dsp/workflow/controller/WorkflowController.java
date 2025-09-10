@@ -406,7 +406,7 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/get-input-documents")
+	@GetMapping("/get-input-documents") 
 	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments(
 			@RequestParam(required = false) Long inputInstanceId, @RequestParam(required = false) Long draftId) {
 
