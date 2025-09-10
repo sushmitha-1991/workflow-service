@@ -1234,7 +1234,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
 			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 			
-			if (translationInputDTO.getContentUUID() != null) {
+			if (translationInputDTO.getContentUUID() == null) { 
 			
 				// Step 1: Call upload-html-english API
 				HttpHeaders formHeaders = new HttpHeaders();
