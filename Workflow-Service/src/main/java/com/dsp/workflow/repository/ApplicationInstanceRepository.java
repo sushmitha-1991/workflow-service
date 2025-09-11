@@ -32,7 +32,8 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			    ai.html_content_en AS inputContent,
 			    a.translate_flag AS translateFlag,
 			    ai.starting_page_no as startingPageNo,
-			    oom.document_key as dsp2key
+			    oom.document_key as docUuid,
+			    oom.dsp2_key as dsp2key
 			FROM master.application_instance ai
 			LEFT JOIN master.applications a ON a.id = ai.application_id
 			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session
@@ -128,14 +129,14 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 	List<Object[]> getSectionB2AppHouse(Long applicationInstanceId);
 
 	
-//	@Query(value = """
-//				select ai.application_id, ai.current_status, ai.document_date 
-//				from master.application_instance ai 
-//				where ai.application_id = :applicationId
-//				and ai.document_date = :docDate 
-//				and ai.is_active = true 
-//				order by ai.created_at desc limit 1
-//			""", nativeQuery = true)
-//	List<Object[]> getDocStatusByDate(Long applicationInstanceId, LocalDate docDate);
+	@Query(value = """
+				select ai.application_id, ai.current_status, ai.document_date 
+				from master.application_instance ai 
+				where ai.application_id = :applicationId
+				and ai.document_date = :docDate 
+				and ai.is_active = true 
+				order by ai.created_at desc limit 1
+			""", nativeQuery = true)
+	List<Object[]> getDocStatusByDate(Long applicationInstanceId, LocalDate docDate);
 
 }
