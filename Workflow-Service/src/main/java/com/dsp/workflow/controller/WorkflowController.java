@@ -431,11 +431,11 @@ public class WorkflowController {
 				utils.getHouseIdFromAuthentication());
 	}
 	
-//	@GetMapping("/document-status-for-date")
-//	public TaskResponseDTO getDocStatusForDate (long applicationId, 
-//								LocalDate docDate) {
-//		
-//		return workflowService.getDocStatusForDate(applicationId, docDate);
-//	
-//	}
+	@GetMapping("/document-status-for-date")
+	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+								LocalDate docDate) {
+		
+		return workflowService.getDocStatusForDate(applicationId, docDate);
+	
+	}
 }
