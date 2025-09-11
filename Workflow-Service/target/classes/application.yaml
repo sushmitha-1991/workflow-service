@@ -1,7 +1,0 @@
-#camunda:
-#  bpm:
-#    rest:
-#      url: http://10.247.128.24/engine-rest
-#    admin-user:
-#      id: demo
-#      password: demo
