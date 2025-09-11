@@ -137,6 +137,6 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 				and ai.is_active = true 
 				order by ai.created_at desc limit 1
 			""", nativeQuery = true)
-	List<Object[]> getDocStatusByDate(Long applicationInstanceId, LocalDate docDate);
+	List<Object[]> getDocStatusByDate(Long applicationId, LocalDate docDate);
 
 }
