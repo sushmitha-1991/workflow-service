@@ -1,5 +1,6 @@
 package com.dsp.workflow.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -123,7 +124,7 @@ public interface WorkflowService {
 	 * @param draftDataDTO
 	 * @return
 	 */
-	Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO);
+	Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO); 
 
 	/**
 	 * @param userId
@@ -149,4 +150,5 @@ public interface WorkflowService {
 	 */
 	InProgressCountResponse getInProgressCount(Long userIdFromAuthentication, Long houseIdFromAuthentication);
 
+//	TaskResponseDTO getDocStatusForDate (long applicationId, LocalDate docDate);
 }

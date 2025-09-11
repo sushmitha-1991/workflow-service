@@ -3,6 +3,7 @@ package com.dsp.workflow.service.impl;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -30,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -153,6 +155,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private HttpServletRequest httpRequest;
+	
+    private final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
 	private final static String allDocumentsQuery = """
 
@@ -845,6 +850,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> " + translationInputDTO);
+					
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
 							callTranslationAPI(translationInputDTO);
@@ -1166,7 +1173,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
 	}
 
-	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
+	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) { 
 		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
@@ -1181,7 +1188,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
-				.contentUUID(convertToString(row[7]) != null ? UUID.fromString(convertToString(row[7])) : null)
+				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
 				.build(); 
 	}
 
@@ -1225,8 +1232,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
+			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 			
-			if (translationInputDTO.getContentUUID() != null) {
+			if (translationInputDTO.getContentUUID() == null) { 
 			
 				// Step 1: Call upload-html-english API
 				HttpHeaders formHeaders = new HttpHeaders();
@@ -2005,5 +2013,29 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
+	
+//	@Override
+//	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+//								LocalDate docDate) {
+//		
+//		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
+//
+//		if (result.isEmpty()) {
+//			return null;
+//		}
+//
+//		return null;
+		
+//		Object[] row = result.get(0);
+//
+//	    Date dbDate = Date.parse((String)row[2]);
+//	        
+//		return TaskResponseDTO.builder()
+//				.applicationId((Long) row[0])
+//				.status((String) row[1])
+//				.date(dbDate)
+//				.build();
+//	}
+	
 
 }
