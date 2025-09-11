@@ -32,6 +32,7 @@ public class TranslationInputDTO {
 	private String inputContent;
 	private Long startingPageNo;
 	private UUID contentUUID;
+	private String dsp2key; // for OnlyOffice
 
 	//
 	private Boolean translationFlag;

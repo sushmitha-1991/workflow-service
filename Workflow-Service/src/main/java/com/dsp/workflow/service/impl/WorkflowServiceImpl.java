@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1189,6 +1190,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
 				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
+				.dsp2key(!StringUtils.isEmpty((String)row[9]) ? (String)row[9] : null)
 				.build(); 
 	}
 
@@ -2014,28 +2016,30 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
 	
-//	@Override
-//	public TaskResponseDTO getDocStatusForDate (long applicationId, 
-//								LocalDate docDate) {
-//		
-//		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
-//
-//		if (result.isEmpty()) {
-//			return null;
-//		}
-//
-//		return null;
+	@Override
+	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+								LocalDate docDate) {
 		
-//		Object[] row = result.get(0);
-//
-//	    Date dbDate = Date.parse((String)row[2]);
-//	        
-//		return TaskResponseDTO.builder()
-//				.applicationId((Long) row[0])
-//				.status((String) row[1])
-//				.date(dbDate)
-//				.build();
-//	}
+		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
+
+		if (result.isEmpty()) {
+			return TaskResponseDTO.builder()
+					.exists(false)
+					.build();		
+		}
+
+		Object[] row = result.get(0);
+	    LocalDate localDate = LocalDate.parse((String)row[2], formatter);
+	    
+	    Date dbDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+	        
+		return TaskResponseDTO.builder()
+				.applicationId((Long) row[0])
+				.status((String) row[1])
+				.date(dbDate)
+				.exists(true)
+				.build();
+	}
 	
 
 }
