@@ -336,7 +336,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
 			                coalesce(a.document_display_name, a."name") as documentName,
-			                dd.for_date as date,
+			                (dd.draft_data->>'documentDate')::date as date,
+			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
 			                dd.lok_sabha_session_number as SSNo,
 			                dd.rajya_sabha_session as RSSNo,
