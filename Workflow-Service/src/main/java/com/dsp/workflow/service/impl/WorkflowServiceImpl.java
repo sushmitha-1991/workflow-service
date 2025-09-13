@@ -335,8 +335,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        select
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
-			                coalesce(a.document_display_name, a."name") as documentName,
-			                (dd.draft_data->>'documentDate')::date as date,
+			                coalesce(a.document_display_name, a."name") as documentName, 
+			                coalesce(dd.for_date, (dd.draft_data->>'documentDate')::date) as date,
 			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
 			                dd.lok_sabha_session_number as SSNo,
@@ -360,8 +360,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as editorId,
 			                null as uploaded_document_uuid
 			        from
-			                workflow.workflow_history wh
-			        left join workflow.drafted_document dd on
+			        	workflow.drafted_document dd
+				        left join  workflow.workflow_history wh on 
 			                dd.id = wh.draft_id
 			        left join master.applications a on
 			                a.id = dd.application_id
