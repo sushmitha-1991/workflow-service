@@ -7,11 +7,14 @@ package com.dsp.workflow.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)  
 public class TaskResponseDTO {
 	private String applicationNo; // application_no from application_instance
 	private String documentName; // name from master.application
@@ -26,4 +29,5 @@ public class TaskResponseDTO {
 	private String taskName; // Added to store the task name
 	private Long applicationInstanceId; // Keep this for additional details
 	private String processInstanceId;
+	private boolean exists; 
 }

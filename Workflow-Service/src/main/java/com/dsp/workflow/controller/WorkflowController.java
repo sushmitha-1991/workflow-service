@@ -32,6 +32,7 @@ import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
+import com.dsp.workflow.dto.TranslationInputDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.repository.ApplicationRepository;
@@ -405,7 +406,7 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/get-input-documents")
+	@GetMapping("/get-input-documents") 
 	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments(
 			@RequestParam(required = false) Long inputInstanceId, @RequestParam(required = false) Long draftId) {
 
@@ -429,5 +430,12 @@ public class WorkflowController {
 		return workflowService.getInProgressCount(utils.getUserIdFromAuthentication(),
 				utils.getHouseIdFromAuthentication());
 	}
-
+	
+	@GetMapping("/document-status-for-date")
+	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+								LocalDate docDate) {
+		
+		return workflowService.getDocStatusForDate(applicationId, docDate);
+	
+	}
 }

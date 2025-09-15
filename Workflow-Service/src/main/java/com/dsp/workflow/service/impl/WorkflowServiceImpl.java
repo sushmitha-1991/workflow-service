@@ -3,6 +3,7 @@ package com.dsp.workflow.service.impl;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -153,6 +156,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private HttpServletRequest httpRequest;
+	
+    private final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
 	private final static String allDocumentsQuery = """
 
@@ -329,8 +335,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        select
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
-			                coalesce(a.document_display_name, a."name") as documentName,
-			                dd.for_date as date,
+			                coalesce(a.document_display_name, a."name") as documentName, 
+			                coalesce(dd.for_date, (dd.draft_data->>'documentDate')::date) as date,
+			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
 			                dd.lok_sabha_session_number as SSNo,
 			                dd.rajya_sabha_session as RSSNo,
@@ -353,8 +360,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as editorId,
 			                null as uploaded_document_uuid
 			        from
-			                workflow.workflow_history wh
-			        left join workflow.drafted_document dd on
+			        	workflow.drafted_document dd
+				        left join  workflow.workflow_history wh on 
 			                dd.id = wh.draft_id
 			        left join master.applications a on
 			                a.id = dd.application_id
@@ -461,17 +468,19 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			union
 			                     SELECT
+			                     distinct on (ah.ref_no)
 			                  ah.ref_no as applicationNo,
 			                  ma.document_display_name as documentName,
 			                  inp.document_date as date,
 			                  lsm.lok_sabha_number as LSNo,
 			                  lssm.session_number as SSNo,
 			                  rssm.session_number as RSSNo,
-			        				  case
-								  	when (inp.status = 'Returned') then inp.status
-								  	else 'In Progress'
-							  end
-			                  as status,
+			                  ah.status as status,
+			        				  --case
+								  	--when (inp.status = 'Returned') then inp.status
+								  	--else 'In Progress'
+							  --end
+			                  --as status,
 			          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			          null as refId,
 			          null as applicationId,
@@ -843,6 +852,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> " + translationInputDTO);
+					
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						try {
 							callTranslationAPI(translationInputDTO);
@@ -1164,7 +1175,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
 	}
 
-	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
+	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) { 
 		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
@@ -1179,7 +1190,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
-				.contentUUID(convertToString(row[7]) != null ? UUID.fromString(convertToString(row[7])) : null)
+				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
+				.dsp2key(!StringUtils.isEmpty((String)row[9]) ? (String)row[9] : null)
 				.build(); 
 	}
 
@@ -1223,8 +1235,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
+			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 			
-			if (translationInputDTO.getContentUUID() != null) {
+			if (translationInputDTO.getContentUUID() == null) { 
 			
 				// Step 1: Call upload-html-english API
 				HttpHeaders formHeaders = new HttpHeaders();
@@ -2003,5 +2016,31 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
+	
+	@Override
+	public TaskResponseDTO getDocStatusForDate (long applicationId, 
+								LocalDate docDate) {
+		
+		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
+
+		if (result.isEmpty()) {
+			return TaskResponseDTO.builder()
+					.exists(false)
+					.build();		
+		}
+
+		Object[] row = result.get(0);
+	    LocalDate localDate = LocalDate.parse((String)row[2], formatter);
+	    
+	    Date dbDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+	        
+		return TaskResponseDTO.builder()
+				.applicationId((Long) row[0])
+				.status((String) row[1])
+				.date(dbDate)
+				.exists(true)
+				.build();
+	}
+	
 
 }
