@@ -17,18 +17,13 @@ import com.dsp.workflow.entity.WorkflowHistory;
 @Component
 public class WorkflowHistoryMapper {
 
+	public WorkflowHistory toWorkflowHistory(InputWorkflowHistory input) {
 
-	public WorkflowHistory toWorkflowHistory (InputWorkflowHistory input) {
-
-		WorkflowHistory history = WorkflowHistory.builder()
-									.actionTakenBy(input.getActionTakenBy())
-									.actionTakenByName(input.getActionTakenByName())
-									.actionTakenOn(input.getCreatedAt())
-									.status(input.getStatus())
-									.pendingWith(input.getPendingWith())
-									.pendingWithName(input.getPendingWithName())
-									.note(input.getCommentForDisplay())
-									.build();
+		WorkflowHistory history = WorkflowHistory.builder().actionTakenBy(input.getActionTakenBy())
+				.actionTakenByName(input.getActionTakenByName()).actionTakenOn(input.getCreatedAt())
+				.status(input.getStatus()).pendingWith(input.getPendingWith())
+				.pendingWithName(input.getPendingWithName()).note(input.getCommentForDisplay())
+				.userIpAddress(input.getIpAddress()).build();
 		return history;
 	}
 
@@ -37,15 +32,13 @@ public class WorkflowHistoryMapper {
 	 * @param docMap
 	 * @return
 	 */
-	public DocumentMetadataDTO toDocumentDTO (Map<String,Object> docMap) {
+	public DocumentMetadataDTO toDocumentDTO(Map<String, Object> docMap) {
 
 		DocumentMetadataDTO document = DocumentMetadataDTO.builder()
 				.documentId(docMap.get("documentName") != null ? docMap.get("documentName").toString() : "")
-				.uuid(UUID.fromString(docMap.get("documentUuid").toString())) 
-				.build();
-				
+				.uuid(UUID.fromString(docMap.get("documentUuid").toString())).build();
+
 		return document;
 	}
-	
-	
+
 }
