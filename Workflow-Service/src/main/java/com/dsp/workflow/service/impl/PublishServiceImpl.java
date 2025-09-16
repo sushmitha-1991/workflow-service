@@ -90,15 +90,17 @@ public class PublishServiceImpl implements PublishService {
     // Global set to track already uploaded document URLs
     // private final Set<String> processedUrls = new HashSet<>();
     // // Pattern to detect versioned files (e.g., "_v1", "_v11", etc.)
-    // private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+\\.(pdf|docx|doc)$", Pattern.CASE_INSENSITIVE);
+    // private static final Pattern VERSION_PATTERN =
+    // Pattern.compile("_v\\d+\\.(pdf|docx|doc)$", Pattern.CASE_INSENSITIVE);
 
-        // Global set to track already uploaded document URLs
-        private final Set<String> processedUrls = new HashSet<>();
+    // Global set to track already uploaded document URLs
+    private final Set<String> processedUrls = new HashSet<>();
 
-        // Regex to detect version suffix like "_v1", "_v12", "_v123" before the extension
-        private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+(?=\\.[^.]+$)",
-         Pattern.CASE_INSENSITIVE);
-    
+    // Regex to detect version suffix like "_v1", "_v12", "_v123" before the
+    // extension
+    private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+(?=\\.[^.]+$)",
+            Pattern.CASE_INSENSITIVE);
+
     @Autowired
     private ETransmissionDataUpload eTransmissionUtils;
     @Autowired
@@ -443,10 +445,12 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
-        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(utils.getHouseAbbr())) {
+        String house = utils.getHouseAbbr();
+        System.out.println("house " + house);
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
             return uploadToDsp2Ls(applicationName, dto);
         } else {
-            return uploadToDsp2Ls(applicationName, dto);
+            return uploadToDsp2RS(applicationName, dto);
         }
     }
 
@@ -492,7 +496,6 @@ public class PublishServiceImpl implements PublishService {
                 if (!inRange) {
                     continue;
                 }
-                
 
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 byte[] fileData = null;
@@ -535,11 +538,12 @@ public class PublishServiceImpl implements PublishService {
 
     public List<String> uploadToDsp2RS(String applicationName, SessionDto dto) {
         Specification<PublishDocumentTempRS> spec = Specification.where(hasAppNameRs(applicationName));
-
         spec = spec.and(hasPublishUuidRs());
-
         if (StringUtils.isNotBlank(dto.getLocale())) {
             spec = spec.and(hasLocaleTempRs(dto.getLocale()));
+        }
+        if (StringUtils.isNotBlank(dto.getSesNo())) {
+            spec = spec.and(hasRsNo(dto.getSesNo()));
         }
         List<PublishDocumentTempRS> urlList = rsDocRepo.findAll(spec);
         List<String> uploadedUuids = new ArrayList<>();
@@ -563,6 +567,7 @@ public class PublishServiceImpl implements PublishService {
                     logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
                     continue; // Skip this iteration if download fails
                 }
+
                 logger.info("Processing document: {}", response.getCompleteUrl());
                 if (fileData == null || fileData.length == 0) {
                     updateNonUuidRs(response);
@@ -573,7 +578,8 @@ public class PublishServiceImpl implements PublishService {
                     continue;
                 }
 
-                // System.out.println("data " + fileData);
+                System.out.println("data " + fileData);
+                System.out.println("res rs " + response);
                 String uuid = uploadAndReturnUuid(null, response, fileData);
                 // }
                 if (uuid.isEmpty()) {
@@ -596,9 +602,9 @@ public class PublishServiceImpl implements PublishService {
     public List<String> uploadToDsp2Rs(String applicationName, SessionDto dto) {
 
         List<String> uploadedUuids = new ArrayList<>();
-        
+        uploadedUuids.addAll(uploadToDsp2RS(applicationName, dto));
         return uploadedUuids;
-         }
+    }
 
     // uploadTransmissionDocs
     @Override
@@ -635,6 +641,7 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
 
     }
+
     private Collection<? extends ResponseDocsUuids> fetchAndUploadDocument(ETransmissionUploadTempEntity response) {
         List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
 
@@ -650,8 +657,9 @@ public class PublishServiceImpl implements PublishService {
 
         // ----------- ERRATA ENGLISH -----------
         try {
-            if (isUploadAllowed(response.getEngErrataUrl(), response.getEngErrataUuid(),response.getEngErrata())) {
-                errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(), ConstantsUtility.E_EN);
+            if (isUploadAllowed(response.getEngErrataUrl(), response.getEngErrataUuid(), response.getEngErrata())) {
+                errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+                        ConstantsUtility.E_EN);
 
                 if (errataEngData != null && errataEngData.length > 0) {
                     ResponseDocsUuids res = eTransmissionUtils.processErrata(
@@ -672,8 +680,10 @@ public class PublishServiceImpl implements PublishService {
 
         // ----------- ERRATA HINDI -----------
         try {
-            if (isUploadAllowed(response.getHindiErrataUrl(), response.getHindiErrataUuid(),response.getHindiErrata())) {
-                errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(), ConstantsUtility.E_HI);
+            if (isUploadAllowed(response.getHindiErrataUrl(), response.getHindiErrataUuid(),
+                    response.getHindiErrata())) {
+                errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+                        ConstantsUtility.E_HI);
 
                 if (errataHiData != null && errataHiData.length > 0) {
                     ResponseDocsUuids res = eTransmissionUtils.processErrata(
@@ -694,8 +704,9 @@ public class PublishServiceImpl implements PublishService {
 
         // ----------- FILE ENGLISH -----------
         try {
-            if (isUploadAllowed(response.getList1EngUrl(), response.getList1EngUuid(),response.getList1Eng())) {
-                fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(), ConstantsUtility.F_EN);
+            if (isUploadAllowed(response.getList1EngUrl(), response.getList1EngUuid(), response.getList1Eng())) {
+                fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+                        ConstantsUtility.F_EN);
 
                 if (fileEngData != null && fileEngData.length > 0) {
                     ResponseDocsUuids res = eTransmissionUtils.processFile(
@@ -716,8 +727,9 @@ public class PublishServiceImpl implements PublishService {
 
         // ----------- FILE HINDI -----------
         try {
-            if (isUploadAllowed(response.getList1HindiUrl(), response.getList1HindiUuid(),response.getHindiErrata())) {
-                fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(), ConstantsUtility.F_HI);
+            if (isUploadAllowed(response.getList1HindiUrl(), response.getList1HindiUuid(), response.getHindiErrata())) {
+                fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+                        ConstantsUtility.F_HI);
 
                 if (fileHindiData != null && fileHindiData.length > 0) {
                     ResponseDocsUuids res = eTransmissionUtils.processFile(
@@ -752,7 +764,7 @@ public class PublishServiceImpl implements PublishService {
      * - Not previously processed
      * - Not a versioned file
      */
-    private boolean isUploadAllowed(String url, String uuid,String fileName) {
+    private boolean isUploadAllowed(String url, String uuid, String fileName) {
         if (url == null || uuid != null || processedUrls.contains(url)) {
             return false;
         }
@@ -764,8 +776,10 @@ public class PublishServiceImpl implements PublishService {
 
         return true;
     }
+
     private String cleanFileName(String url) {
-        if (url == null) return null;
+        if (url == null)
+            return null;
         try {
             String fileName = url.substring(url.lastIndexOf('/') + 1);
             Matcher matcher = VERSION_PATTERN.matcher(fileName);
@@ -775,12 +789,12 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-
     /**
      * Extract file name from the URL.
      */
     private String getFileNameFromUrl(String url) {
-        if (url == null) return null;
+        if (url == null)
+            return null;
         try {
             return url.substring(url.lastIndexOf('/') + 1);
         } catch (Exception e) {
@@ -788,126 +802,141 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
+    // private Collection<? extends ResponseDocsUuids>
+    // fetchAndUploadDocument(ETransmissionUploadTempEntity response) {
+    // List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
+    // Set<String> processedUrls = new HashSet<>(); // Track processed URLs to
+    // prevent duplicates
 
-    // private Collection<? extends ResponseDocsUuids> fetchAndUploadDocument(ETransmissionUploadTempEntity response) {
-    //     List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
-    //     Set<String> processedUrls = new HashSet<>(); // Track processed URLs to prevent duplicates
+    // byte[] errataEngData = null;
+    // byte[] errataHiData = null;
+    // byte[] fileEngData = null;
+    // byte[] fileHindiData = null;
 
-    //     byte[] errataEngData = null;
-    //     byte[] errataHiData = null;
-    //     byte[] fileEngData = null;
-    //     byte[] fileHindiData = null;
+    // String existE_ENUuid = response.getEngErrataUuid();
+    // String existE_HIUuid = response.getHindiErrataUuid();
+    // String existF_ENUuid = response.getList1EngUuid();
+    // String existF_HIUuid = response.getList1HindiUuid();
 
-    //     String existE_ENUuid = response.getEngErrataUuid();
-    //     String existE_HIUuid = response.getHindiErrataUuid();
-    //     String existF_ENUuid = response.getList1EngUuid();
-    //     String existF_HIUuid = response.getList1HindiUuid();
+    // // ----------- ERRATA ENGLISH -----------
+    // try {
+    // if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null
+    // && !processedUrls.contains(response.getEngErrataUrl())) {
 
-    //     // ----------- ERRATA ENGLISH -----------
-    //     try {
-    //         if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null
-    //                 && !processedUrls.contains(response.getEngErrataUrl())) {
+    // errataEngData =
+    // eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+    // ConstantsUtility.E_EN);
 
-    //             errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(), ConstantsUtility.E_EN);
+    // if (errataEngData != null && errataEngData.length > 0) {
+    // ResponseDocsUuids res = eTransmissionUtils.processErrata(
+    // response, existE_ENUuid, errataEngData,
+    // ConstantsUtility.E_EN, response.getEngErrataUrl(), uploadedUuids);
 
-    //             if (errataEngData != null && errataEngData.length > 0) {
-    //                 ResponseDocsUuids res = eTransmissionUtils.processErrata(
-    //                         response, existE_ENUuid, errataEngData,
-    //                         ConstantsUtility.E_EN, response.getEngErrataUrl(), uploadedUuids);
+    // if (res != null) {
+    // existE_ENUuid = res.getUuid().toString();
+    // uploadedUuids.add(res);
+    // processedUrls.add(response.getEngErrataUrl());
+    // }
+    // }
+    // }
+    // } catch (Exception e) {
+    // System.out.println("ERROR Fetching data from ERRATA EN URL: " +
+    // e.getMessage());
+    // eTransmissionUtils.updateNonUuidInTransmission(response);
+    // }
 
-    //                 if (res != null) {
-    //                     existE_ENUuid = res.getUuid().toString();
-    //                     uploadedUuids.add(res);
-    //                     processedUrls.add(response.getEngErrataUrl());
-    //                 }
-    //             }
-    //         }
-    //     } catch (Exception e) {
-    //         System.out.println("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
-    //         eTransmissionUtils.updateNonUuidInTransmission(response);
-    //     }
+    // // ----------- ERRATA HINDI -----------
+    // try {
+    // if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() ==
+    // null
+    // && !processedUrls.contains(response.getHindiErrataUrl())) {
 
-    //     // ----------- ERRATA HINDI -----------
-    //     try {
-    //         if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null
-    //                 && !processedUrls.contains(response.getHindiErrataUrl())) {
+    // errataHiData =
+    // eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+    // ConstantsUtility.E_HI);
 
-    //             errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(), ConstantsUtility.E_HI);
+    // if (errataHiData != null && errataHiData.length > 0) {
+    // ResponseDocsUuids res = eTransmissionUtils.processErrata(
+    // response, existE_HIUuid, errataHiData,
+    // ConstantsUtility.E_HI, response.getHindiErrataUrl(), uploadedUuids);
 
-    //             if (errataHiData != null && errataHiData.length > 0) {
-    //                 ResponseDocsUuids res = eTransmissionUtils.processErrata(
-    //                         response, existE_HIUuid, errataHiData,
-    //                         ConstantsUtility.E_HI, response.getHindiErrataUrl(), uploadedUuids);
+    // if (res != null) {
+    // existE_HIUuid = res.getUuid().toString();
+    // uploadedUuids.add(res);
+    // processedUrls.add(response.getHindiErrataUrl());
+    // }
+    // }
+    // }
+    // } catch (Exception e) {
+    // System.out.println("ERROR Fetching data from ERRATA HI URL: " +
+    // e.getMessage());
+    // eTransmissionUtils.updateNonUuidInTransmission(response);
+    // }
 
-    //                 if (res != null) {
-    //                     existE_HIUuid = res.getUuid().toString();
-    //                     uploadedUuids.add(res);
-    //                     processedUrls.add(response.getHindiErrataUrl());
-    //                 }
-    //             }
-    //         }
-    //     } catch (Exception e) {
-    //         System.out.println("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
-    //         eTransmissionUtils.updateNonUuidInTransmission(response);
-    //     }
+    // // ----------- FILE ENGLISH -----------
+    // try {
+    // if (response.getList1EngUrl() != null && response.getList1EngUuid() == null
+    // && !processedUrls.contains(response.getList1EngUrl())) {
 
-    //     // ----------- FILE ENGLISH -----------
-    //     try {
-    //         if (response.getList1EngUrl() != null && response.getList1EngUuid() == null
-    //                 && !processedUrls.contains(response.getList1EngUrl())) {
+    // fileEngData =
+    // eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+    // ConstantsUtility.F_EN);
 
-    //             fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(), ConstantsUtility.F_EN);
+    // if (fileEngData != null && fileEngData.length > 0) {
+    // ResponseDocsUuids res = eTransmissionUtils.processFile(
+    // response, existF_ENUuid, fileEngData,
+    // ConstantsUtility.F_EN, response.getList1EngUrl(), uploadedUuids);
 
-    //             if (fileEngData != null && fileEngData.length > 0) {
-    //                 ResponseDocsUuids res = eTransmissionUtils.processFile(
-    //                         response, existF_ENUuid, fileEngData,
-    //                         ConstantsUtility.F_EN, response.getList1EngUrl(), uploadedUuids);
+    // if (res != null) {
+    // existF_ENUuid = res.getUuid().toString();
+    // uploadedUuids.add(res);
+    // processedUrls.add(response.getList1EngUrl());
+    // }
+    // }
+    // }
+    // } catch (Exception e) {
+    // System.out.println("ERROR Fetching data from FILE EN URL: " +
+    // e.getMessage());
+    // eTransmissionUtils.updateNonUuidInTransmission(response);
+    // }
 
-    //                 if (res != null) {
-    //                     existF_ENUuid = res.getUuid().toString();
-    //                     uploadedUuids.add(res);
-    //                     processedUrls.add(response.getList1EngUrl());
-    //                 }
-    //             }
-    //         }
-    //     } catch (Exception e) {
-    //         System.out.println("ERROR Fetching data from FILE EN URL: " + e.getMessage());
-    //         eTransmissionUtils.updateNonUuidInTransmission(response);
-    //     }
+    // // ----------- FILE HINDI -----------
+    // try {
+    // if (response.getList1HindiUrl() != null && response.getList1HindiUuid() ==
+    // null
+    // && !processedUrls.contains(response.getList1HindiUrl())) {
 
-    //     // ----------- FILE HINDI -----------
-    //     try {
-    //         if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null
-    //                 && !processedUrls.contains(response.getList1HindiUrl())) {
+    // fileHindiData =
+    // eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+    // ConstantsUtility.F_HI);
 
-    //             fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(), ConstantsUtility.F_HI);
+    // if (fileHindiData != null && fileHindiData.length > 0) {
+    // ResponseDocsUuids res = eTransmissionUtils.processFile(
+    // response, existF_HIUuid, fileHindiData,
+    // ConstantsUtility.F_HI, response.getList1HindiUrl(), uploadedUuids);
 
-    //             if (fileHindiData != null && fileHindiData.length > 0) {
-    //                 ResponseDocsUuids res = eTransmissionUtils.processFile(
-    //                         response, existF_HIUuid, fileHindiData,
-    //                         ConstantsUtility.F_HI, response.getList1HindiUrl(), uploadedUuids);
+    // if (res != null) {
+    // existF_HIUuid = res.getUuid().toString();
+    // uploadedUuids.add(res);
+    // processedUrls.add(response.getList1HindiUrl());
+    // }
+    // }
+    // }
+    // } catch (Exception e) {
+    // System.out.println("ERROR Fetching data from FILE HI URL: " +
+    // e.getMessage());
+    // eTransmissionUtils.updateNonUuidInTransmission(response);
+    // }
 
-    //                 if (res != null) {
-    //                     existF_HIUuid = res.getUuid().toString();
-    //                     uploadedUuids.add(res);
-    //                     processedUrls.add(response.getList1HindiUrl());
-    //                 }
-    //             }
-    //         }
-    //     } catch (Exception e) {
-    //         System.out.println("ERROR Fetching data from FILE HI URL: " + e.getMessage());
-    //         eTransmissionUtils.updateNonUuidInTransmission(response);
-    //     }
+    // // If no valid files were uploaded, update the entity
+    // if ((fileEngData == null || fileEngData.length == 0)
+    // && (fileHindiData == null || fileHindiData.length == 0)
+    // && (errataEngData==null || errataEngData.length==0)
+    // && (errataHiData==null || errataHiData.length==0)) {
+    // eTransmissionUtils.updateNonUuidInTransmission(response);
+    // }
 
-    //     // If no valid files were uploaded, update the entity
-    //     if ((fileEngData == null || fileEngData.length == 0)
-    //             && (fileHindiData == null || fileHindiData.length == 0)
-    //             && (errataEngData==null || errataEngData.length==0)
-    //             && (errataHiData==null || errataHiData.length==0)) {
-    //         eTransmissionUtils.updateNonUuidInTransmission(response);
-    //     }
-
-    //     return uploadedUuids;
+    // return uploadedUuids;
     // }
     private Boolean existsUrlAndUuid(ETransmissionUploadTempEntity response) {
         Boolean isTrueOrFalse = true;
@@ -943,13 +972,13 @@ public class PublishServiceImpl implements PublishService {
                 byte[] fileSignatureData = null;
                 UUID existingPhUuid = response.getPhotoUuid();
                 UUID existingSgUuid = response.getSignatureUuid();
-                if (existingPhUuid != null && existingSgUuid != null ) {
+                if (existingPhUuid != null && existingSgUuid != null) {
                     System.out.println("skip");
                     continue;
                 } else {
-                    if (existingPhUuid==null && StringUtils.isNotBlank(response.getPhotoUrl())){
+                    if (existingPhUuid == null && StringUtils.isNotBlank(response.getPhotoUrl())) {
                         try {
-                            System.out.println("file "+response.getPhotoUrl());
+                            System.out.println("file " + response.getPhotoUrl());
 
                             filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
                                     ConstantsUtility.PHOTO);
@@ -965,9 +994,9 @@ public class PublishServiceImpl implements PublishService {
                             memberUtils.updateNonUuidInMemPhoto(response);
                         }
                     }
-                    if (existingSgUuid==null && StringUtils.isNotBlank(response.getSignatureUrl())) {
+                    if (existingSgUuid == null && StringUtils.isNotBlank(response.getSignatureUrl())) {
                         try {
-                            System.out.println("file "+response.getSignatureUrl());
+                            System.out.println("file " + response.getSignatureUrl());
                             fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
                                     ConstantsUtility.SIGN);
                             System.out.println("fileData " + fileSignatureData);
@@ -1034,6 +1063,15 @@ public class PublishServiceImpl implements PublishService {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
     }
 
+    public static Specification<PublishDocumentTempRS> hasRsNo(String rsNo) {
+        return (root, query, criteriaBuilder) -> {
+            if (rsNo != null) {
+                return criteriaBuilder.equal(root.get("sesNo"), rsNo);
+            }
+            return criteriaBuilder.conjunction();
+        };
+    }
+
     private Specification<ETransmissionUploadTempEntity> hasHouseId(Long house) {
         return (root, query, criteriaBuilder) -> {
             if (house != null) {
@@ -1055,8 +1093,9 @@ public class PublishServiceImpl implements PublishService {
     public String uploadAndReturnUuid(PublishDocumentTemp response, PublishDocumentTempRS responseRs, byte[] fileData) {
         try {
             String houseAbbr = utils.getHouseAbbr();
-
             System.out.println("response " + response);
+            System.out.println("response Rs " + responseRs);
+
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
                 if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
@@ -1071,29 +1110,45 @@ public class PublishServiceImpl implements PublishService {
                 logger.error("Authorization token is missing. Cannot upload file.");
                 return "token null";
             }
-            String appAbbr = repository.getAbbrByApplicationId(response.getApplicationId());
+
+            String appAbbr = getAppAbbr(response, responseRs, houseAbbr);
             System.out.println("appAbbr " + appAbbr);
             List<String> folders = new ArrayList();
             folders.add(houseAbbr);
-            if (appAbbr.equalsIgnoreCase("PMB") || appAbbr.equalsIgnoreCase("B2")) {
-                folders.add(getYear(response.getForDate()));
-                folders.add(getMonth(response.getForDate()));
-            } else {
-                if (response.getSesNo() != null) {
-                    if (ConstantsUtility.LOK_SABHA.equals(houseAbbr)) {
-
+            System.out.println("house " + houseAbbr);
+            if (ConstantsUtility.LOK_SABHA.equals(houseAbbr)) {
+                if (StringUtils.isNotBlank(appAbbr) && appAbbr.equalsIgnoreCase("PMB")
+                        || appAbbr.equalsIgnoreCase("B2")) {
+                    folders.add(getYear(response.getForDate()));
+                    folders.add(getMonth(response.getForDate()));
+                } else {
+                    if (response.getSesNo() != null) {
                         folders.add(response.getLsNo());
                         if (!isRoman(response.getSesNo())) {
                             response.setSesNo(toRoman(Integer.parseInt(response.getSesNo())));
                         }
                         folders.add(response.getSesNo());
-                    } else if (StringUtils.isNotBlank(responseRs.getRsesNo())) {
-                        folders.add(responseRs.getRsesNo());
+                    }
+                }
+            } else {
+                if (StringUtils.isNotBlank(appAbbr) && appAbbr.equalsIgnoreCase("PMB")
+                        || appAbbr.equalsIgnoreCase("B2")) {
+                    if (responseRs.getForDate() != null) {
+                        // LocalDateTime
+                        // dateTime=getLocalDateTimeFromTimeStramp(responseRs.getForDate())
+                        folders.add(getYearFromTime(responseRs.getForDate()));
+                        folders.add(getMonthFromTime(responseRs.getForDate()));
+                    }
+                } else {
+                    if (StringUtils.isNotBlank(responseRs.getSesNo())) {
+                        folders.add(responseRs.getSesNo());
+
                     }
                 }
             }
 
             folders.add(appAbbr);
+
             System.out.println("folders " + folders);
             String rootPath = ConstantsUtility.OKM_ROOT;
             String folderPath = createDmsFolderStructure(rootPath, folders);
@@ -1107,10 +1162,13 @@ public class PublishServiceImpl implements PublishService {
             // String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
             // : originalFileName.substring(0, lastDotIndex);
             String fileNameWithoutExt = "";
+            System.out.println("LS " + response);
+            System.out.println("RS " + responseRs);
+
             if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
-                response.getUrl();
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getUrl());
             else
-                responseRs.getUrl();
+                fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getUrl());
             System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
@@ -1122,7 +1180,7 @@ public class PublishServiceImpl implements PublishService {
             String updatedFileName = fileNameWithoutExt + ".pdf";
             // Create a temporary file
 
-            File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
+            File tempFile = File.createTempFile(updatedFileName, ".pdf");
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
             }
@@ -1141,7 +1199,7 @@ public class PublishServiceImpl implements PublishService {
             body.add("documentName", updatedFileName);
             body.add("masterId", 231);
 
-            body.add("applicationNo", response.getApplicationId());
+            body.add("applicationNo", getApplicationIdHouse(response, responseRs, houseAbbr));
             body.add("referenceId", 1);
             body.add("referenceType", "ApplicationInstance");
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
@@ -1190,10 +1248,61 @@ public class PublishServiceImpl implements PublishService {
             logger.error("Error writing temp file: ", e);
         } catch (Exception e) {
             logger.error("Error uploading file: ", e.getMessage());
+            e.printStackTrace();
         }
         return "";
     }
 
+   
+
+    private Object getApplicationIdHouse(PublishDocumentTemp response, PublishDocumentTempRS responseRs,
+            String houseAbbr) {
+        // TODO Auto-generated method stub
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
+            return response.getApplicationId();
+        else
+            return responseRs.getApplicationId();
+    }
+
+    public String getAppAbbr(PublishDocumentTemp ls, PublishDocumentTempRS rs, String house) {
+        // TODO Auto-generated method stub
+        try {
+            if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house))
+                return repository.getAbbrByApplicationId(ls.getApplicationId());
+            else
+                return repository.getAbbrByApplicationId(rs.getApplicationId());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public LocalDateTime getLocalDateTimeFromTimeStramp(String date) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // Convert to LocalDateTime
+        return LocalDateTime.parse(date, formatter);
+    }
+
+    public String getFileNameWithOutExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return fileName.substring(0, dotIndex);
+        } else {
+            return fileName;
+        }
+    }
+    private String getMonthFromTime(String forDate) {
+        // TODO Auto-generated method stub
+        LocalDateTime date=getLocalDateTimeFromTimeStramp(forDate);
+        return ""+date.getMonthValue();
+    }
+    private String getYearFromTime(String forDate) {
+        // TODO Auto-generated method stub
+        LocalDateTime date=getLocalDateTimeFromTimeStramp(forDate);
+        return ""+date.getYear();
+    }
     private String getYear(String date) {
         // Assuming format mm/dd/yyyy or m/d/yyyy
         if (date == null || !date.contains("/"))
@@ -1228,10 +1337,15 @@ public class PublishServiceImpl implements PublishService {
         if (entity.isPresent()) {
             PublishDocumentTempRS entitys = entity.get();
             entitys.setPublishUuid(stringToUuid(uuid));
-            entitys.setIsUuidUpdated(true);
+            entitys.setPublishUrl(uuidToUrl(uuid));
+            entitys.setIsUpdatedUuid(true);
             entitys = rsDocRepo.save(entitys);
             System.out.println("entity " + entity);
         }
+    }
+
+    public String uuidToUrl(String uuid) {
+        return openKmUrl + "/dsp1/downloads/" + uuid;
     }
 
     private void updateNonUuid(PublishDocumentTemp response) {
@@ -1250,8 +1364,9 @@ public class PublishServiceImpl implements PublishService {
                 .findById(response.getId());
         if (entity.isPresent()) {
             PublishDocumentTempRS entitys = entity.get();
-            entitys.setIsUuidUpdated(false);
+            entitys.setIsUpdatedUuid(false);
             entitys = rsDocRepo.save(entitys);
+
             System.out.println("entity " + entity);
         }
     }
@@ -1263,136 +1378,6 @@ public class PublishServiceImpl implements PublishService {
     @Override
     public String createDmsFolderStructure(String root, List<String> folders) {
         return folderCreationUtils.createDmsFolderStructure(root, folders);
-    }
-
-    public String uploadAndReturnUuidRs(PublishDocumentTempRS response, byte[] fileData) {
-        // try {
-
-        // System.out.println("response " + response);
-        // System.out.println("fileData " + fileData);
-        // String uploadUrl = openKmUrl + "/document/upload";
-        // HttpHeaders headers = new HttpHeaders();
-        // System.out.println("uploadUrl " + uploadUrl);
-        // headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        // // Set Authorization Token
-        // String token = getTokenFromRequest();
-        // if (token == null || token.isEmpty()) {
-        // logger.error("Authorization token is missing. Cannot upload file.");
-        // return "";
-        // }
-        // headers.set("Authorization", "Bearer " + token);
-        // // Extract filename and ensure .pdf extension
-
-        // // adding specific folders
-        // try {
-        // HttpEntity<String> checkEntity = new HttpEntity<>(headers);
-        // restTemplate.exchange(folderCheckUrl, HttpMethod.GET, checkEntity,
-        // String.class);
-        // logger.info("Folder exists: {}", folderPath);
-        // } catch (HttpClientErrorException.NotFound ex) {
-        // // Folder does not exist - create it
-        // logger.info("Folder not found, creating: {}", folderPath);
-        // String createFolderUrl = openKmUrl + "/folder/createSimple";
-        // MultiValueMap<String, String> createFolderBody = new LinkedMultiValueMap<>();
-        // createFolderBody.add("parentPath", "/okm:root");
-        // createFolderBody.add("name", "PC");
-        // HttpEntity<MultiValueMap<String, String>> createFolderEntity = new
-        // HttpEntity<>(createFolderBody,
-        // headers);
-        // ResponseEntity<String> createFolderResponse =
-        // restTemplate.postForEntity(createFolderUrl,
-        // createFolderEntity, String.class);
-        // if (createFolderResponse.getStatusCode().is2xxSuccessful()) {
-        // logger.info("Folder created successfully: {}", folderPath);
-        // } else {
-        // logger.error("Failed to create folder: {}",
-        // createFolderResponse.getStatusCode());
-        // return "";
-        // }
-        // } catch (Exception e) {
-        // logger.error("Error while checking or creating folder: ", e);
-        // return "";
-        // }
-        // //
-        // //
-        // String originalFileName = response.getUrl();
-        // int lastDotIndex = originalFileName.lastIndexOf(".");
-        // String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
-        // : originalFileName.substring(0, lastDotIndex);
-        // String updatedFileName = fileNameWithoutExt + ".pdf";
-        // // Create a temporary file
-        // File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
-        // try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-        // fos.write(fileData);
-        // }
-        // // Create file resource
-        // ByteArrayResource resource = new ByteArrayResource(fileData) {
-        // @Override
-        // public String getFilename() {
-        // return updatedFileName;
-        // }
-        // };
-        // // Prepare request body
-        // MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        // body.add("file", resource);
-        // body.add("folderPath", folderPath);
-        // body.add("documentName", updatedFileName);
-        // body.add("masterId", 231);
-        // body.add("applicationNo", response.getApplicationId());
-        // body.add("referenceId", 1);
-        // body.add("referenceType", "ApplicationInstance");
-
-        // HttpEntity<MultiValueMap<String, Object>> requestEntity = new
-        // HttpEntity<>(body, headers);
-        // ResponseEntity<Map<String, Object>> responseEntity =
-        // restTemplate.exchange(uploadUrl, HttpMethod.POST,
-        // requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
-        // });
-
-        // logger.info("Response from OpenKM: {}", responseEntity);
-
-        // // Check response status
-        // if (responseEntity.getStatusCode().is2xxSuccessful() &&
-        // responseEntity.getBody() != null) {
-        // Map<String, Object> responseBody = responseEntity.getBody();
-        // logger.info("Response Body: {}", responseBody);
-        // // Extract "data"
-        // Object dataObject = responseBody.get("data");
-        // if (dataObject instanceof Map) {
-        // Map<String, Object> dataMap = (Map<String, Object>) dataObject;
-        // // Extract "documentUuid"
-        // Object generatedUuid = dataMap.get("documentUuid");
-        // logger.info("Extracted documentUuid: {}", generatedUuid);
-        // if (generatedUuid != null && !generatedUuid.toString().trim().isEmpty()) {
-        // String uuidString = generatedUuid.toString().trim();
-        // try {
-        // UUID uuid = UUID.fromString(uuidString);
-        // Optional<PublishDocumentTemp> entity = tempRepo.findById(response.getId());
-        // if (entity.isPresent()) {
-        // PublishDocumentTemp temp = tempRepo.save(entity.get());
-        // }
-        // logger.info("entity after saving");
-        // // repository.saveUuidById(uuid, response.getId());
-        // return uuidString;
-        // } catch (IllegalArgumentException ex) {
-        // logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
-        // }
-        // } else {
-        // logger.warn("Received empty or null UUID from OpenKM: {}", dataMap);
-        // }
-        // } else {
-        // logger.warn("Response does not contain 'data' field: {}", responseBody);
-        // }
-        // } else {
-        // logger.error("Failed to upload document. HTTP Status: {}",
-        // responseEntity.getStatusCode());
-        // }
-        // } catch (IOException e) {
-        // logger.error("Error writing temp file: ", e);
-        // } catch (Exception e) {
-        // logger.error("Error uploading file: ", e);
-        // }
-        return "";
     }
 
     public String getTokenFromRequest() {
@@ -1463,15 +1448,6 @@ public class PublishServiceImpl implements PublishService {
         return (root, query, criteriaBuilder) -> {
             if (sesNo != null) {
                 return criteriaBuilder.equal(root.get("sesNo"), sesNo);
-            }
-            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
-        };
-    }
-
-    public static Specification<PublishDocumentTempRS> hasRSNo(String rsNo) {
-        return (root, query, criteriaBuilder) -> {
-            if (rsNo != null) {
-                return criteriaBuilder.equal(root.get("rsesNo"), rsNo);
             }
             return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
         };
