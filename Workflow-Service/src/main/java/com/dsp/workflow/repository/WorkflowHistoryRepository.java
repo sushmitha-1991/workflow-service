@@ -30,14 +30,15 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Modifying
 	@Transactional
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
-			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name = :receiverUserName, pending_start_date = :actionTakenOn "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name = :receiverUserName, pending_start_date = :actionTakenOn, ip_address = :userIp "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
 			+ "AND action_taken_by IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForStepType(@Param("processInstanceId") String processInstanceId,
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
 			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId,
-			@Param("receiverUserId") Long receiverUserId, @Param("receiverUserName") String receiverUserName);
+			@Param("receiverUserId") Long receiverUserId, @Param("receiverUserName") String receiverUserName,
+			@Param("userIp") String userIp);
 
 	List<WorkflowHistory> findBySubModuleIdAndActionTakenBy(String subModuleId, Long UserId);
 
@@ -195,13 +196,14 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	@Modifying
 	@Transactional
 	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
-			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = NULL, pending_with_name = NULL "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = NULL, pending_with_name = NULL, ip_address = :userIp "
 			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
 			+ "AND action_taken_by IS NULL", nativeQuery = true)
 	void updateWorkflowHistoryForFinalStepType(@Param("processInstanceId") String processInstanceId,
 			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
 			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
-			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId);
+			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId,
+			@Param("userIp") String userIp);
 
 	/**
 	 * @param lokSabhaSession
@@ -357,7 +359,7 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 
 			    union
 
-			    SELECT ah.ref_no as applicationNo, CASE 
+			    SELECT ah.ref_no as applicationNo, CASE
 				  WHEN inp.status = 'Returned' THEN 'Returned'
 				    ELSE 'In Progress'
 				  END AS status
