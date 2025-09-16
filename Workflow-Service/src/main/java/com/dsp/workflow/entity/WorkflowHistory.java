@@ -7,7 +7,6 @@ package com.dsp.workflow.entity;
 
 import java.time.LocalDateTime;
 
-import com.dsp.workflow.config.XSSConfig.AllowHtml;
 import com.dsp.workflow.config.XSSConfig.NoEscape;
 
 import jakarta.persistence.CascadeType;
@@ -100,5 +99,8 @@ public class WorkflowHistory extends Auditable {
 
 	@Column(name = "corrected_debate_success")
 	private Boolean correctedDebateSuccess;
+
+	@Column(name = "ip_address", nullable = true)
+	private String userIpAddress;
 
 }
