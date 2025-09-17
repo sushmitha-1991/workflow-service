@@ -507,13 +507,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 			      left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
 			  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
 			      left join authentication.base_user bu on bu.id = ah.sent_to_user_id
-
+					left join workflow.drafted_document dd on dd.application_no=ah.ref_no
+					left join workflow.workflow_history wh on wh.draft_id=dd.id
 			      	left join master.designations d on bu.designation_id = d.id
 			    	left join authentication.user_roles ur on bu.id = ur.user_id
 					LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
 					LEFT JOIN master.offices o ON o.id = ur.office_id
 
 			      WHERE ah.sent_to_user_id = :userId
+			      and wh.draft_id is null
 			      AND inp.document_date IS NOT NULL
 			      and ah.is_active = true
 			      and ah.is_deleted = false
