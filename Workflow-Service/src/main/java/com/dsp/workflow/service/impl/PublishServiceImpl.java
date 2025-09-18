@@ -1771,6 +1771,7 @@ public class PublishServiceImpl implements PublishService {
                 		wf.for_date					  AS documentDate,
                 		wf.office_id                  AS officeId,
                 		wf.application_id             AS applicationId,
+                		 wf.application_no             AS applicationNo,     
                 		o.office_name                 AS officeName,
                 		COALESCE(a.name, wf.application_name) AS documentName
                     FROM workflow.publish_history wf
@@ -1847,8 +1848,9 @@ public class PublishServiceImpl implements PublishService {
                 .documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
                 .officeId(row[11] != null ? ((Number) row[11]).longValue() : null)
                 .applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
-                .branch(row[13] != null ? row[13].toString() : "")
-                .applicationName(row[14] != null ? row[14].toString() : "")
+                .applicationNo(row[13] != null ? row[13].toString() : "")
+                .branch(row[14] != null ? row[14].toString() : "")
+                .applicationName(row[15] != null ? row[15].toString() : "")
                 .build()).toList();
     }
 }
