@@ -90,7 +90,7 @@ public class JwtFilter extends OncePerRequestFilter {
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
 
-		GenericResponse<Object> genericResponse = new GenericResponse<>(status, success, message, null);
+		GenericResponse<Object> genericResponse = new GenericResponse<>(success, message, null, status);
 
 // Convert object to JSON
 		ObjectMapper mapper = new ObjectMapper();
