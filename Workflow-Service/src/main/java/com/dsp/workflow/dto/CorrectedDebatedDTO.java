@@ -40,4 +40,6 @@ public class CorrectedDebatedDTO {
 	private String inputContent;
 
 	private String contentUUID;
+	
+	private String dsp2Key;
 }
