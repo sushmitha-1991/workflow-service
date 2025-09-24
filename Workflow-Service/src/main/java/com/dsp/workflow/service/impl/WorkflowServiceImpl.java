@@ -1174,7 +1174,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return CorrectedDebatedDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
-				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
+				.inputContent((String) row[5]).dsp2Key((String) row[6]).receivedDate(LocalDate.now()).build();
 	}
 
 	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) { 
