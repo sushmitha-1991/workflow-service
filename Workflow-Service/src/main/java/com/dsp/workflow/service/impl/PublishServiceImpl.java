@@ -1308,7 +1308,7 @@ public class PublishServiceImpl implements PublishService {
         if (date == null || !date.contains("/"))
             return "";
         String[] parts = date.split("/");
-        return (parts.length == 3) ? parts[2] : "";
+        return ((parts.length == 3) ? parts[2] : "").trim();
     }
 
     private String getMonth(String date) {
@@ -1316,7 +1316,7 @@ public class PublishServiceImpl implements PublishService {
         if (date == null || !date.contains("/"))
             return "";
         String[] parts = date.split("/");
-        return (parts.length >= 1) ? parts[0] : "";
+        return ((parts.length >= 1) ? parts[0] : "").trim();
     }
 
     private void updatePublishTempTable(PublishDocumentTemp response, String uuid) {
