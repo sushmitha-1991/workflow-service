@@ -203,7 +203,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+        	                null as draft_abbr
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
@@ -215,8 +216,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                and wh.action_taken_by is null
 			        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			        and a.id not in (select a.id from master.applications a, master.modules m
-			                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId),
-	                null as draft_abbr
+			                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId)
 			union
 			        select
 			                distinct on
