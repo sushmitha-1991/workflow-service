@@ -40,7 +40,12 @@ public class FolderCreationUtils {
         }
         return null;
     }
-    
+     public String trimStr(String str)
+    {
+        if(StringUtils.isBlank(str) || StringUtils.isEmpty(str))
+        return "";
+        return str.trim();
+    }
     public String createDmsFolderStructure(String root, List<String> folders) {
 
         String path = (StringUtils.isEmpty(root)) ? OKM_ROOT : root;
@@ -57,7 +62,7 @@ public class FolderCreationUtils {
             if (i > 0) {
                 folderName += "/";
             }
-            folderName += folders.get(i);
+            folderName += trimStr(folders.get(i));
             try {
                 createFolderIfNotExists(path, folderName, token);
 
