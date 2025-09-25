@@ -700,8 +700,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			) A
 			left join master.applications ma on
 			        ma.id = A.applicationId
-			left join master.application_draft_map adm on
-			        ma.abbr = adm.draft_abbr
+			left join master.applications_draft_map adm on
+			     ma.abbr = adm.abbr
 
 					""";
 
