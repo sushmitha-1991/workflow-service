@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -32,7 +34,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -156,14 +157,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private HttpServletRequest httpRequest;
-	
-    private final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+	private final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+	private static final Logger log = LoggerFactory.getLogger(WorkflowServiceImpl.class);
 
 	private final static String allDocumentsQuery = """
 
-							SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url, uploaded_document_uuid
+			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, 
+			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid
 			FROM (
 			                            select
 			                    distinct on
@@ -200,7 +203,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+        	                null as draft_abbr
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
@@ -248,7 +252,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                (
 			                select
@@ -320,7 +325,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ii.html_content_en as htmlContentEn,
 			                ii.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid
+			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                master.input_instance ii
 			        join master.applications a on
@@ -358,7 +364,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as htmlContentEn,
 			                null as htmlContentHi,
 			                null as editorId,
-			                null as uploaded_document_uuid
+			                null as uploaded_document_uuid,
+			                dd.abbr as draft_abbr
 			        from
 			        	workflow.drafted_document dd
 				        left join  workflow.workflow_history wh on 
@@ -403,7 +410,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
@@ -446,7 +454,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as htmlContentEn,
 			                null as htmlContentHi,
 			                CAST(rd.editor_id AS VARCHAR) as editorId,
-			                null as uploaded_document_uuid
+			                null as uploaded_document_uuid,
+			                null as draft_abbr			                
 			FROM synopsis.roster_detail rd
 			JOIN synopsis.roster r ON rd.roster_id = r.id
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
@@ -497,7 +506,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			              null as htmlContentEn,
 			              null as htmlContentHi,
 			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
-			              null as uploaded_document_uuid
+			              null as uploaded_document_uuid,
+		                  null as draft_abbr
 			      FROM translation.translation_input inp
 			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			      left join master.applications ma on ma.id = inp.document_type_id
@@ -505,13 +515,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 			      left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
 			  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
 			      left join authentication.base_user bu on bu.id = ah.sent_to_user_id
-
+					left join workflow.drafted_document dd on dd.application_no=ah.ref_no
+					left join workflow.workflow_history wh on wh.draft_id=dd.id
 			      	left join master.designations d on bu.designation_id = d.id
 			    	left join authentication.user_roles ur on bu.id = ur.user_id
 					LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
 					LEFT JOIN master.offices o ON o.id = ur.office_id
 
 			      WHERE ah.sent_to_user_id = :userId
+			      and wh.draft_id is null
 			      AND inp.document_date IS NOT NULL
 			      and ah.is_active = true
 			      and ah.is_deleted = false
@@ -544,7 +556,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        null as htmlContentEn,
 			        null as htmlContentHi,
 			        CAST(da.allocateto AS VARCHAR) as editorId,
-			        null as uploaded_document_uuid
+			        null as uploaded_document_uuid,
+		            null as draft_abbr
 			FROM corrected_debate.allocation da
 			left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
@@ -593,7 +606,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				    null as htmlContentEn,
 				    null as htmlContentHi,
 				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
-				    null as uploaded_document_uuid
+				    null as uploaded_document_uuid,
+		            null as draft_abbr
 				FROM corrected_debate.allocation_history da
 				left join corrected_debate.translation_input i on i.id = da.translation_input_id
 				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
@@ -629,7 +643,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				       null as htmlContentEn,
 				       null as htmlContentHi,
 				       null as editorId,
-				       null as uploaded_document_uuid
+				       null as uploaded_document_uuid,
+		               null as draft_abbr
 				   FROM agenda_papers.e_summon es
 				   where es.status = 'Published' and es.house_id = :houseId
 				   and es.is_active = true and es.is_deleted = false
@@ -666,7 +681,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        ai.html_content_en as htmlContentEn,
 			        ai.html_content_hi as htmlContentHi,
 			        null as editorId,
-			                null as uploaded_document_uuid
+			        null as uploaded_document_uuid,
+		            null as draft_abbr
 			from
 			        workflow.workflow_history wh
 			join master.application_instance ai on
@@ -684,6 +700,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			) A
 			left join master.applications ma on
 			        ma.id = A.applicationId
+			left join master.applications_draft_map adm on
+			     ma.abbr = adm.abbr
 
 					""";
 
@@ -738,61 +756,30 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return (tasks != null && !tasks.isEmpty()) ? tasks.get(0).get("id").toString() : null;
 	}
 
-	// @Transactional
-	// public String completeTask(String taskId, Map<String, Object> variables) {
-	// // Fetch the task
-	// Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-	// if (task != null) {
-	// // Complete the task
-	// taskService.complete(taskId, variables);
-	//
-	// // Create a new Notesheet entity using the mapper
-	// Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId);
-	// notesheetRepository.save(notesheet);
-	// // Create and save ApplicationAuthority entity using the mapper
-	// ApplicationAuthority applicationAuthority =
-	// ApplicationAuthorityMapper.fromVariables(variables,
-	// notesheet.getApplicationHistoryId());
-	// applicationAuthorityRepository.save(applicationAuthority);
-	//
-	// // Create and save ApplicationHistory entity using the mapper
-	// ApplicationHistory applicationHistory =
-	// ApplicationHistoryMapper.fromVariables(variables, taskId);
-	// applicationHistoryRepository.save(applicationHistory);
-	//
-	// // Fetch the next task ID if available
-	// Task nextTask =
-	// taskService.createTaskQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
-	// String nextTaskId = (nextTask != null) ? nextTask.getId() : null;
-	//
-	// return nextTaskId;
-	// } else {
-	// return null;
-	// }
-	// }
 	@Transactional
 	public String completeTask(String taskId, Map<String, Object> variables,
 			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note) {
 		try {
-			System.out.println(">>> checkpoint 1");
+			log.info("Starting completeTask for taskId: {}", taskId);
+
 			String url = camundaRestUrl + "/task/" + taskId + "/complete";
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
 			headers.setContentType(MediaType.APPLICATION_JSON);
-			System.out.println(">>> checkpoint 2");
 
 			// Convert variables to a format expected by Camunda REST API
 			Map<String, Object> requestBody = new HashMap<>();
 			requestBody.put("variables", formatVariablesForCamunda(variables));
-			System.out.println(">>> checkpoint 3");
+
+			log.debug("Camunda complete task request body: {}", requestBody);
 
 			// Create an HttpEntity with headers and body
 			HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-			System.out.println(">>> checkpoint 4");
 
 			// Execute the REST API call to complete the task
+			log.info("Calling Camunda complete task API: {}", url);
 			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-			System.out.println(">>> checkpoint 5");
+			log.info("Camunda complete task response: {}", response.getStatusCode());
 
 			// Extract variables for further processing
 			String userName = utils.getUserFullNameFromAuthentication();
@@ -807,193 +794,190 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String initalStatusKey = application_no + "." + actionTaken + ".POSTSTATUS";
 			String receiverUserName = (String) variables.get("receiverUserName");
 			String status = (String) variables.get("status");
-			LocalDateTime actionTakenOn = LocalDateTime.now(); // Assuming the action is taken now
+			LocalDateTime actionTakenOn = LocalDateTime.now();
+			String userIp = Utils.getLoggedInUserIp(httpRequest);
+
+			log.debug(
+					"Extracted workflow variables - processInstanceId: {}, application_no: {}, actionTaken: {}, stepType: {}",
+					processInstanceId, application_no, actionTaken, variables.get("stepType"));
 
 			// Fetch next task ID
 			String nextTaskId = fetchNextTaskId(processInstanceId);
+			log.info("Next taskId fetched: {}", nextTaskId);
 
 			// Check if the task was successfully completed
 			if (response.getStatusCode().is2xxSuccessful()) {
-				// Determine step type
 				String stepType = (String) variables.get("stepType");
+				log.info("Processing stepType: {}", stepType);
 
 				if ("INIT".equals(stepType)) {
-					// Entry to Notesheet Table
+					log.info("Processing INIT step...");
+
 					try {
 						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 						notesheetRepository.save(notesheet);
+						log.info("Notesheet saved for INIT step");
 					} catch (Exception e) {
-						System.err.println("Unexpected error in INIT step: " + e.getMessage());
-						e.printStackTrace();
+						log.error("Error while saving notesheet in INIT step", e);
 						throw new RuntimeException("Unexpected error while processing INIT step", e);
 					}
 
-					System.out.println(">>> checkpoint 11");
-
-					// First entry with status = "submitted"
 					WorkflowHistory.WorkflowHistoryBuilder firstEntryBuilder = WorkflowHistory.builder()
 							.processInstanceId(processInstanceId).subModuleId(application_no)
 							.applicationInstanceId(applicationInstanceId).actionTakenBy(senderUserId)
 							.actionTakenByName(userName).actionTaken(actionTaken).actionTakenOn(LocalDateTime.now())
 							.status(status).statusKey(statusKey).actionUrl(actionUrl).pendingWith(receiverUserId)
 							.pendingWithName(receiverUserName).pendingStartDate(LocalDateTime.now())
-							.initalStatusKey(statusKey).note(note).currentTaskId(taskId);
-					System.out.println(">>> checkpoint 12");
+							.initalStatusKey(statusKey).note(note).currentTaskId(taskId).userIpAddress(userIp);
 
-					// Second entry, for the next task or status
 					WorkflowHistory.WorkflowHistoryBuilder secondEntryBuilder = WorkflowHistory.builder()
 							.processInstanceId(processInstanceId).subModuleId(application_no)
 							.applicationInstanceId(applicationInstanceId).actionTaken(null).actionTakenBy(null)
 							.actionTakenByName(null).actionTakenOn(null).status(null).statusKey(null)
 							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-							.nextTaskId(nextTaskId).actionUrl(actionUrl);
-					System.out.println(">>> checkpoint 13");
+							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp);
 
-					// Entry to Translation Inputs
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
-					System.out.println(">>> " + translationInputDTO);
-					
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+						log.info("Translation flag is true, calling Translation API");
 						try {
 							callTranslationAPI(translationInputDTO);
 							secondEntryBuilder.translationSuccess(true);
 							firstEntryBuilder.translationSuccess(true);
-
+							log.info("Translation API call successful");
 						} catch (Exception e) {
-							// Log and continue
 							secondEntryBuilder.translationSuccess(false);
 							firstEntryBuilder.translationSuccess(false);
-							e.printStackTrace();
-
+							log.error("Translation API call failed", e);
 						}
 					}
 
-					System.out.println(">>> checkpoint 14");
-
 					WorkflowHistory firstEntry = firstEntryBuilder.build();
 					workflowHistoryRepository.save(firstEntry);
-
-					System.out.println(">>> checkpoint 15");
+					log.info("Workflow history (first entry) saved for INIT step");
 
 					WorkflowHistory secondEntry = secondEntryBuilder.build();
 					workflowHistoryRepository.save(secondEntry);
-
-					System.out.println(">>> checkpoint 16");
+					log.info("Workflow history (second entry) saved for INIT step");
 
 				} else if ("INTER".equals(stepType)) {
+					log.info("Processing INTER step...");
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+					log.info("Application instance updated for INTER step");
 
-					// Entry to Notesheet Table
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
+					log.info("Notesheet saved for INTER step");
 
 					workflowHistoryRepository.updateWorkflowHistoryForStepType(processInstanceId, applicationInstanceId,
 							senderUserId, userName, actionTakenOn, status, statusKey, taskId, receiverUserId,
-							receiverUserName);
+							receiverUserName, userIp);
+					log.info("Workflow history updated for INTER step");
 
 					WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
 							.subModuleId(application_no).applicationInstanceId(applicationInstanceId)
 							.actionTakenBy(null).actionTakenByName(null).actionTakenOn(null).status(null)
 							.statusKey(null).pendingWith(receiverUserId).pendingWithName(receiverUserName)
 							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initalStatusKey).note(note)
-							.nextTaskId(nextTaskId).actionUrl(actionUrl).build();
+							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp).build();
 					workflowHistoryRepository.save(entry);
+					log.info("Workflow history entry saved for INTER step");
 
 				} else if ("FINAL".equals(stepType)) {
+					log.info("Processing FINAL step...");
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+					log.info("Application instance updated for FINAL step");
 
-					// Entry to Notesheet Table
 					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 					notesheetRepository.save(notesheet);
+					log.info("Notesheet saved for FINAL step");
 
-					// Update existing workflow history for FINAL step
 					workflowHistoryRepository.updateWorkflowHistoryForFinalStepType(processInstanceId,
-							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId);
+							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId,
+							userIp);
+					log.info("Workflow history updated for FINAL step");
 
-					// Translation API
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+						log.info("Calling Translation API in FINAL step");
 						try {
 							callTranslationAPI(translationInputDTO);
+							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
-							e.printStackTrace();
+							log.error("Translation API failed in FINAL step", e);
 						}
 					}
 
-					// Section Bulletin 2
 					SectionBulletin2AppHouseDTO sectionBulletin2AppHouseDTO = getSectionB2AppHouse(
 							applicationInstanceId);
-					System.out.println(">>> sectionBulletin2AppHouseDTO - " + sectionBulletin2AppHouseDTO);
-
 					if (sectionBulletin2AppHouseDTO != null
 							&& BULLETIN_2_RS.equals(sectionBulletin2AppHouseDTO.getApplicationName())
 							&& RS_HOUSE.equals(sectionBulletin2AppHouseDTO.getHouse())) {
+						log.info("Processing Section Bulletin 2 for RS...");
 						try {
 							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
 									applicationInstanceId);
-							System.out.println(">>> sectionBulletin2DTOs - " + sectionBulletin2DTOs);
 							if (!sectionBulletin2DTOs.isEmpty()) {
 								callSectionB2RS(sectionBulletin2DTOs);
+								log.info("Section B2 RS API call successful");
 							}
 						} catch (Exception e) {
-							e.printStackTrace();
+							log.error("Section B2 RS API call failed", e);
 						}
 					}
 
-					// Corrected Debates API
 					String appAbbr = workflowHistoryRepository.getApplicationAbbr(convertToLong(application_no));
 					if (CORRECTED_DEBATES_ABBR.equals(appAbbr)) {
+						log.info("Processing Corrected Debates flow...");
 						CorrectedDebatedDTO correctedDebatedDTO = getCorrectedDebatedDTO(applicationInstanceId);
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
 						try {
 							callCorrectedDebatesAPI(correctedDebatedDTO);
+							log.info("Corrected Debates API call successful");
 
 							try {
-								// Calling Debate Tagging for DTAG
 								debateTaggingDTO.setApplicationId(80L);
 								callDebateTagging(debateTaggingDTO);
+								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
-								System.err.println("Error in first call to callDebateTagging (DTAG):");
-								e.printStackTrace();
+								log.error("Debate tagging (DTAG) failed", e);
 							}
 
 							try {
-								// Calling Debate Tagging for Supplementary Tagging
 								debateTaggingDTO.setApplicationId(81L);
 								callDebateTagging(debateTaggingDTO);
+								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
-								System.err.println("Error in second call to callDebateTagging (Supplementary):");
-								e.printStackTrace();
+								log.error("Debate tagging (Supplementary) failed", e);
 							}
 
 						} catch (Exception e) {
-							e.printStackTrace();
+							log.error("Corrected Debates API failed", e);
 						}
 					}
 
 //					// B2 - INPUT API for RS
 //					if (B2_ABBR.equals(appAbbr) && "RS".equals(utils.getHouseAbbr())) {
 //						callB2InputAPI();
-//					}	
-
+//					}
 				}
 
-				// Return next task ID or end message
 				if (nextTaskId == null) {
+					log.info("Workflow has ended for processInstanceId: {}", processInstanceId);
 					return "Workflow has ended";
 				}
+				log.info("Returning nextTaskId: {}", nextTaskId);
 				return nextTaskId;
 
 			} else {
+				log.error("Camunda complete task API failed with status: {}", response.getStatusCode());
 				throw new RuntimeException("Failed to complete task with Camunda API");
 			}
 
-		} catch (
-
-		Exception e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			log.error("Error completing task with external Camunda API", e);
 			throw new CamundaException("Error completing task with external Camunda API: " + e.getMessage(), e);
 		}
 	}
@@ -1172,10 +1156,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return CorrectedDebatedDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).documentTypeId(convertToLong(row[3]))
 				.documentDate(convertToLocalDate(row[4])) // updated line
-				.inputContent((String) row[5]).receivedDate(LocalDate.now()).build();
+				.inputContent((String) row[5]).dsp2Key((String) row[6]).receivedDate(LocalDate.now()).build();
 	}
 
-	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) { 
+	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
 		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
@@ -1191,8 +1175,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.documentDate(convertToLocalDate(row[4])) // updated line
 				.inputContent((String) row[5]).translationFlag(row[6] != null ? (Boolean) row[6] : null)
 				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
-				.dsp2key(!StringUtils.isEmpty((String)row[9]) ? (String)row[9] : null)
-				.build(); 
+				.dsp2key(!StringUtils.isEmpty((String) row[9]) ? (String) row[9] : null).build();
 	}
 
 	private LocalDate convertToLocalDate(Object dateObj) {
@@ -1228,56 +1211,56 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return null;
 	}
 
-	
 	public void callTranslationAPI(TranslationInputDTO translationInputDTO) {
 		try {
-			
+
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
 			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
-			
-			if (translationInputDTO.getContentUUID() == null) { 
-			
+
+			if (translationInputDTO.getContentUUID() == null) {
+
 				// Step 1: Call upload-html-english API
 				HttpHeaders formHeaders = new HttpHeaders();
 				formHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				formHeaders.setBearerAuth(token);
-	
+
 				// Check if startingPageNo is null, if so set to "1"
 				String startingPageNo = (translationInputDTO.getStartingPageNo() != null)
 						? translationInputDTO.getStartingPageNo().toString()
 						: "1";
-	
+
 				MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
 				formParams.add("htmlContentEn", translationInputDTO.getInputContent());
 				formParams.add("startingPageNo", startingPageNo);
 				formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
 				formParams.add("locale", "en");
-				
+
 				System.out.println("PARAMS: " + formParams);
-	
+
 				HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
-	
+
 				System.out.println(">>> upload failing - ");
-				ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
-	
+				ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest,
+						String.class);
+
 				System.out.println("### upload completed");
 				// Parse documentUuid from response
 				ObjectMapper objectMapper = new ObjectMapper();
 				JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
-	
+
 				if (!responseJson.has("documentUuid") || responseJson.get("documentUuid").isNull()) {
 					throw new RuntimeException("documentUuid not found in upload-html-english response");
 				}
-	
+
 				UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
-	
+
 				System.out.println("### doc - " + documentUuid);
-	
+
 				translationInputDTO.setContentUUID(documentUuid); // directly set it
 			}
-			
+
 			// Step 2: Call translation API
 			HttpHeaders jsonHeaders = new HttpHeaders();
 			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -1861,6 +1844,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 			draftDocument.setForDate(draftDataDTO.getForDate());
 			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
+			draftDocument.setAbbr(draftDataDTO.getAbbr());
+
+			System.out.println("**DRAFT 1: " + draftDocument);
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -1906,6 +1892,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		responseMap.put("lokSabhaSessionNumber", lokSabhaSessionNumber);
 		responseMap.put("actionUrl", draftDataDTO.getActionUrl());
 		responseMap.put("applicationNo", draftDocument.getApplicationNo());
+		responseMap.put("abbr", draftDocument.getAbbr());
 
 		return responseMap;
 	}
@@ -2016,31 +2003,23 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public InProgressCountResponse getInProgressCount(Long userId, Long houseId) {
 		return workflowHistoryRepository.getInProgressStatusCount(userId, houseId);
 	}
-	
+
 	@Override
-	public TaskResponseDTO getDocStatusForDate (long applicationId, 
-								LocalDate docDate) {
-		
+	public TaskResponseDTO getDocStatusForDate(long applicationId, LocalDate docDate) {
+
 		List<Object[]> result = applicationInstanceRepository.getDocStatusByDate(applicationId, docDate);
 
 		if (result.isEmpty()) {
-			return TaskResponseDTO.builder()
-					.exists(false)
-					.build();		
+			return TaskResponseDTO.builder().exists(false).build();
 		}
 
 		Object[] row = result.get(0);
-	    LocalDate localDate = LocalDate.parse((String)row[2], formatter);
-	    
-	    Date dbDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-	        
-		return TaskResponseDTO.builder()
-				.applicationId((Long) row[0])
-				.status((String) row[1])
-				.date(dbDate)
-				.exists(true)
+		LocalDate localDate = LocalDate.parse((String) row[2], formatter);
+
+		Date dbDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+		return TaskResponseDTO.builder().applicationId((Long) row[0]).status((String) row[1]).date(dbDate).exists(true)
 				.build();
 	}
-	
 
 }

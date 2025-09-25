@@ -62,6 +62,9 @@ public class DraftDocument extends Auditable {
 	@Column(name = "for_date", nullable = true)
 	private LocalDate forDate;
 	
-	@Column(name = "only_office_dsp2_key", nullable = false)
+	@Column(name = "only_office_dsp2_key", nullable = true)
 	private String onlyOfficeDsp2Key;
+	
+	@Column(name = "abbr", nullable = true)
+	private String abbr;	
 }

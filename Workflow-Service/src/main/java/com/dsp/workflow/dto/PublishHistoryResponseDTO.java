@@ -24,6 +24,7 @@ public class PublishHistoryResponseDTO {
 	private LocalDate documentDate;
 	private Long officeId;
 	private Long applicationId;
+    private String applicationNo;
 	private String branch;
 	private String applicationName;
 
