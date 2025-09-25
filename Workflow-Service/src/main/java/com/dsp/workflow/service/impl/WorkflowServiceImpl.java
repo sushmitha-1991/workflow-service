@@ -164,8 +164,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 
-							SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
-			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, ma.save_as_draft_url, uploaded_document_uuid
+			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, 
+			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid
 			FROM (
 			                            select
 			                    distinct on
@@ -214,7 +215,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                and wh.action_taken_by is null
 			        and (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			        and a.id not in (select a.id from master.applications a, master.modules m
-			                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId)
+			                                        where a.module_id = m.id and a.abbr in ('SYN') and m.house_id = :houseId),
+	                null as draft_abbr
 			union
 			        select
 			                distinct on
@@ -250,7 +252,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                (
 			                select
@@ -322,7 +325,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ii.html_content_en as htmlContentEn,
 			                ii.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid
+			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                master.input_instance ii
 			        join master.applications a on
@@ -337,8 +341,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        select
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
-			                coalesce(a.document_display_name, a."name") as documentName,
-			                coalesce((dd.draft_data->>'documentDate')::date,dd.for_date) as date,
+			                coalesce(a.document_display_name, a."name") as documentName, 
+			                coalesce(dd.for_date, (dd.draft_data->>'documentDate')::date) as date,
 			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
 			                dd.lok_sabha_session_number as SSNo,
@@ -360,10 +364,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as htmlContentEn,
 			                null as htmlContentHi,
 			                null as editorId,
-			                null as uploaded_document_uuid
+			                null as uploaded_document_uuid,
+			                dd.abbr as draft_abbr
 			        from
 			        	workflow.drafted_document dd
-				        left join  workflow.workflow_history wh on
+				        left join  workflow.workflow_history wh on 
 			                dd.id = wh.draft_id
 			        left join master.applications a on
 			                a.id = dd.application_id
@@ -405,7 +410,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
-			                ai.uploaded_document_uuid as uploaded_document_uuid
+			                ai.uploaded_document_uuid as uploaded_document_uuid,
+			                null as draft_abbr
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
@@ -448,7 +454,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as htmlContentEn,
 			                null as htmlContentHi,
 			                CAST(rd.editor_id AS VARCHAR) as editorId,
-			                null as uploaded_document_uuid
+			                null as uploaded_document_uuid,
+			                null as draft_abbr			                
 			FROM synopsis.roster_detail rd
 			JOIN synopsis.roster r ON rd.roster_id = r.id
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
@@ -499,7 +506,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			              null as htmlContentEn,
 			              null as htmlContentHi,
 			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
-			              null as uploaded_document_uuid
+			              null as uploaded_document_uuid,
+		                  null as draft_abbr
 			      FROM translation.translation_input inp
 			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			      left join master.applications ma on ma.id = inp.document_type_id
@@ -548,7 +556,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        null as htmlContentEn,
 			        null as htmlContentHi,
 			        CAST(da.allocateto AS VARCHAR) as editorId,
-			        null as uploaded_document_uuid
+			        null as uploaded_document_uuid,
+		            null as draft_abbr
 			FROM corrected_debate.allocation da
 			left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
@@ -597,7 +606,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				    null as htmlContentEn,
 				    null as htmlContentHi,
 				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
-				    null as uploaded_document_uuid
+				    null as uploaded_document_uuid,
+		            null as draft_abbr
 				FROM corrected_debate.allocation_history da
 				left join corrected_debate.translation_input i on i.id = da.translation_input_id
 				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
@@ -633,7 +643,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				       null as htmlContentEn,
 				       null as htmlContentHi,
 				       null as editorId,
-				       null as uploaded_document_uuid
+				       null as uploaded_document_uuid,
+		               null as draft_abbr
 				   FROM agenda_papers.e_summon es
 				   where es.status = 'Published' and es.house_id = :houseId
 				   and es.is_active = true and es.is_deleted = false
@@ -670,7 +681,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        ai.html_content_en as htmlContentEn,
 			        ai.html_content_hi as htmlContentHi,
 			        null as editorId,
-			                null as uploaded_document_uuid
+			        null as uploaded_document_uuid,
+		            null as draft_abbr
 			from
 			        workflow.workflow_history wh
 			join master.application_instance ai on
@@ -688,6 +700,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			) A
 			left join master.applications ma on
 			        ma.id = A.applicationId
+			left join master.application_draft_map adm on
+			        ma.abbr = adm.draft_abbr
 
 					""";
 
@@ -1830,6 +1844,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 			draftDocument.setForDate(draftDataDTO.getForDate());
 			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
+			draftDocument.setAbbr(draftDataDTO.getAbbr());
+
+			System.out.println("**DRAFT 1: " + draftDocument);
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -1875,6 +1892,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		responseMap.put("lokSabhaSessionNumber", lokSabhaSessionNumber);
 		responseMap.put("actionUrl", draftDataDTO.getActionUrl());
 		responseMap.put("applicationNo", draftDocument.getApplicationNo());
+		responseMap.put("abbr", draftDocument.getAbbr());
 
 		return responseMap;
 	}
