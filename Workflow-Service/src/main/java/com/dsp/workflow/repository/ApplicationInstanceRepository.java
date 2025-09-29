@@ -20,7 +20,7 @@ import com.dsp.workflow.entity.ApplicationInstance;
  * 
  */
 @Repository
-public interface ApplicationInstanceRepository extends JpaRepository<ApplicationInstance, Long> { 
+public interface ApplicationInstanceRepository extends JpaRepository<ApplicationInstance, Long> {
 
 	@Query(value = """
 									SELECT
@@ -37,8 +37,8 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			FROM master.application_instance ai
 			LEFT JOIN master.applications a ON a.id = ai.application_id
 			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session
-			left join master.lok_sabha_session_masters lssm 
-				on lssm.session_number = ai.lok_sabha_session_number and lssm.lok_sabha_master_id = lsm.id		
+			left join master.lok_sabha_session_masters lssm
+				on lssm.session_number = ai.lok_sabha_session_number and lssm.lok_sabha_master_id = lsm.id
 			left join master.rajya_sabha_session_master rssm on rssm.session_number = ai.rajya_sabha_session
 			left join onlyoffice.only_office_metadata oom on oom.dsp2_key = ai.only_office_dsp2_key
 			WHERE ai.id = :applicationInstanceId
@@ -130,15 +130,20 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 						""", nativeQuery = true)
 	List<Object[]> getSectionB2AppHouse(Long applicationInstanceId);
 
-	
 	@Query(value = """
-				select ai.application_id, ai.current_status, ai.document_date 
-				from master.application_instance ai 
+				select ai.application_id, ai.current_status, ai.document_date
+				from master.application_instance ai
 				where ai.application_id = :applicationId
-				and ai.document_date = :docDate 
-				and ai.is_active = true 
+				and ai.document_date = :docDate
+				and ai.is_active = true
 				order by ai.created_at desc limit 1
 			""", nativeQuery = true)
 	List<Object[]> getDocStatusByDate(Long applicationId, LocalDate docDate);
+
+	/**
+	 * @return
+	 */
+	@Query(value = "SELECT id FROM master.rajya_sabha_session_master ORDER BY session_start DESC LIMIT 1", nativeQuery = true)
+	Long findLatestByCreatedBy();
 
 }

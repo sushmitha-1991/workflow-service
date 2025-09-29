@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dsp.workflow.dto.ApprovalOverrideRequest;
 import com.dsp.workflow.dto.CompleteTaskRequestDTO;
 import com.dsp.workflow.dto.DocumentMetadataDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
@@ -32,7 +33,6 @@ import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.TaskHistoryDTO;
 import com.dsp.workflow.dto.TaskQueryDTO;
 import com.dsp.workflow.dto.TaskResponseDTO;
-import com.dsp.workflow.dto.TranslationInputDTO;
 import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
 import com.dsp.workflow.repository.ApplicationRepository;
@@ -406,7 +406,7 @@ public class WorkflowController {
 		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/get-input-documents") 
+	@GetMapping("/get-input-documents")
 	public ResponseEntity<GenericResponse<List<DocumentMetadataDTO>>> getInputDocuments(
 			@RequestParam(required = false) Long inputInstanceId, @RequestParam(required = false) Long draftId) {
 
@@ -430,12 +430,19 @@ public class WorkflowController {
 		return workflowService.getInProgressCount(utils.getUserIdFromAuthentication(),
 				utils.getHouseIdFromAuthentication());
 	}
-	
+
 	@GetMapping("/document-status-for-date")
-	public TaskResponseDTO getDocStatusForDate (long applicationId, 
-								LocalDate docDate) {
-		
+	public TaskResponseDTO getDocStatusForDate(long applicationId, LocalDate docDate) {
+
 		return workflowService.getDocStatusForDate(applicationId, docDate);
-	
+
 	}
+
+	@PostMapping("/approvals/override")
+	public ResponseEntity<String> approvalOverride(@RequestBody ApprovalOverrideRequest request) {
+
+		String response = workflowService.overrideApproval(request, request.getDocument());
+		return ResponseEntity.ok(response);
+	}
+
 }
