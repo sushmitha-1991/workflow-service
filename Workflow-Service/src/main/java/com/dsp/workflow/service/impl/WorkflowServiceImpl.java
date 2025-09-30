@@ -165,7 +165,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 
-			SELECT distinct applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			SELECT distinct  applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, 
 			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid
 			FROM (
