@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import com.dsp.workflow.dto.ApprovalOverrideRequest;
 import com.dsp.workflow.dto.DraftDataDTO;
 import com.dsp.workflow.dto.InProgressCountResponse;
 import com.dsp.workflow.dto.ProcessStepwiseDocumentsDTO;
@@ -124,7 +125,7 @@ public interface WorkflowService {
 	 * @param draftDataDTO
 	 * @return
 	 */
-	Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO); 
+	Map<String, Object> saveAsDraft(Long userId, DraftDataDTO draftDataDTO);
 
 	/**
 	 * @param userId
@@ -150,5 +151,12 @@ public interface WorkflowService {
 	 */
 	InProgressCountResponse getInProgressCount(Long userIdFromAuthentication, Long houseIdFromAuthentication);
 
-	TaskResponseDTO getDocStatusForDate (long applicationId, LocalDate docDate);
+	TaskResponseDTO getDocStatusForDate(long applicationId, LocalDate docDate);
+
+	/**
+	 * @param request
+	 * @param documentList
+	 * @return
+	 */
+	String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList);
 }

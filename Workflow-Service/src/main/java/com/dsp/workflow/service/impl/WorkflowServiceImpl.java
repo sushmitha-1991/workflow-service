@@ -37,6 +37,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.dto.ApprovalOverrideRequest;
 import com.dsp.workflow.dto.CorrectedDebatedDTO;
 import com.dsp.workflow.dto.DebateTaggingDTO;
 import com.dsp.workflow.dto.DraftDataDTO;
@@ -164,7 +165,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	private final static String allDocumentsQuery = """
 
-			SELECT applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
+			SELECT distinct applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag, 
 			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid
 			FROM (
@@ -204,7 +205,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.html_content_hi as htmlContentHi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
-        	                null as draft_abbr
+			     	                null as draft_abbr
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
@@ -341,7 +342,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        select
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
-			                coalesce(a.document_display_name, a."name") as documentName, 
+			                coalesce(a.document_display_name, a."name") as documentName,
 			                coalesce(dd.for_date, (dd.draft_data->>'documentDate')::date) as date,
 			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
@@ -368,7 +369,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                dd.abbr as draft_abbr
 			        from
 			        	workflow.drafted_document dd
-				        left join  workflow.workflow_history wh on 
+				        left join  workflow.workflow_history wh on
 			                dd.id = wh.draft_id
 			        left join master.applications a on
 			                a.id = dd.application_id
@@ -455,7 +456,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as htmlContentHi,
 			                CAST(rd.editor_id AS VARCHAR) as editorId,
 			                null as uploaded_document_uuid,
-			                null as draft_abbr			                
+			                null as draft_abbr
 			FROM synopsis.roster_detail rd
 			JOIN synopsis.roster r ON rd.roster_id = r.id
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
@@ -507,7 +508,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			              null as htmlContentHi,
 			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
 			              null as uploaded_document_uuid,
-		                  null as draft_abbr
+			                 null as draft_abbr
 			      FROM translation.translation_input inp
 			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			      left join master.applications ma on ma.id = inp.document_type_id
@@ -557,7 +558,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        null as htmlContentHi,
 			        CAST(da.allocateto AS VARCHAR) as editorId,
 			        null as uploaded_document_uuid,
-		            null as draft_abbr
+			           null as draft_abbr
 			FROM corrected_debate.allocation da
 			left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
@@ -607,7 +608,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				    null as htmlContentHi,
 				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
 				    null as uploaded_document_uuid,
-		            null as draft_abbr
+			           null as draft_abbr
 				FROM corrected_debate.allocation_history da
 				left join corrected_debate.translation_input i on i.id = da.translation_input_id
 				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
@@ -644,7 +645,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				       null as htmlContentHi,
 				       null as editorId,
 				       null as uploaded_document_uuid,
-		               null as draft_abbr
+			              null as draft_abbr
 				   FROM agenda_papers.e_summon es
 				   where es.status = 'Published' and es.house_id = :houseId
 				   and es.is_active = true and es.is_deleted = false
@@ -682,7 +683,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        ai.html_content_hi as htmlContentHi,
 			        null as editorId,
 			        null as uploaded_document_uuid,
-		            null as draft_abbr
+			           null as draft_abbr
 			from
 			        workflow.workflow_history wh
 			join master.application_instance ai on
@@ -700,9 +701,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			) A
 			left join master.applications ma on
 			        ma.id = A.applicationId
-			left join master.applications_draft_map adm on
-			     ma.abbr = adm.abbr
-
+			left join master.applications_draft_map adm on A.draft_abbr = adm.abbr
 					""";
 
 	private final static String orderByClause = """
@@ -1869,7 +1868,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setLokSabhaSessionNumber(lokSabhaSessionNumber);
 			draftDocument.setRajyaSabhaSession(rajyaSabhaSession);
 			draftDocument.setForDate(draftDataDTO.getForDate());
-
+			draftDocument.setAbbr(draftDataDTO.getAbbr());
 			// Save new draft document
 			draftDocumentRepository.save(draftDocument);
 
@@ -2020,6 +2019,95 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		return TaskResponseDTO.builder().applicationId((Long) row[0]).status((String) row[1]).date(dbDate).exists(true)
 				.build();
+	}
+
+	@Transactional
+	@Override
+	public String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList) {
+		System.out.println(">>> Starting overrideApproval for AppId: " + request.getAppId());
+
+		// Generate Application Number
+		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
+		serialNumberRequest.setAppId(request.getAppId());
+		serialNumberRequest.setSessionId(request.getSessionId());
+
+		System.out.println(">>> serialNumberRequest - " + serialNumberRequest);
+
+		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
+		System.out.println(">>> Generated Application Number: " + appNo);
+
+		// Add entry to Application Instance table
+		ApplicationInstance applicationInstance = ApplicationInstance.builder().applicationNo(appNo.toString())
+				.currentStatus("Approved").processInstanceId(null).applicationId(request.getAppId())
+				.lokSabhaSession(request.getLokSabhaNo()).lokSabhaSessionNumber(request.getLokSabhaSession())
+				.rajyaSabhaSession(request.getRajyaSabhaNo()).documentDate(request.getDocumentDate())
+				.htmlContentEnglish(request.getDsp2Key()).onlyOfficeDsp2Key(request.getDsp2Key()).build();
+
+		applicationInstanceRepository.save(applicationInstance);
+		System.out.println(">>> ApplicationInstance saved with Id: " + applicationInstance.getId());
+
+		// Update RefId
+		applicationInstance.setRefId(applicationInstance.getId());
+		applicationInstanceRepository.saveAndFlush(applicationInstance);
+		System.out.println(">>> ApplicationInstance updated with RefId: " + applicationInstance.getRefId());
+
+		// Translation API call
+		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstance.getId());
+		System.out.println(">>> translationInputDTO - " + translationInputDTO);
+		if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
+			System.out.println(">>> Translation required. Calling Translation API...");
+			try {
+				callTranslationAPI(translationInputDTO);
+				System.out.println(">>> Translation API call successful.");
+			} catch (Exception e) {
+				System.err.println(">>> Translation API failed: " + e.getMessage());
+				e.printStackTrace();
+			}
+		} else {
+			System.out.println(">>> Translation not required.");
+		}
+
+		// Prepare variables map
+		Map<String, Object> variables = new HashMap<>();
+
+		// Handle receiverUserId
+		if (request.getReceiverUserId() == null || request.getReceiverUserId().toString().trim().isEmpty()) {
+			variables.put("receiverUserId", 0);
+		} else {
+			variables.put("receiverUserId", request.getReceiverUserId());
+		}
+
+		// Handle receiverRoleId
+		if (request.getReceiverRoleId() == null || request.getReceiverRoleId().toString().trim().isEmpty()) {
+			variables.put("receiverRoleId", 0);
+		} else {
+			variables.put("receiverRoleId", request.getReceiverRoleId());
+		}
+
+		// Fixed values
+		variables.put("actionTaken", "FINAL"); // hardcoded as per requirement
+		variables.put("applicationInstanceId", applicationInstance.getId());
+
+		System.out.println(">>> Variables prepared for Notesheet: " + variables);
+
+		// Add to Notesheet
+		Notesheet notesheet = NotesheetMapper.fromVariables(variables, null, documentList, request.getNote());
+		notesheetRepository.save(notesheet);
+		System.out.println(">>> Notesheet saved with Id: " + notesheet.getId());
+
+		// Add Workflow History
+		WorkflowHistory workflowHistory = WorkflowHistory.builder().applicationInstanceId(applicationInstance.getId())
+				.subModuleId(request.getAppId().toString()).note(request.getNote())
+				.actionTakenBy(utils.getUserIdFromAuthentication())
+				.actionTakenByName(utils.getUserFullNameFromAuthentication()).actionTakenOn(LocalDateTime.now())
+				.pendingWith(null).pendingWithName(null).pendingStartDate(LocalDateTime.now()).status("Approved")
+				.userIpAddress(utils.getLoggedInUserIp(httpRequest)).build();
+
+		workflowHistoryRepository.save(workflowHistory);
+		System.out.println(">>> WorkflowHistory saved for ApplicationInstanceId: " + applicationInstance.getId());
+
+		System.out.println(">>> overrideApproval completed successfully.");
+		return "Document Approved Successfully";
 	}
 
 }
