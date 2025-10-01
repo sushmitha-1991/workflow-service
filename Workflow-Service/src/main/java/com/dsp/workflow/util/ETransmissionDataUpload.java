@@ -29,14 +29,18 @@ import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.ResponseDocsUuids;
 import com.dsp.workflow.dto.ResponseMember;
+import com.dsp.workflow.entity.ETransmissionRSUploadTempEntity;
 import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
+import com.dsp.workflow.repository.ETransmissionRSRepository;
 import com.dsp.workflow.repository.ETransmissionRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Component
 public class ETransmissionDataUpload {
+    @Autowired
+    private ETransmissionRSRepository eTransmissionRSRepository;
     @Autowired
     private ETransmissionRepository eTransmissionRepository;
     @Autowired
@@ -69,6 +73,17 @@ public class ETransmissionDataUpload {
         }
     }
 
+    public void updateNonUuidInRSTransmission(ETransmissionRSUploadTempEntity response) {
+        Optional<ETransmissionRSUploadTempEntity> entity = eTransmissionRSRepository
+                .findById(response.getId());
+        if (entity.isPresent()) {
+            ETransmissionRSUploadTempEntity entitys = entity.get();
+            entitys.setIsUpdatedAllUuid(false);
+            entitys = eTransmissionRSRepository.save(entitys);
+            System.out.println("entity " + entity);
+        }
+    }
+
     public void updateNonUuidInTransmission(ETransmissionUploadTempEntity response) {
         Optional<ETransmissionUploadTempEntity> entity = eTransmissionRepository
                 .findById(response.getId());
@@ -90,12 +105,16 @@ public class ETransmissionDataUpload {
     }
 
     public ResponseDocsUuids uploadAndReturnUuidResp(ETransmissionUploadTempEntity response,
-            byte[] fileData, String fileType, String url) {
+            ETransmissionRSUploadTempEntity responseRs,
+            byte[] fileData, String fileType, String url, String house) {
         try {
             System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
-                updateNonUuidInTransmission(response);
+                if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house))
+                    updateNonUuidInTransmission(response);
+                if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house))
+                    updateNonUuidInRSTransmission(responseRs);
                 return null;
             }
             // // Set Authorization Token
@@ -105,10 +124,22 @@ public class ETransmissionDataUpload {
                 return null;
             }
             List<String> folders = new ArrayList();
-            String houseAbbr = utils.getHouseAbbr();
-            folders.add(houseAbbr);
+            // String houseAbbr = utils.getHouseAbbr();
+            folders.add(house);
             folders.add("E_Papers");
-            folders.add(getYear(response.getDateOfCirculation()));
+            // LS and RS
+            String fileNameWithoutExt = "";
+            if (ConstantsUtility.LOK_SABHA.equals(house)) {
+                folders.add(getYear(response.getDateOfCirculation()));
+                fileNameWithoutExt = fileNameDependsOnFileType(response, responseRs, house, fileType);
+
+                System.out.println("file Name before slash and space update Ls" + fileNameWithoutExt);
+            } else if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house)) {
+                folders.add(getYear(responseRs.getDateOfCirculation()));
+                fileNameWithoutExt = fileNameDependsOnFileType(response, responseRs, house, fileType);
+
+                System.out.println("file Name before slash and space update RS" + fileNameWithoutExt);
+            }
             folders.add(fileType);
             System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
@@ -118,16 +149,6 @@ public class ETransmissionDataUpload {
             System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
-            String fileNameWithoutExt = "";
-            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Eng());
-            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Hindi());
-            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
-                fileNameWithoutExt =getFileNameWithOutExtension(response.getEngErrata());
-            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
-                fileNameWithoutExt = getFileNameWithOutExtension(response.getHindiErrata());
-            System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
                 fileNameWithoutExt = fileNameWithoutExt
@@ -135,13 +156,10 @@ public class ETransmissionDataUpload {
                         .replace("/", "-");
             }
             System.out.println("file Name after slash and space update" + fileNameWithoutExt);
-            String updatedFileName = fileNameWithoutExt+"_dsp1.pdf";
+            String updatedFileName = fileNameWithoutExt + "_dsp1.pdf";
             // String updatedFileName = fileNameWithoutExt+".pdf";
-
             // Create a temporary file
-
             File tempFile = File.createTempFile(fileNameWithoutExt, ".pdf");
-
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 fos.write(fileData);
             }
@@ -185,7 +203,8 @@ public class ETransmissionDataUpload {
                         String uuidString = generatedUuid.toString().trim();
                         try {
                             UUID uuid = UUID.fromString(uuidString);
-                            ResponseDocsUuids res = updateTransmTableUuid(uuid, fileType, response, url, houseAbbr);
+                            ResponseDocsUuids res = updateTransmTableUuid(uuid, fileType, response, responseRs, url,
+                                    house);
                             return res;
                         } catch (IllegalArgumentException ex) {
                             logger.error("Invalid UUID format received from OpenKM: {}", uuidString, ex);
@@ -205,6 +224,32 @@ public class ETransmissionDataUpload {
             logger.error("Error uploading file: ", e.getMessage());
         }
         return null;
+    }
+
+    public String fileNameDependsOnFileType(ETransmissionUploadTempEntity response,
+            ETransmissionRSUploadTempEntity responseRs, String house, String fileType) {
+        String fileNameWithoutExt = "";
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
+            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Eng());
+            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getList1Hindi());
+            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getEngErrata());
+            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(response.getHindiErrata());
+        } else if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house)) {
+            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getList1Eng());
+            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getList1Hindi());
+            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getEngErrata());
+            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getHindiErrata());
+        }
+        return fileNameWithoutExt;
+
     }
 
     public String getFileNameWithOutExtension(String fileName) {
@@ -228,7 +273,8 @@ public class ETransmissionDataUpload {
             byte[] data, String type, String url,
             List<ResponseDocsUuids> uploadedUuids) {
         if (StringUtils.isBlank(existingUuid) && data != null && data.length > 0) {
-            return uploadAndReturnUuidResp(response, data, type, url);
+            return uploadAndReturnUuidResp(response, new ETransmissionRSUploadTempEntity(),
+                    data, type, url, ConstantsUtility.LOK_SABHA);
         }
         return null;
     }
@@ -237,36 +283,85 @@ public class ETransmissionDataUpload {
             byte[] data, String type, String url,
             List<ResponseDocsUuids> uploadedUuids) {
         if (StringUtils.isBlank(existingUuid)) {
-            return uploadAndReturnUuidResp(response, data, type, url);
+            return uploadAndReturnUuidResp(response, new ETransmissionRSUploadTempEntity(),
+                    data, type, url, ConstantsUtility.LOK_SABHA);
+            // uploadedUuids.add(respFile);
+        }
+        return null;
+    }
+
+    // RS
+
+    public ResponseDocsUuids processErrataRS(ETransmissionRSUploadTempEntity response, String existingUuid,
+            byte[] data, String type, String url,
+            List<ResponseDocsUuids> uploadedUuids) {
+        if (StringUtils.isBlank(existingUuid) && data != null && data.length > 0) {
+            return uploadAndReturnUuidResp(new ETransmissionUploadTempEntity(), response, data, type, url,
+                    ConstantsUtility.RAJYA_SABHA);
+        }
+        return null;
+    }
+
+    public ResponseDocsUuids processFileRS(ETransmissionRSUploadTempEntity response, String existingUuid,
+            byte[] data, String type, String url,
+            List<ResponseDocsUuids> uploadedUuids) {
+        if (StringUtils.isBlank(existingUuid)) {
+            return uploadAndReturnUuidResp(new ETransmissionUploadTempEntity(), response, data, type, url,
+                    ConstantsUtility.RAJYA_SABHA);
             // uploadedUuids.add(respFile);
         }
         return null;
     }
 
     public ResponseDocsUuids updateTransmTableUuid(UUID uuid, String fileType,
-            ETransmissionUploadTempEntity response, String url, String house) {
+            ETransmissionUploadTempEntity response, ETransmissionRSUploadTempEntity responseRs,
+            String url, String house) {
         // TODO Auto-generated method stub
-        Optional<ETransmissionUploadTempEntity> entity = eTransmissionRepository
-                .findById(response.getId());
-        if (entity.isPresent()) {
-            ETransmissionUploadTempEntity entitys = entity.get();
-            entitys.setIsUpdatedAllUuid(true);
-            if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
-                entitys.setEngErrataUuid(uuid.toString());
-            if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
-                entitys.setHindiErrataUuid(uuid.toString());
-            if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
-                entitys.setList1EngUuid(uuid.toString());
-            if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
-                entitys.setList1HindiUuid(uuid.toString());
-            entitys = eTransmissionRepository.save(entitys);
-            System.out.println("entity " + entity);
-            ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
-                    .fileType(fileType)
-                    .url(url)
-                    .uuid(uuid).build();
-            return res;
-
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
+            Optional<ETransmissionUploadTempEntity> entity = eTransmissionRepository
+                    .findById(response.getId());
+            if (entity.isPresent()) {
+                ETransmissionUploadTempEntity entitys = entity.get();
+                entitys.setIsUpdatedAllUuid(true);
+                if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                    entitys.setEngErrataUuid(uuid.toString());
+                if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                    entitys.setHindiErrataUuid(uuid.toString());
+                if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                    entitys.setList1EngUuid(uuid.toString());
+                if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                    entitys.setList1HindiUuid(uuid.toString());
+                entitys = eTransmissionRepository.save(entitys);
+                System.out.println("entity " + entity);
+                ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
+                        .fileType(fileType)
+                        .url(url)
+                        .uuid(uuid).build();
+                return res;
+            }
+        }
+       else if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
+            Optional<ETransmissionRSUploadTempEntity> entity = eTransmissionRSRepository
+                    .findById(response.getId());
+            if (entity.isPresent()) {
+                ETransmissionRSUploadTempEntity entitys = entity.get();
+                entitys.setIsUpdatedAllUuid(true);
+                if (ConstantsUtility.E_EN.equalsIgnoreCase(fileType))
+                    entitys.setEngErrataUuid(uuid.toString());
+                if (ConstantsUtility.E_HI.equalsIgnoreCase(fileType))
+                    entitys.setHindiErrataUuid(uuid.toString());
+                if (ConstantsUtility.F_EN.equalsIgnoreCase(fileType))
+                    entitys.setList1EngUuid(uuid.toString());
+                if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
+                    entitys.setList1HindiUuid(uuid.toString());
+                entitys = eTransmissionRSRepository.save(entitys);
+                System.out.println("entity " + entity);
+                ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
+                        .fileType(fileType)
+                        .url(url)
+                        .uuid(uuid).build();
+                return res;
+            }
         }
         return null;
     }

@@ -38,7 +38,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -49,6 +48,7 @@ import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
+import com.dsp.workflow.entity.ETransmissionRSUploadTempEntity;
 import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
 import com.dsp.workflow.entity.PublishDocumentTemp;
@@ -57,6 +57,7 @@ import com.dsp.workflow.entity.PublishHistoryEntity;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.ApplicationRepository;
+import com.dsp.workflow.repository.ETransmissionRSRepository;
 import com.dsp.workflow.repository.ETransmissionRepository;
 import com.dsp.workflow.repository.MemberTempUploadRepository;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
@@ -87,6 +88,8 @@ public class PublishServiceImpl implements PublishService {
     private String openKmUrl;
     @Autowired
     private ETransmissionRepository eTransmissionRepository;
+    @Autowired
+    private ETransmissionRSRepository eTransmissionRSRepository;
     // Global set to track already uploaded document URLs
     // private final Set<String> processedUrls = new HashSet<>();
     // // Pattern to detect versioned files (e.g., "_v1", "_v11", etc.)
@@ -606,9 +609,18 @@ public class PublishServiceImpl implements PublishService {
         return uploadedUuids;
     }
 
-    // uploadTransmissionDocs
     @Override
     public List<ResponseDocsUuids> uploadTransmissionDocs() {
+        String house = getHouse();
+        if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house))
+            return uploadTransmissionDocsLs();
+        if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house))
+            return uploadTransmissionDocsRs();
+        return null;
+    }
+
+    // uploadTransmissionDocsLs
+    public List<ResponseDocsUuids> uploadTransmissionDocsLs() {
         Long houseId = utils.getHouseIdFromAuthentication();
         Specification<ETransmissionUploadTempEntity> spec = Specification.where(hasHouseId(houseId));
         List<ETransmissionUploadTempEntity> urlList = eTransmissionRepository.findAll(spec);
@@ -627,6 +639,42 @@ public class PublishServiceImpl implements PublishService {
                 }
                 try {
                     uploadedUuids.addAll(fetchAndUploadDocument(response));
+                } catch (Exception e) {
+                    System.out.println("Exception " + e.getMessage());
+                }
+
+                System.out.println("uploadedUuids");
+                System.out.println(uploadedUuids);
+            }
+            return uploadedUuids;
+        } catch (Exception e) {
+            logger.error("Error downloading or processing file", e);
+        }
+        return uploadedUuids;
+
+    }
+
+    // etransmission_rs_temp
+    // uploadTransmissionDocsLs
+    public List<ResponseDocsUuids> uploadTransmissionDocsRs() {
+        Long houseId = utils.getHouseIdFromAuthentication();
+        Specification<ETransmissionRSUploadTempEntity> spec = Specification.where(hasHouseIdRS(houseId));
+        List<ETransmissionRSUploadTempEntity> urlList = eTransmissionRSRepository.findAll(spec);
+        List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
+        System.out.println("urlList " + urlList.size());
+        if (urlList != null && urlList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // System.out.println("Url List " + urlList);
+        int i = 0;
+        try {
+            for (ETransmissionRSUploadTempEntity response : urlList) {
+                if (existsUrlAndUuidRS(response)) {
+                    System.out.println("skip");
+                    continue;
+                }
+                try {
+                    uploadedUuids.addAll(fetchAndUploadDocumentRS(response));
                 } catch (Exception e) {
                     System.out.println("Exception " + e.getMessage());
                 }
@@ -752,6 +800,121 @@ public class PublishServiceImpl implements PublishService {
         if ((fileEngData == null || fileEngData.length == 0)
                 && (fileHindiData == null || fileHindiData.length == 0)) {
             eTransmissionUtils.updateNonUuidInTransmission(response);
+        }
+
+        return uploadedUuids;
+    }
+
+    private Collection<? extends ResponseDocsUuids> fetchAndUploadDocumentRS(ETransmissionRSUploadTempEntity response) {
+        List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
+
+        byte[] errataEngData = null;
+        byte[] errataHiData = null;
+        byte[] fileEngData = null;
+        byte[] fileHindiData = null;
+
+        String existE_ENUuid = response.getEngErrataUuid();
+        String existE_HIUuid = response.getHindiErrataUuid();
+        String existF_ENUuid = response.getList1EngUuid();
+        String existF_HIUuid = response.getList1HindiUuid();
+
+        // ----------- ERRATA ENGLISH -----------
+        try {
+            if (isUploadAllowed(response.getEngErrataUrl(), response.getEngErrataUuid(), response.getEngErrata())) {
+                errataEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getEngErrataUrl(),
+                        ConstantsUtility.E_EN);
+
+                if (errataEngData != null && errataEngData.length > 0) {
+                    ResponseDocsUuids res = eTransmissionUtils.processErrataRS(
+                            response, existE_ENUuid, errataEngData,
+                            ConstantsUtility.E_EN, response.getEngErrataUrl(), uploadedUuids);
+
+                    if (res != null) {
+                        existE_ENUuid = res.getUuid().toString();
+                        uploadedUuids.add(res);
+                        processedUrls.add(response.getEngErrataUrl());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInRSTransmission(response);
+        }
+
+        // ----------- ERRATA HINDI -----------
+        try {
+            if (isUploadAllowed(response.getHindiErrataUrl(), response.getHindiErrataUuid(),
+                    response.getHindiErrata())) {
+                errataHiData = eTransmissionUtils.getUrlAnReturnFileData(response.getHindiErrataUrl(),
+                        ConstantsUtility.E_HI);
+
+                if (errataHiData != null && errataHiData.length > 0) {
+                    ResponseDocsUuids res = eTransmissionUtils.processErrataRS(
+                            response, existE_HIUuid, errataHiData,
+                            ConstantsUtility.E_HI, response.getHindiErrataUrl(), uploadedUuids);
+
+                    if (res != null) {
+                        existE_HIUuid = res.getUuid().toString();
+                        uploadedUuids.add(res);
+                        processedUrls.add(response.getHindiErrataUrl());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInRSTransmission(response);
+        }
+
+        // ----------- FILE ENGLISH -----------
+        try {
+            if (isUploadAllowed(response.getList1EngUrl(), response.getList1EngUuid(), response.getList1Eng())) {
+                fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
+                        ConstantsUtility.F_EN);
+
+                if (fileEngData != null && fileEngData.length > 0) {
+                    ResponseDocsUuids res = eTransmissionUtils.processFileRS(
+                            response, existF_ENUuid, fileEngData,
+                            ConstantsUtility.F_EN, response.getList1EngUrl(), uploadedUuids);
+
+                    if (res != null) {
+                        existF_ENUuid = res.getUuid().toString();
+                        uploadedUuids.add(res);
+                        processedUrls.add(response.getList1EngUrl());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR Fetching data from FILE EN URL: " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInRSTransmission(response);
+        }
+
+        // ----------- FILE HINDI -----------
+        try {
+            if (isUploadAllowed(response.getList1HindiUrl(), response.getList1HindiUuid(), response.getHindiErrata())) {
+                fileHindiData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1HindiUrl(),
+                        ConstantsUtility.F_HI);
+
+                if (fileHindiData != null && fileHindiData.length > 0) {
+                    ResponseDocsUuids res = eTransmissionUtils.processFileRS(
+                            response, existF_HIUuid, fileHindiData,
+                            ConstantsUtility.F_HI, response.getList1HindiUrl(), uploadedUuids);
+
+                    if (res != null) {
+                        existF_HIUuid = res.getUuid().toString();
+                        uploadedUuids.add(res);
+                        processedUrls.add(response.getList1HindiUrl());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR Fetching data from FILE HI URL: " + e.getMessage());
+            eTransmissionUtils.updateNonUuidInRSTransmission(response);
+        }
+
+        // If no valid files were uploaded, update the entity
+        if ((fileEngData == null || fileEngData.length == 0)
+                && (fileHindiData == null || fileHindiData.length == 0)) {
+            eTransmissionUtils.updateNonUuidInRSTransmission(response);
         }
 
         return uploadedUuids;
@@ -953,6 +1116,21 @@ public class PublishServiceImpl implements PublishService {
         return isTrueOrFalse;
     }
 
+    private Boolean existsUrlAndUuidRS(ETransmissionRSUploadTempEntity response) {
+        Boolean isTrueOrFalse = true;
+
+        if (response.getList1EngUrl() != null && response.getList1EngUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getList1HindiUrl() != null && response.getList1HindiUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getEngErrataUrl() != null && response.getEngErrataUuid() == null)
+            isTrueOrFalse = false;
+        if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
+            isTrueOrFalse = false;
+        System.out.println("isTrueOrFalse " + isTrueOrFalse);
+        return isTrueOrFalse;
+    }
+
     @Override
     public List<ResponseMember> uploadMemberDSP2() {
         Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
@@ -1081,6 +1259,15 @@ public class PublishServiceImpl implements PublishService {
         };
     }
 
+    private Specification<ETransmissionRSUploadTempEntity> hasHouseIdRS(Long house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("houseId"), house);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+
     private Specification<MemberPhotoSignTemp> hasHouseInMem(String house) {
         return (root, query, criteriaBuilder) -> {
             if (house != null) {
@@ -1124,7 +1311,7 @@ public class PublishServiceImpl implements PublishService {
                 } else {
                     if (response.getSesNo() != null) {
                         folders.add(response.getLsNo());
-                        if (!isRoman(response.getSesNo())) {
+                        if (!isRoman(folderCreationUtils.trimStr(response.getSesNo()))) {
                             response.setSesNo(toRoman(Integer.parseInt(response.getSesNo())));
                         }
                         folders.add(response.getSesNo());
@@ -1253,8 +1440,6 @@ public class PublishServiceImpl implements PublishService {
         return "";
     }
 
-   
-
     private Object getApplicationIdHouse(PublishDocumentTemp response, PublishDocumentTempRS responseRs,
             String houseAbbr) {
         // TODO Auto-generated method stub
@@ -1293,16 +1478,19 @@ public class PublishServiceImpl implements PublishService {
             return fileName;
         }
     }
+
     private String getMonthFromTime(String forDate) {
         // TODO Auto-generated method stub
-        LocalDateTime date=getLocalDateTimeFromTimeStramp(forDate);
-        return ""+date.getMonthValue();
+        LocalDateTime date = getLocalDateTimeFromTimeStramp(forDate);
+        return "" + date.getMonthValue();
     }
+
     private String getYearFromTime(String forDate) {
         // TODO Auto-generated method stub
-        LocalDateTime date=getLocalDateTimeFromTimeStramp(forDate);
-        return ""+date.getYear();
+        LocalDateTime date = getLocalDateTimeFromTimeStramp(forDate);
+        return "" + date.getYear();
     }
+
     private String getYear(String date) {
         // Assuming format mm/dd/yyyy or m/d/yyyy
         if (date == null || !date.contains("/"))
@@ -1771,7 +1959,7 @@ public class PublishServiceImpl implements PublishService {
                 		wf.for_date					  AS documentDate,
                 		wf.office_id                  AS officeId,
                 		wf.application_id             AS applicationId,
-                		 wf.application_no             AS applicationNo,     
+                		 wf.application_no             AS applicationNo,
                 		o.office_name                 AS officeName,
                 		COALESCE(a.name, wf.application_name) AS documentName
                     FROM workflow.publish_history wf
