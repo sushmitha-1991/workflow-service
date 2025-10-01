@@ -340,9 +340,9 @@ public class ETransmissionDataUpload {
                 return res;
             }
         }
-       else if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
+       else if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house)) {
             Optional<ETransmissionRSUploadTempEntity> entity = eTransmissionRSRepository
-                    .findById(response.getId());
+                    .findById(responseRs.getId());
             if (entity.isPresent()) {
                 ETransmissionRSUploadTempEntity entitys = entity.get();
                 entitys.setIsUpdatedAllUuid(true);
