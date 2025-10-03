@@ -1845,7 +1845,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
 			draftDocument.setAbbr(draftDataDTO.getAbbr());
 
-			System.out.println("**DRAFT 1: " + draftDocument);
+			System.out.println("**DRAFT 1: " + draftDocument.getId());
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
