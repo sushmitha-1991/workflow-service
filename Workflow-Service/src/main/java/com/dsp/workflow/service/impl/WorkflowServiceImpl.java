@@ -2037,19 +2037,25 @@ public class WorkflowServiceImpl implements WorkflowService {
 		System.out.println(">>> Generated Application Number: " + appNo);
 
 		// Add entry to Application Instance table
-		ApplicationInstance applicationInstance = ApplicationInstance.builder().applicationNo(appNo.getId())
-				.currentStatus("Approved").processInstanceId(null).applicationId(request.getAppId())
-				.lokSabhaSession(request.getLokSabhaNo()).lokSabhaSessionNumber(request.getLokSabhaSession())
-				.rajyaSabhaSession(request.getRajyaSabhaNo()).documentDate(request.getDocumentDate())
-				.htmlContentEnglish(request.getDsp2Key()).onlyOfficeDsp2Key(request.getDsp2Key()).build();
+//		ApplicationInstance applicationInstance = ApplicationInstance.builder().applicationNo(appNo.getId())
+//				.currentStatus("Approved").processInstanceId(null).applicationId(request.getAppId())
+//				.lokSabhaSession(request.getLokSabhaNo()).lokSabhaSessionNumber(request.getLokSabhaSession())
+//				.rajyaSabhaSession(request.getRajyaSabhaNo()).documentDate(request.getDocumentDate())
+//				.htmlContentEnglish(request.getDsp2Key()).onlyOfficeDsp2Key(request.getDsp2Key()).build();
+//
+//		applicationInstanceRepository.save(applicationInstance);
+//		System.out.println(">>> ApplicationInstance saved with Id: " + applicationInstance.getId());
+//
+//		// Update RefId
+//		applicationInstance.setRefId(applicationInstance.getId());
+//		applicationInstanceRepository.saveAndFlush(applicationInstance);
+//		System.out.println(">>> ApplicationInstance updated with RefId: " + applicationInstance.getRefId());
 
-		applicationInstanceRepository.save(applicationInstance);
-		System.out.println(">>> ApplicationInstance saved with Id: " + applicationInstance.getId());
-
-		// Update RefId
-		applicationInstance.setRefId(applicationInstance.getId());
+		ApplicationInstance applicationInstance = applicationInstanceRepository.findByRefId(request.getRefId())
+				.orElseThrow(
+						() -> new RuntimeException("ApplicationInstance not found for appNo: " + request.getRefId()));
+		applicationInstance.setCurrentStatus("Approved");
 		applicationInstanceRepository.saveAndFlush(applicationInstance);
-		System.out.println(">>> ApplicationInstance updated with RefId: " + applicationInstance.getRefId());
 
 		// Translation API call
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstance.getId());

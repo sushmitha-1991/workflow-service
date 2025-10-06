@@ -29,4 +29,5 @@ public class ApprovalOverrideRequest {
 	private Long receiverRoleId;
 	private Integer receiverUserId;
 	private List<ProcessStepwiseDocumentsDTO> document;
+	private Long refId;
 }
