@@ -439,10 +439,16 @@ public class WorkflowController {
 	}
 
 	@PostMapping("/approvals/override")
-	public ResponseEntity<String> approvalOverride(@RequestBody ApprovalOverrideRequest request) {
-
+	public ResponseEntity<GenericResponse<String>> approvalOverride(@RequestBody ApprovalOverrideRequest request) {
 		String response = workflowService.overrideApproval(request, request.getDocument());
-		return ResponseEntity.ok(response);
+
+		GenericResponse<String> genericResponse = new GenericResponse<>(true, // success
+				"Approval overridden successfully", // message
+				response, // data
+				HttpStatus.OK.value() // statusCode
+		);
+
+		return ResponseEntity.ok(genericResponse);
 	}
 
 }
