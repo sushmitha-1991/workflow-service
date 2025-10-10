@@ -51,6 +51,7 @@ import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.entity.ETransmissionRSUploadTempEntity;
 import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
+import com.dsp.workflow.entity.MemberPhotoSignTempRS;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
@@ -60,6 +61,7 @@ import com.dsp.workflow.repository.ApplicationRepository;
 import com.dsp.workflow.repository.ETransmissionRSRepository;
 import com.dsp.workflow.repository.ETransmissionRepository;
 import com.dsp.workflow.repository.MemberTempUploadRepository;
+import com.dsp.workflow.repository.MemberTempUploadRepositoryRS;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.repository.PublishTempDocsRsRepository;
@@ -112,6 +114,8 @@ public class PublishServiceImpl implements PublishService {
     private FolderCreationUtils folderCreationUtils;
     @Autowired
     private MemberTempUploadRepository memberTempRepo;
+     @Autowired
+    private MemberTempUploadRepositoryRS memberTempRepoRs;
     @Autowired
     private Utils utils;
     @Autowired
@@ -1133,6 +1137,21 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public List<ResponseMember> uploadMemberDSP2() {
+        String house=getHouse();
+        if(ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house))
+        {
+        return uploadMemberDSP2LS(house);
+
+        }
+        else if(ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house))
+        {
+        return uploadMemberDSP2RS(house);
+
+        }
+        return null;
+    }
+
+    public List<ResponseMember> uploadMemberDSP2LS(String house) {
         Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
         List<MemberPhotoSignTemp> urlList = memberTempRepo.findAll(spec);
         List<ResponseMember> uploadedUuids = new ArrayList<>();
@@ -1162,7 +1181,7 @@ public class PublishServiceImpl implements PublishService {
                                     ConstantsUtility.PHOTO);
                             System.out.println("fileData " + filePhotoData);
                             ResponseMember memPhoto = memberUtils.processPhoto(response, existingPhUuid, filePhotoData,
-                                    uploadedUuids);
+                                    uploadedUuids,house);
                             existingPhUuid = memPhoto.getPhotoUuid();
                             uploadedUuids.add(memPhoto);
                             // processedUrls.add(response.getPhotoUrl());
@@ -1179,13 +1198,88 @@ public class PublishServiceImpl implements PublishService {
                                     ConstantsUtility.SIGN);
                             System.out.println("fileData " + fileSignatureData);
                             ResponseMember memSign = memberUtils.processSignature(response, existingSgUuid,
-                                    fileSignatureData, uploadedUuids);
+                                    fileSignatureData, uploadedUuids,house);
                             existingSgUuid = memSign.getSignUuid();
                             uploadedUuids.add(memSign);
                             processedUrls.add(response.getSignatureUrl());
                         } catch (Exception e) {
                             System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
                             memberUtils.updateNonUuidInMemSignature(response);
+                        }
+                    }
+                }
+                System.out.println("uploadedUuids");
+                System.out.println(uploadedUuids);
+            }
+            return uploadedUuids;
+        } catch (Exception e) {
+            logger.error("Error downloading or processing file", e);
+        }
+        return uploadedUuids;
+    }
+  private Specification<MemberPhotoSignTempRS> hasHouseInMemRs(String house) {
+        return (root, query, criteriaBuilder) -> {
+            if (house != null) {
+                return criteriaBuilder.equal(root.get("house"), house);
+            }
+            return criteriaBuilder.conjunction(); // Returns a valid Predicate that does not filter anything
+        };
+    }
+    
+    public List<ResponseMember> uploadMemberDSP2RS(String house) {
+        Specification<MemberPhotoSignTempRS> spec = Specification.where(hasHouseInMemRs(utils.getHouseAbbr()));
+        List<MemberPhotoSignTempRS> urlList = memberTempRepoRs.findAll(spec);
+        List<ResponseMember> uploadedUuids = new ArrayList<>();
+        Long houseId = utils.getHouseIdFromAuthentication();
+        System.out.println("urlList " + urlList.size());
+        if (urlList != null && urlList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // System.out.println("Url List " + urlList);
+        int i = 0;
+        try {
+            for (MemberPhotoSignTempRS response : urlList) {
+                // logger.info("Processing document: {}", response.getPhotoUrl());
+                byte[] filePhotoData = null;
+                byte[] fileSignatureData = null;
+                UUID existingPhUuid = response.getPhotoUuid();
+                UUID existingSgUuid = response.getSignatureUuid();
+                if (existingPhUuid != null && existingSgUuid != null) {
+                    System.out.println("skip");
+                    continue;
+                } else {
+                    if (existingPhUuid == null && StringUtils.isNotBlank(response.getPhotoUrl())) {
+                        try {
+                            System.out.println("file " + response.getPhotoUrl());
+
+                            filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
+                                    ConstantsUtility.PHOTO);
+                            System.out.println("fileData " + filePhotoData);
+                            ResponseMember memPhoto = memberUtils.processPhotoRs(response, existingPhUuid, filePhotoData,
+                                    uploadedUuids,house);
+                            existingPhUuid = memPhoto.getPhotoUuid();
+                            uploadedUuids.add(memPhoto);
+                            // processedUrls.add(response.getPhotoUrl());
+
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemPhotoRs(response);
+                        }
+                    }
+                    if (existingSgUuid == null && StringUtils.isNotBlank(response.getSignatureUrl())) {
+                        try {
+                            System.out.println("file " + response.getSignatureUrl());
+                            fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
+                                    ConstantsUtility.SIGN);
+                            System.out.println("fileData " + fileSignatureData);
+                            ResponseMember memSign = memberUtils.processSignatureRs(response, existingSgUuid,
+                                    fileSignatureData, uploadedUuids,house);
+                            existingSgUuid = memSign.getSignUuid();
+                            uploadedUuids.add(memSign);
+                            processedUrls.add(response.getSignatureUrl());
+                        } catch (Exception e) {
+                            System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
+                            memberUtils.updateNonUuidInMemSignatureRs(response);
                         }
                     }
                 }
