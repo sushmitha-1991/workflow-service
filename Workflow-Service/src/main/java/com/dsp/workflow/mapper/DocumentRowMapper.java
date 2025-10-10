@@ -53,4 +53,7 @@ public class DocumentRowMapper {
 	@NoEscape
     String saveAsDraftUrl;
         UUID uploadedDocumentUUID;
+        String onlyOfficeDsp2Key;
+        String dsp2KeyHi;
+    
 }

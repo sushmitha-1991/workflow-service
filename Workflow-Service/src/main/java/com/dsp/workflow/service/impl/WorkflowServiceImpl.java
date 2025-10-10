@@ -167,7 +167,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			SELECT distinct applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag,
-			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid
+			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid, only_office_dsp2_key, dsp2_key_hi
 			FROM (
 			                            select
 			                    distinct on
@@ -203,6 +203,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.published_document_uuid_hi as documentUUIDHi,
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
+			                null as only_office_dsp2_key,
+							null as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
 			     	                null as draft_abbr
@@ -252,6 +254,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.published_document_uuid_hi as documentUUIDHi,
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
+			                null as only_office_dsp2_key,
+							null as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
 			                null as draft_abbr
@@ -325,6 +329,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as documentUUIDHi,
 			                ii.html_content_en as htmlContentEn,
 			                ii.html_content_hi as htmlContentHi,
+			                null as only_office_dsp2_key,
+							null as dsp2_key_hi,
 			                null as editorId,
 			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid,
 			                null as draft_abbr
@@ -364,6 +370,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as documentUUIDHi,
 			                null as htmlContentEn,
 			                null as htmlContentHi,
+			                null as only_office_dsp2_key,
+							null as dsp2_key_hi,
 			                null as editorId,
 			                null as uploaded_document_uuid,
 			                dd.abbr as draft_abbr
@@ -410,6 +418,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ai.published_document_uuid_hi as documentUUIDHi,
 			                ai.html_content_en as htmlContentEn,
 			                ai.html_content_hi as htmlContentHi,
+			                ai.only_office_dsp2_key as only_office_dsp2_key,
+							ai.dsp2_key_hi as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
 			                null as draft_abbr
@@ -454,6 +464,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as documentUUIDHi,
 			                null as htmlContentEn,
 			                null as htmlContentHi,
+			                null as only_office_dsp2_key,
+							null as dsp2_key_hi,
 			                CAST(rd.editor_id AS VARCHAR) as editorId,
 			                null as uploaded_document_uuid,
 			                null as draft_abbr
@@ -506,9 +518,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			              null as documentUUIDHi,
 			              null as htmlContentEn,
 			              null as htmlContentHi,
+			              null as only_office_dsp2_key,
+						  null as dsp2_key_hi,
 			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
 			              null as uploaded_document_uuid,
-			                 null as draft_abbr
+			              null as draft_abbr
 			      FROM translation.translation_input inp
 			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			      left join master.applications ma on ma.id = inp.document_type_id
@@ -556,6 +570,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        null as documentUUIDHi,
 			        null as htmlContentEn,
 			        null as htmlContentHi,
+			        null as only_office_dsp2_key,
+					null as dsp2_key_hi,
 			        CAST(da.allocateto AS VARCHAR) as editorId,
 			        null as uploaded_document_uuid,
 			           null as draft_abbr
@@ -606,6 +622,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 				    null as documentUUIDHi,
 				    null as htmlContentEn,
 				    null as htmlContentHi,
+				    null as only_office_dsp2_key,
+					null as dsp2_key_hi,
 				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
 				    null as uploaded_document_uuid,
 			           null as draft_abbr
@@ -643,9 +661,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 				       null as documentUUIDHi,
 				       null as htmlContentEn,
 				       null as htmlContentHi,
+				       null as only_office_dsp2_key,
+					   null as dsp2_key_hi,
 				       null as editorId,
 				       null as uploaded_document_uuid,
-			              null as draft_abbr
+			           null as draft_abbr
 				   FROM agenda_papers.e_summon es
 				   where es.status = 'Published' and es.house_id = :houseId
 				   and es.is_active = true and es.is_deleted = false
@@ -681,9 +701,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        ai.published_document_uuid_hi as documentUUIDHi,
 			        ai.html_content_en as htmlContentEn,
 			        ai.html_content_hi as htmlContentHi,
+					null as only_office_dsp2_key,
+					null as dsp2_key_hi,
 			        null as editorId,
 			        null as uploaded_document_uuid,
-			           null as draft_abbr
+			        null as draft_abbr
 			from
 			        workflow.workflow_history wh
 			join master.application_instance ai on
@@ -1799,6 +1821,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			rowMap.put("saveAsDraftUrl", row.getSaveAsDraftUrl());
 			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUUID());
+			rowMap.put("onlyOfficeDsp2Key", row.getOnlyOfficeDsp2Key());
+			rowMap.put("dsp2KeyHi", row.getDsp2KeyHi());
 			return rowMap;
 		}).collect(Collectors.toList());
 
