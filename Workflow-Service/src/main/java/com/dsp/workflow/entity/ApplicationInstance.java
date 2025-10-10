@@ -121,9 +121,6 @@ public class ApplicationInstance extends Auditable {
 	@Column(name = "ending_page_no_hi")
 	private Long endingPageNoHi;
 
-	@Column(name = "dsp2_key_en", length = 255)
-	private String dsp2KeyEn;
-
 	@Column(name = "dsp2_key_hi", length = 255)
 	private String dsp2KeyHi;
 
