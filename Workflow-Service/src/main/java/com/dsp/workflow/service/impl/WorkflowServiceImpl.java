@@ -1820,7 +1820,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			rowMap.put("saveAsDraftUrl", row.getSaveAsDraftUrl());
-			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUUID());
+			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUuid());
 			rowMap.put("onlyOfficeDsp2Key", row.getOnlyOfficeDsp2Key());
 			rowMap.put("dsp2KeyHi", row.getDsp2KeyHi());
 			return rowMap;
