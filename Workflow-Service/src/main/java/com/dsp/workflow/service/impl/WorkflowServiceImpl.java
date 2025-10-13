@@ -1879,6 +1879,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument = new DraftDocument();
 			draftDocument.setDraftData(draftData);
 			draftDocument.setApplicationId(draftDataDTO.getApplicationId());
+			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
 
 			// Use existing applicationNo if provided, else generate new one
 			if (draftDataDTO.getApplicationNo() != null) {
