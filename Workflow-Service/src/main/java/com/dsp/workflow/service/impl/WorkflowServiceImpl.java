@@ -1820,7 +1820,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("translateFlag", row.getTranslateFlag());
 			rowMap.put("downloadFlag", row.getDownloadFlag());
 			rowMap.put("saveAsDraftUrl", row.getSaveAsDraftUrl());
-			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUUID());
+			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUuid());
 			rowMap.put("onlyOfficeDsp2Key", row.getOnlyOfficeDsp2Key());
 			rowMap.put("dsp2KeyHi", row.getDsp2KeyHi());
 			return rowMap;
@@ -1879,6 +1879,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument = new DraftDocument();
 			draftDocument.setDraftData(draftData);
 			draftDocument.setApplicationId(draftDataDTO.getApplicationId());
+			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
 
 			// Use existing applicationNo if provided, else generate new one
 			if (draftDataDTO.getApplicationNo() != null) {
