@@ -71,6 +71,7 @@ import com.dsp.workflow.repository.DraftDocumentRepository;
 import com.dsp.workflow.repository.MyUserRepository;
 import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
+import com.dsp.workflow.service.AsyncTranslationService;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,6 +97,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private TaskRepository taskRepository;
+
+	@Autowired
+	private AsyncTranslationService translationService;
 
 	@Autowired
 	private Utils utils;
@@ -860,13 +864,23 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp);
 
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> translationInputDTO - " + translationInputDTO);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Translation flag is true, calling Translation API");
+						System.out.println(">>> before calling translation api");
 						try {
-							callTranslationAPI(translationInputDTO);
-							secondEntryBuilder.translationSuccess(true);
-							firstEntryBuilder.translationSuccess(true);
-							log.info("Translation API call successful");
+							String token = getTokenFromRequest();
+							translationService.callTranslationAPIAsync(translationInputDTO, token)
+									.thenAccept(result -> {
+										secondEntryBuilder.translationSuccess(true);
+										firstEntryBuilder.translationSuccess(true);
+										log.info("Translation API call successful");
+									}).exceptionally(ex -> {
+										secondEntryBuilder.translationSuccess(false);
+										firstEntryBuilder.translationSuccess(false);
+										log.error("Translation API call failed asynchronously", ex);
+										return null;
+									});
 						} catch (Exception e) {
 							secondEntryBuilder.translationSuccess(false);
 							firstEntryBuilder.translationSuccess(false);
@@ -923,7 +937,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Calling Translation API in FINAL step");
 						try {
-							callTranslationAPI(translationInputDTO);
+							String token = getTokenFromRequest();
+							translationService.callTranslationAPIAsync(translationInputDTO, token);
 							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
 							log.error("Translation API failed in FINAL step", e);
@@ -940,7 +955,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
 									applicationInstanceId);
 							if (!sectionBulletin2DTOs.isEmpty()) {
-								callSectionB2RS(sectionBulletin2DTOs);
+								String token = getTokenFromRequest();
+								translationService.callSectionB2RSAsync(sectionBulletin2DTOs, token);
 								log.info("Section B2 RS API call successful");
 							}
 						} catch (Exception e) {
@@ -955,12 +971,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
 						try {
-							callCorrectedDebatesAPI(correctedDebatedDTO);
+							String token = getTokenFromRequest();
+							translationService.callCorrectedDebatesAPIAsync(correctedDebatedDTO, token);
 							log.info("Corrected Debates API call successful");
 
 							try {
 								debateTaggingDTO.setApplicationId(80L);
-								callDebateTagging(debateTaggingDTO);
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (DTAG) failed", e);
@@ -968,7 +985,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 							try {
 								debateTaggingDTO.setApplicationId(81L);
-								callDebateTagging(debateTaggingDTO);
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (Supplementary) failed", e);
