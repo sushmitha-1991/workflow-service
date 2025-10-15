@@ -2049,32 +2049,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Transactional
 	@Override
 	public String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList) {
-		System.out.println(">>> Starting overrideApproval for AppId: " + request.getAppId());
-
 		// Generate Application Number
 		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
 		serialNumberRequest.setAppId(request.getAppId());
 		serialNumberRequest.setSessionId(request.getSessionId());
 
-		System.out.println(">>> serialNumberRequest - " + serialNumberRequest);
-
 		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
-		System.out.println(">>> Generated Application Number: " + appNo);
-
-		// Add entry to Application Instance table
-//		ApplicationInstance applicationInstance = ApplicationInstance.builder().applicationNo(appNo.getId())
-//				.currentStatus("Approved").processInstanceId(null).applicationId(request.getAppId())
-//				.lokSabhaSession(request.getLokSabhaNo()).lokSabhaSessionNumber(request.getLokSabhaSession())
-//				.rajyaSabhaSession(request.getRajyaSabhaNo()).documentDate(request.getDocumentDate())
-//				.htmlContentEnglish(request.getDsp2Key()).onlyOfficeDsp2Key(request.getDsp2Key()).build();
-//
-//		applicationInstanceRepository.save(applicationInstance);
-//		System.out.println(">>> ApplicationInstance saved with Id: " + applicationInstance.getId());
-//
-//		// Update RefId
-//		applicationInstance.setRefId(applicationInstance.getId());
-//		applicationInstanceRepository.saveAndFlush(applicationInstance);
-//		System.out.println(">>> ApplicationInstance updated with RefId: " + applicationInstance.getRefId());
 
 		ApplicationInstance applicationInstance = applicationInstanceRepository.findByRefId(request.getRefId())
 				.orElseThrow(
@@ -2084,12 +2064,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		// Translation API call
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstance.getId());
-		System.out.println(">>> translationInputDTO - " + translationInputDTO);
 		if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
-			System.out.println(">>> Translation required. Calling Translation API...");
 			try {
 				callTranslationAPI(translationInputDTO);
-				System.out.println(">>> Translation API call successful.");
 			} catch (Exception e) {
 				System.err.println(">>> Translation API failed: " + e.getMessage());
 				e.printStackTrace();
@@ -2118,13 +2095,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 		// Fixed values
 		variables.put("actionTaken", "FINAL"); // hardcoded as per requirement
 		variables.put("applicationInstanceId", applicationInstance.getId());
-
-		System.out.println(">>> Variables prepared for Notesheet: " + variables);
-
 		// Add to Notesheet
 		Notesheet notesheet = NotesheetMapper.fromVariables(variables, null, documentList, request.getNote());
 		notesheetRepository.save(notesheet);
-		System.out.println(">>> Notesheet saved with Id: " + notesheet.getId());
 
 		// Add Workflow History
 		WorkflowHistory workflowHistory = WorkflowHistory.builder().applicationInstanceId(applicationInstance.getId())
@@ -2132,12 +2105,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.actionTakenBy(utils.getUserIdFromAuthentication())
 				.actionTakenByName(utils.getUserFullNameFromAuthentication()).actionTakenOn(LocalDateTime.now())
 				.pendingWith(null).pendingWithName(null).pendingStartDate(LocalDateTime.now()).status("Approved")
-				.userIpAddress(utils.getLoggedInUserIp(httpRequest)).build();
+				.userIpAddress(Utils.getLoggedInUserIp(httpRequest)).build();
 
 		workflowHistoryRepository.save(workflowHistory);
-		System.out.println(">>> WorkflowHistory saved for ApplicationInstanceId: " + applicationInstance.getId());
-
-		System.out.println(">>> overrideApproval completed successfully.");
 		return "Document Approved Successfully";
 	}
 
