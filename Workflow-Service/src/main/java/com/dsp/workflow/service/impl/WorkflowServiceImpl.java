@@ -870,6 +870,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						System.out.println(">>> before calling translation api");
 						try {
 							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
 							translationService.callTranslationAPIAsync(translationInputDTO, token)
 									.thenAccept(result -> {
 										secondEntryBuilder.translationSuccess(true);
@@ -938,6 +939,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						log.info("Calling Translation API in FINAL step");
 						try {
 							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
 							translationService.callTranslationAPIAsync(translationInputDTO, token);
 							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
@@ -956,6 +958,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 									applicationInstanceId);
 							if (!sectionBulletin2DTOs.isEmpty()) {
 								String token = getTokenFromRequest();
+								System.out.println(">>> async call for section b2 rs");
 								translationService.callSectionB2RSAsync(sectionBulletin2DTOs, token);
 								log.info("Section B2 RS API call successful");
 							}
@@ -972,11 +975,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 						try {
 							String token = getTokenFromRequest();
+							System.out.println(">>> async call for corrected debate");
 							translationService.callCorrectedDebatesAPIAsync(correctedDebatedDTO, token);
 							log.info("Corrected Debates API call successful");
 
 							try {
 								debateTaggingDTO.setApplicationId(80L);
+								System.out.println(">>> async call for debate tagging");
 								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
@@ -985,6 +990,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 							try {
 								debateTaggingDTO.setApplicationId(81L);
+								System.out.println(">>> async call for debate tagging");
 								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
