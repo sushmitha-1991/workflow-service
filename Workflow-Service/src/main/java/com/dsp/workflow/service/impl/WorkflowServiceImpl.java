@@ -60,6 +60,7 @@ import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
+import com.dsp.workflow.kafka.KafkaProducer;
 import com.dsp.workflow.mapper.DocumentRowMapper;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -135,6 +136,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private RestTemplate restTemplate;
+
+	@Autowired
+	private KafkaProducer kafkaProducer;
+
 	@Autowired
 	private MyUserRepository userRepository;
 	@Autowired
@@ -837,6 +842,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 				if ("INIT".equals(stepType)) {
 					log.info("Processing INIT step...");
+
+					try {
+						String kafkaMsg = "A new Document received";
+						Long userId = receiverUserId;
+						Long sentByUserId = senderUserId;
+						String sentFrom = userName;
+						String groupType = null;
+						kafkaProducer.sendNotification(userId, sentByUserId, kafkaMsg, groupType, sentFrom);
+					} catch (Exception e) {
+					}
 
 					try {
 						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
