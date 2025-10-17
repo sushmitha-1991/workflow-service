@@ -846,7 +846,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					try {
 						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
-								"A new document received", "User", userName));
+								"A new document received", "Officer", userName));
 					} catch (Exception e) {
 						log.warn("Kafka send failed, skipping notification", e);
 					}
