@@ -843,15 +843,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 				if ("INIT".equals(stepType)) {
 					log.info("Processing INIT step...");
 
-					try {
-						String kafkaMsg = "A new Document received";
-						Long userId = receiverUserId;
-						Long sentByUserId = senderUserId;
-						String sentFrom = userName;
-						String groupType = null;
-						kafkaProducer.sendNotification(userId, sentByUserId, kafkaMsg, groupType, sentFrom);
-					} catch (Exception e) {
-					}
+//					try {
+//						String kafkaMsg = "A new Document received";
+//						Long userId = receiverUserId;
+//						Long sentByUserId = senderUserId;
+//						String sentFrom = userName;
+//						String groupType = null;
+//						kafkaProducer.sendNotification(userId, sentByUserId, kafkaMsg, groupType, sentFrom);
+//					} catch (Exception e) {
+//					}
 
 					try {
 						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
