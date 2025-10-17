@@ -828,6 +828,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			LocalDateTime actionTakenOn = LocalDateTime.now();
 			String userIp = Utils.getLoggedInUserIp(httpRequest);
 
+			String refNo = applicationInstanceRepository.getRefNo(applicationInstanceId);
+			String kafkaMsg = "A new document received for review. Reference No: " + refNo;
+
 			log.debug(
 					"Extracted workflow variables - processInstanceId: {}, application_no: {}, actionTaken: {}, stepType: {}",
 					processInstanceId, application_no, actionTaken, variables.get("stepType"));
@@ -846,7 +849,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 					try {
 						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
-								"A new document received", "Officer", userName));
+								kafkaMsg, "Officer", userName));
 					} catch (Exception e) {
 						log.warn("Kafka send failed, skipping notification", e);
 					}
@@ -932,6 +935,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp).build();
 					workflowHistoryRepository.save(entry);
 					log.info("Workflow history entry saved for INTER step");
+
+					try {
+						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
+								kafkaMsg, "Officer", userName));
+					} catch (Exception e) {
+						log.warn("Kafka send failed, skipping notification", e);
+					}
 
 				} else if ("FINAL".equals(stepType)) {
 					log.info("Processing FINAL step...");
