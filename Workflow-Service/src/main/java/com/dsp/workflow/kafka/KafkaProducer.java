@@ -34,6 +34,7 @@ public class KafkaProducer {
 			payload.put("sentFrom", sentFrom);
 
 			String jsonMessage = mapper.writeValueAsString(payload);
+			System.out.println(">>> notification sending");
 			kafkaTemplate.send(TOPIC, jsonMessage);
 
 		} catch (Exception e) {
