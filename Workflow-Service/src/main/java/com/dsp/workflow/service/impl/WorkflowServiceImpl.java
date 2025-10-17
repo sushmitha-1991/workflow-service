@@ -829,7 +829,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String userIp = Utils.getLoggedInUserIp(httpRequest);
 
 			String refNo = applicationInstanceRepository.getRefNo(applicationInstanceId);
-			String kafkaMsg = "A new document received for review. Reference No: " + refNo;
+			String moduleName = applicationInstanceRepository.getModuleName(applicationInstanceId);
+			String kafkaMsg = moduleName + " received for review. Reference No: " + refNo;
 
 			log.debug(
 					"Extracted workflow variables - processInstanceId: {}, application_no: {}, actionTaken: {}, stepType: {}",
