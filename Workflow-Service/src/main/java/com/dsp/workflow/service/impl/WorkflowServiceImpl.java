@@ -60,6 +60,7 @@ import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
+import com.dsp.workflow.kafka.KafkaProducer;
 import com.dsp.workflow.mapper.DocumentRowMapper;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -71,6 +72,7 @@ import com.dsp.workflow.repository.DraftDocumentRepository;
 import com.dsp.workflow.repository.MyUserRepository;
 import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
+import com.dsp.workflow.service.AsyncTranslationService;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,6 +98,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private TaskRepository taskRepository;
+
+	@Autowired
+	private AsyncTranslationService translationService;
 
 	@Autowired
 	private Utils utils;
@@ -131,6 +136,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private RestTemplate restTemplate;
+
+	@Autowired
+	private KafkaProducer kafkaProducer;
+
 	@Autowired
 	private MyUserRepository userRepository;
 	@Autowired
@@ -835,6 +844,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 					log.info("Processing INIT step...");
 
 					try {
+						String kafkaMsg = "A new Document received";
+						Long userId = receiverUserId;
+						Long sentByUserId = senderUserId;
+						String sentFrom = userName;
+						String groupType = null;
+						kafkaProducer.sendNotification(userId, sentByUserId, kafkaMsg, groupType, sentFrom);
+					} catch (Exception e) {
+					}
+
+					try {
 						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
 						notesheetRepository.save(notesheet);
 						log.info("Notesheet saved for INIT step");
@@ -860,13 +879,24 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp);
 
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> translationInputDTO - " + translationInputDTO);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Translation flag is true, calling Translation API");
+						System.out.println(">>> before calling translation api");
 						try {
-							callTranslationAPI(translationInputDTO);
-							secondEntryBuilder.translationSuccess(true);
-							firstEntryBuilder.translationSuccess(true);
-							log.info("Translation API call successful");
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
+							translationService.callTranslationAPIAsync(translationInputDTO, token)
+									.thenAccept(result -> {
+										secondEntryBuilder.translationSuccess(true);
+										firstEntryBuilder.translationSuccess(true);
+										log.info("Translation API call successful");
+									}).exceptionally(ex -> {
+										secondEntryBuilder.translationSuccess(false);
+										firstEntryBuilder.translationSuccess(false);
+										log.error("Translation API call failed asynchronously", ex);
+										return null;
+									});
 						} catch (Exception e) {
 							secondEntryBuilder.translationSuccess(false);
 							firstEntryBuilder.translationSuccess(false);
@@ -923,7 +953,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Calling Translation API in FINAL step");
 						try {
-							callTranslationAPI(translationInputDTO);
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
+							translationService.callTranslationAPIAsync(translationInputDTO, token);
 							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
 							log.error("Translation API failed in FINAL step", e);
@@ -940,7 +972,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
 									applicationInstanceId);
 							if (!sectionBulletin2DTOs.isEmpty()) {
-								callSectionB2RS(sectionBulletin2DTOs);
+								String token = getTokenFromRequest();
+								System.out.println(">>> async call for section b2 rs");
+								translationService.callSectionB2RSAsync(sectionBulletin2DTOs, token);
 								log.info("Section B2 RS API call successful");
 							}
 						} catch (Exception e) {
@@ -955,12 +989,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
 						try {
-							callCorrectedDebatesAPI(correctedDebatedDTO);
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for corrected debate");
+							translationService.callCorrectedDebatesAPIAsync(correctedDebatedDTO, token);
 							log.info("Corrected Debates API call successful");
 
 							try {
 								debateTaggingDTO.setApplicationId(80L);
-								callDebateTagging(debateTaggingDTO);
+								System.out.println(">>> async call for debate tagging");
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (DTAG) failed", e);
@@ -968,7 +1005,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 							try {
 								debateTaggingDTO.setApplicationId(81L);
-								callDebateTagging(debateTaggingDTO);
+								System.out.println(">>> async call for debate tagging");
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (Supplementary) failed", e);
