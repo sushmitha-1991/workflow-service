@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -844,13 +845,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 					log.info("Processing INIT step...");
 
 					try {
-						String kafkaMsg = "A new document received";
-						Long userId = receiverUserId;
-						Long sentByUserId = senderUserId;
-						String sentFrom = userName;
-						String groupType = "User";
-						kafkaProducer.sendNotification(userId, sentByUserId, kafkaMsg, groupType, sentFrom);
+						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
+								"A new document received", "User", userName));
 					} catch (Exception e) {
+						log.warn("Kafka send failed, skipping notification", e);
 					}
 
 					try {
