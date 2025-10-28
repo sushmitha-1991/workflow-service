@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -60,6 +61,7 @@ import com.dsp.workflow.entity.WorkflowHistory;
 import com.dsp.workflow.exception.CamundaException;
 import com.dsp.workflow.exception.ResourceNotFoundException;
 import com.dsp.workflow.exception.TaskNotFoundException;
+import com.dsp.workflow.kafka.KafkaProducer;
 import com.dsp.workflow.mapper.DocumentRowMapper;
 import com.dsp.workflow.mapper.WorkflowMapper;
 import com.dsp.workflow.notesheet.dto.NotesheetDTO;
@@ -71,6 +73,7 @@ import com.dsp.workflow.repository.DraftDocumentRepository;
 import com.dsp.workflow.repository.MyUserRepository;
 import com.dsp.workflow.repository.TaskRepository;
 import com.dsp.workflow.repository.WorkflowHistoryRepository;
+import com.dsp.workflow.service.AsyncTranslationService;
 import com.dsp.workflow.service.WorkflowService;
 import com.dsp.workflow.util.Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,6 +99,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private TaskRepository taskRepository;
+
+	@Autowired
+	private AsyncTranslationService translationService;
 
 	@Autowired
 	private Utils utils;
@@ -131,6 +137,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 	@Autowired
 	private RestTemplate restTemplate;
+
+	@Autowired
+	private KafkaProducer kafkaProducer;
+
 	@Autowired
 	private MyUserRepository userRepository;
 	@Autowired
@@ -818,6 +828,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			LocalDateTime actionTakenOn = LocalDateTime.now();
 			String userIp = Utils.getLoggedInUserIp(httpRequest);
 
+			String refNo = applicationInstanceRepository.getRefNo(applicationInstanceId);
+			String moduleName = applicationInstanceRepository.getModuleName(applicationInstanceId);
+			String kafkaMsg = moduleName + " received for review. Reference No: " + refNo;
+
 			log.debug(
 					"Extracted workflow variables - processInstanceId: {}, application_no: {}, actionTaken: {}, stepType: {}",
 					processInstanceId, application_no, actionTaken, variables.get("stepType"));
@@ -833,6 +847,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 				if ("INIT".equals(stepType)) {
 					log.info("Processing INIT step...");
+
+					try {
+						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
+								kafkaMsg, "Officer", userName));
+					} catch (Exception e) {
+						log.warn("Kafka send failed, skipping notification", e);
+					}
 
 					try {
 						Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
@@ -860,13 +881,24 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp);
 
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
+					System.out.println(">>> translationInputDTO - " + translationInputDTO);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Translation flag is true, calling Translation API");
+						System.out.println(">>> before calling translation api");
 						try {
-							callTranslationAPI(translationInputDTO);
-							secondEntryBuilder.translationSuccess(true);
-							firstEntryBuilder.translationSuccess(true);
-							log.info("Translation API call successful");
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
+							translationService.callTranslationAPIAsync(translationInputDTO, token)
+									.thenAccept(result -> {
+										secondEntryBuilder.translationSuccess(true);
+										firstEntryBuilder.translationSuccess(true);
+										log.info("Translation API call successful");
+									}).exceptionally(ex -> {
+										secondEntryBuilder.translationSuccess(false);
+										firstEntryBuilder.translationSuccess(false);
+										log.error("Translation API call failed asynchronously", ex);
+										return null;
+									});
 						} catch (Exception e) {
 							secondEntryBuilder.translationSuccess(false);
 							firstEntryBuilder.translationSuccess(false);
@@ -905,6 +937,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 					workflowHistoryRepository.save(entry);
 					log.info("Workflow history entry saved for INTER step");
 
+					try {
+						CompletableFuture.runAsync(() -> kafkaProducer.sendNotification(receiverUserId, senderUserId,
+								kafkaMsg, "Officer", userName));
+					} catch (Exception e) {
+						log.warn("Kafka send failed, skipping notification", e);
+					}
+
 				} else if ("FINAL".equals(stepType)) {
 					log.info("Processing FINAL step...");
 					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
@@ -923,7 +962,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Calling Translation API in FINAL step");
 						try {
-							callTranslationAPI(translationInputDTO);
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for translation");
+							translationService.callTranslationAPIAsync(translationInputDTO, token);
 							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
 							log.error("Translation API failed in FINAL step", e);
@@ -940,7 +981,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 							List<SectionBulletin2DTO> sectionBulletin2DTOs = getSectionBulletin2Data(
 									applicationInstanceId);
 							if (!sectionBulletin2DTOs.isEmpty()) {
-								callSectionB2RS(sectionBulletin2DTOs);
+								String token = getTokenFromRequest();
+								System.out.println(">>> async call for section b2 rs");
+								translationService.callSectionB2RSAsync(sectionBulletin2DTOs, token);
 								log.info("Section B2 RS API call successful");
 							}
 						} catch (Exception e) {
@@ -955,12 +998,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 						DebateTaggingDTO debateTaggingDTO = getDebatetaggingDTO(applicationInstanceId);
 
 						try {
-							callCorrectedDebatesAPI(correctedDebatedDTO);
+							String token = getTokenFromRequest();
+							System.out.println(">>> async call for corrected debate");
+							translationService.callCorrectedDebatesAPIAsync(correctedDebatedDTO, token);
 							log.info("Corrected Debates API call successful");
 
 							try {
 								debateTaggingDTO.setApplicationId(80L);
-								callDebateTagging(debateTaggingDTO);
+								System.out.println(">>> async call for debate tagging");
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (DTAG) failed", e);
@@ -968,7 +1014,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 							try {
 								debateTaggingDTO.setApplicationId(81L);
-								callDebateTagging(debateTaggingDTO);
+								System.out.println(">>> async call for debate tagging");
+								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (Supplementary) failed", e);
@@ -2049,32 +2096,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Transactional
 	@Override
 	public String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList) {
-		System.out.println(">>> Starting overrideApproval for AppId: " + request.getAppId());
-
 		// Generate Application Number
 		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
 		serialNumberRequest.setAppId(request.getAppId());
 		serialNumberRequest.setSessionId(request.getSessionId());
 
-		System.out.println(">>> serialNumberRequest - " + serialNumberRequest);
-
 		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
-		System.out.println(">>> Generated Application Number: " + appNo);
-
-		// Add entry to Application Instance table
-//		ApplicationInstance applicationInstance = ApplicationInstance.builder().applicationNo(appNo.getId())
-//				.currentStatus("Approved").processInstanceId(null).applicationId(request.getAppId())
-//				.lokSabhaSession(request.getLokSabhaNo()).lokSabhaSessionNumber(request.getLokSabhaSession())
-//				.rajyaSabhaSession(request.getRajyaSabhaNo()).documentDate(request.getDocumentDate())
-//				.htmlContentEnglish(request.getDsp2Key()).onlyOfficeDsp2Key(request.getDsp2Key()).build();
-//
-//		applicationInstanceRepository.save(applicationInstance);
-//		System.out.println(">>> ApplicationInstance saved with Id: " + applicationInstance.getId());
-//
-//		// Update RefId
-//		applicationInstance.setRefId(applicationInstance.getId());
-//		applicationInstanceRepository.saveAndFlush(applicationInstance);
-//		System.out.println(">>> ApplicationInstance updated with RefId: " + applicationInstance.getRefId());
 
 		ApplicationInstance applicationInstance = applicationInstanceRepository.findByRefId(request.getRefId())
 				.orElseThrow(
@@ -2084,12 +2111,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		// Translation API call
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstance.getId());
-		System.out.println(">>> translationInputDTO - " + translationInputDTO);
 		if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
-			System.out.println(">>> Translation required. Calling Translation API...");
 			try {
 				callTranslationAPI(translationInputDTO);
-				System.out.println(">>> Translation API call successful.");
 			} catch (Exception e) {
 				System.err.println(">>> Translation API failed: " + e.getMessage());
 				e.printStackTrace();
@@ -2118,13 +2142,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 		// Fixed values
 		variables.put("actionTaken", "FINAL"); // hardcoded as per requirement
 		variables.put("applicationInstanceId", applicationInstance.getId());
-
-		System.out.println(">>> Variables prepared for Notesheet: " + variables);
-
 		// Add to Notesheet
 		Notesheet notesheet = NotesheetMapper.fromVariables(variables, null, documentList, request.getNote());
 		notesheetRepository.save(notesheet);
-		System.out.println(">>> Notesheet saved with Id: " + notesheet.getId());
 
 		// Add Workflow History
 		WorkflowHistory workflowHistory = WorkflowHistory.builder().applicationInstanceId(applicationInstance.getId())
@@ -2132,12 +2152,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.actionTakenBy(utils.getUserIdFromAuthentication())
 				.actionTakenByName(utils.getUserFullNameFromAuthentication()).actionTakenOn(LocalDateTime.now())
 				.pendingWith(null).pendingWithName(null).pendingStartDate(LocalDateTime.now()).status("Approved")
-				.userIpAddress(utils.getLoggedInUserIp(httpRequest)).build();
+				.userIpAddress(Utils.getLoggedInUserIp(httpRequest)).build();
 
 		workflowHistoryRepository.save(workflowHistory);
-		System.out.println(">>> WorkflowHistory saved for ApplicationInstanceId: " + applicationInstance.getId());
-
-		System.out.println(">>> overrideApproval completed successfully.");
 		return "Document Approved Successfully";
 	}
 

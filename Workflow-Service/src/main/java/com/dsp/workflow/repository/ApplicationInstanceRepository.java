@@ -156,4 +156,20 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 	 */
 	Optional<ApplicationInstance> findByRefId(Long refId);
 
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = "SELECT application_no from master.application_instance where id = :applicationInstanceId", nativeQuery = true)
+	String getRefNo(Long applicationInstanceId);
+
+	/**
+	 * @param applicationInstanceId
+	 * @return
+	 */
+	@Query(value = "SELECT a.name " + "FROM master.application_instance ai "
+			+ "LEFT JOIN master.applications a ON a.id = ai.application_id "
+			+ "WHERE ai.id = :applicationInstanceId", nativeQuery = true)
+	String getModuleName(@Param("applicationInstanceId") Long applicationInstanceId);
+
 }
