@@ -41,5 +41,9 @@ public class DebateTaggingDTO {
 	private Long applicationId;
 
 	private String status;
+	
+	private String dsp2Key; //for only office
+	
+	private Long documentTypeId;
 
 }

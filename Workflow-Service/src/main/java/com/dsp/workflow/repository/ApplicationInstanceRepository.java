@@ -85,11 +85,14 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			    lssm.id AS lokSabhaSessionNo,
 			    rssm.id AS rajyaSabhaSessionNo,
 					CAST(ai.document_date AS DATE) AS debateDate,
-			    ai.html_content_en AS content
+			    ai.html_content_en AS content,
+			    ai.application_id AS documentTypeId,
+			    oom.dsp2_key as dsp2key
 			FROM master.application_instance ai
 			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session
 			left join master.lok_sabha_session_masters lssm on lssm.session_number = ai.lok_sabha_session_number
 			left join master.rajya_sabha_session_master rssm on rssm.session_number = ai.rajya_sabha_session
+			left join onlyoffice.only_office_metadata oom on oom.dsp2_key = ai.only_office_dsp2_key
 			WHERE ai.id = :applicationInstanceId
 
 						""", nativeQuery = true)
