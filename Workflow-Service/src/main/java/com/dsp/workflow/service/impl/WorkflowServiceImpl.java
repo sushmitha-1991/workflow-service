@@ -1157,7 +1157,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		return DebateTaggingDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).debateDate(convertToLocalDate(row[3]))
-				.content((String) row[4]).status("DRAFT").build();
+				.content((String) row[4]).status("DRAFT").documentTypeId(convertToLong(row[5] != null? row[5]:0)).dsp2Key(!StringUtils.isEmpty((String) row[6]) ? (String) row[6] : null).build();
 	}
 
 	/**
