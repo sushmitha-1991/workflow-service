@@ -110,14 +110,30 @@ public class PublishController {
 			) {
 		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale,
 		 lsNo, sessNo, rssNo,house);
-		// if (responseDto.isEmpty()) {
-		// return ResponseEntity.noContent().build();
-		// }
+		return ResponseEntity.ok(responseDto);
+	}
+@GetMapping("/getAll/publishedDocs")
+	public ResponseEntity<List<UrlDto>> getPublishedDocsFromDSP1V2(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName,
+			 @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo,
+			 @RequestParam(required = false) String sessNo,
+			@RequestParam(required = false) String rssNo,
+			@RequestParam(required = false) String house
+			) {
+		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale,
+		 lsNo, sessNo, rssNo,house);
 		return ResponseEntity.ok(responseDto);
 	}
 
 	@PostMapping("/getAll/unpublishedDocs")
 	public ResponseEntity<List<UrlDto>> getAllUnpublished(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
+		List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
+		return ResponseEntity.ok(responseDto); // Returns 200 OK with the list
+	}
+	@GetMapping("/getAll/unpublishedDocs")
+	public ResponseEntity<List<UrlDto>> getAllUnpublishedV2(@RequestParam(required = false) LocalDate date,
 			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
 		List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
 		// if (responseDto.isEmpty()) {
@@ -140,6 +156,22 @@ public class PublishController {
 		// }
 		return responseDto;
 	}
+	
+	@GetMapping("/getAll/publishedDoc")
+	public UrlDto getByDateDocV2(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sesNo,
+			@RequestParam(required = false) String rsNo
+
+	) {
+		UrlDto responseDto = publishService.getByDateDoc(date, applicationName, locale);
+		// if (responseDto.isEmpty()) {
+		// return ResponseEntity.noContent().build();
+		// }
+		return responseDto;
+	}
+	
+
 
 	@PostMapping("/getAll/docBySession")
 	public UrlDto getBySession(@RequestParam(required = false) LocalDate date,
@@ -164,6 +196,29 @@ public class PublishController {
 		return responseDto; // Returns 200 OK with the list
 	}
 
+	@GetMapping("/getAll/docBySession")
+	public UrlDto getBySessionV2(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String lsNo,
+			@RequestParam(required = false) String sessNo, @RequestParam(required = false) String rsNo,
+			@RequestParam(required = false) String locale) {
+		UrlDto responseDto = publishService.getBySession(date, lsNo, sessNo, rsNo, applicationName, locale);
+		// if (responseDto.isEmpty()) {
+		// return ResponseEntity.noContent().build();
+		// }
+		return responseDto;
+	}
+
+	@GetMapping("/getAll/unpublishedDoc")
+	public UrlDto getAllUnpublishedDocV2(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
+		UrlDto responseDto = publishService.getAllUnpublishedDoc(date, applicationName, locale);
+		// if (responseDto.isEmpty()) {
+		// return ResponseEntity.noContent().build(); // Returns 204 No Content if the
+		// list is empty
+		// }
+		return responseDto; // Returns 200 OK with the list
+	}
+
 	@PutMapping("/update/{id}")
 	public PublishHistoryDTO update(@PathVariable Long id, @RequestBody PublishHistoryDTO dto) {
 		System.out.println("Id need to be unpublished" + id);
@@ -176,6 +231,34 @@ public class PublishController {
 
 	@PutMapping("/unpublish/{id}")
 	public ResponseEntity<GenericResponse<PublishHistoryDTO>> unpublishById(@PathVariable Long id,
+			@RequestBody UnPublishRequest request) {
+		System.out.println("Id need to be unpublished " + id);
+		if (id == null) {
+			throw new RuntimeException("id is NULL");
+		}
+		PublishHistoryDTO responseDto = publishService.updateById(id, request);
+		if (responseDto == null) {
+			return ResponseEntity.noContent().build();
+		}
+		GenericResponse<PublishHistoryDTO> response = new GenericResponse<>(true, "Record unpublished", responseDto,
+				HttpStatus.OK.value());
+
+		return ResponseEntity.ok(response);
+		// return responseDto;
+	}
+
+	@PostMapping("/update/{id}")
+	public PublishHistoryDTO updateV2(@PathVariable Long id, @RequestBody PublishHistoryDTO dto) {
+		System.out.println("Id need to be unpublished" + id);
+		if (id == null) {
+			throw new RuntimeException("id is NULL");
+		}
+		PublishHistoryDTO responseDto = publishService.update(id, dto);
+		return responseDto;
+	}
+
+	@PostMapping("/unpublish/{id}")
+	public ResponseEntity<GenericResponse<PublishHistoryDTO>> unpublishByIdV2(@PathVariable Long id,
 			@RequestBody UnPublishRequest request) {
 		System.out.println("Id need to be unpublished " + id);
 		if (id == null) {
