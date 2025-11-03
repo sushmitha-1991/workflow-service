@@ -268,7 +268,7 @@ public class PublishServiceImpl implements PublishService {
 		if (responseEntitys != null) {
 			for (PublishHistoryEntity entity : responseEntitys) {
 				UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
-						.name(entity.getApplicationName()).fileType(entity.getFileType()).url(entity.getPublishUrl())
+						.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase()).url(entity.getPublishUrl())
 						.build();
 				if (entity.getForDate() != null) {
 					responseDto.setDate(entity.getForDate().toString());
@@ -636,6 +636,7 @@ public class PublishServiceImpl implements PublishService {
 	public List<ResponseDocsUuids> uploadTransmissionDocsLs() {
 		Long houseId = utils.getHouseIdFromAuthentication();
 		Specification<ETransmissionUploadTempEntity> spec = Specification.where(hasHouseId(houseId));
+
 		List<ETransmissionUploadTempEntity> urlList = eTransmissionRepository.findAll(spec);
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
 		System.out.println("urlList " + urlList.size());
@@ -645,7 +646,8 @@ public class PublishServiceImpl implements PublishService {
 		// System.out.println("Url List " + urlList);
 		int i = 0;
 		try {
-			for (ETransmissionUploadTempEntity response : urlList) {
+			List<ETransmissionUploadTempEntity> transmissionData=existsUrlAndUuidCheckLS(urlList);
+			for (ETransmissionUploadTempEntity response : transmissionData) {
 				if (existsUrlAndUuid(response)) {
 					System.out.println("skip");
 					continue;
@@ -681,7 +683,8 @@ public class PublishServiceImpl implements PublishService {
 		// System.out.println("Url List " + urlList);
 		int i = 0;
 		try {
-			for (ETransmissionRSUploadTempEntity response : urlList) {
+			List<ETransmissionRSUploadTempEntity> transmissionRsData=existsUrlAndUuidCheckRS(urlList);
+			for (ETransmissionRSUploadTempEntity response : transmissionRsData) {
 				if (existsUrlAndUuidRS(response)) {
 					System.out.println("skip");
 					continue;
@@ -1114,6 +1117,39 @@ public class PublishServiceImpl implements PublishService {
 			isTrueOrFalse = false;
 		System.out.println("isTrueOrFalse " + isTrueOrFalse);
 		return isTrueOrFalse;
+	}
+
+	private List<ETransmissionUploadTempEntity> existsUrlAndUuidCheckLS(List<ETransmissionUploadTempEntity> response) {
+List<ETransmissionUploadTempEntity> resp=new ArrayList();
+
+
+		for(ETransmissionUploadTempEntity entity:response)
+		{
+			if(existsUrlAndUuid(entity))
+			{
+				resp.add(entity);
+			}
+			else
+			{
+				continue;
+			}
+		}
+		return resp;
+	}
+	private List<ETransmissionRSUploadTempEntity> existsUrlAndUuidCheckRS(List<ETransmissionRSUploadTempEntity> response) {
+
+List<ETransmissionRSUploadTempEntity> resp=new ArrayList();
+for(ETransmissionRSUploadTempEntity entity:response)
+		{
+			if(existsUrlAndUuidRS(entity))
+			{
+				resp.add(entity);
+			}
+			else{
+				continue;
+			}
+		}
+		return resp;
 	}
 
 	private Boolean existsUrlAndUuidRS(ETransmissionRSUploadTempEntity response) {
