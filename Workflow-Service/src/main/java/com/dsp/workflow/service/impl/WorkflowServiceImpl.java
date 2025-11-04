@@ -2097,11 +2097,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Override
 	public String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList) {
 		// Generate Application Number
-		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
-		serialNumberRequest.setAppId(request.getAppId());
-		serialNumberRequest.setSessionId(request.getSessionId());
-
-		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
+//		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
+//		serialNumberRequest.setAppId(request.getAppId());
+//		serialNumberRequest.setSessionId(request.getSessionId());
+//
+//		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
 
 		ApplicationInstance applicationInstance = applicationInstanceRepository.findByRefId(request.getRefId())
 				.orElseThrow(
