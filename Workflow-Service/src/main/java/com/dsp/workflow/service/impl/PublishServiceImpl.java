@@ -268,7 +268,9 @@ public class PublishServiceImpl implements PublishService {
 		if (responseEntitys != null) {
 			for (PublishHistoryEntity entity : responseEntitys) {
 				UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
-						.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase()).url(entity.getPublishUrl())
+						.name(entity.getApplicationName())
+						.fileType((entity.getFileType()).toUpperCase())
+						.url(""+entity.getPublishUuid())
 						.build();
 				if (entity.getForDate() != null) {
 					responseDto.setDate(entity.getForDate().toString());
