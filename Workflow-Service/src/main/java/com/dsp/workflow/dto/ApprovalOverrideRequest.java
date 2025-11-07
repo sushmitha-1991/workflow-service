@@ -30,4 +30,5 @@ public class ApprovalOverrideRequest {
 	private Integer receiverUserId;
 	private List<ProcessStepwiseDocumentsDTO> document;
 	private Long refId;
+	private String actionUrl;
 }
