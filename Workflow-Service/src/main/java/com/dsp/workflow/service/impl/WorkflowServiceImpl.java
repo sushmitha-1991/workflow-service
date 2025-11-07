@@ -1204,7 +1204,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 		return DebateTaggingDTO.builder().lokSabhaNo(convertToLong(row[0])).lokSabhaSessionNo(convertToLong(row[1]))
 				.rajyaSabhaSessionNo(convertToLong(row[2])).debateDate(convertToLocalDate(row[3]))
-				.content((String) row[4]).status("DRAFT").documentTypeId(convertToLong(row[5] != null? row[5]:0)).dsp2Key(!StringUtils.isEmpty((String) row[6]) ? (String) row[6] : null).build();
+				.content((String) row[4]).status("DRAFT").documentTypeId(convertToLong(row[5] != null ? row[5] : 0))
+				.dsp2Key(!StringUtils.isEmpty((String) row[6]) ? (String) row[6] : null).build();
 	}
 
 	/**
@@ -2096,16 +2097,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 	@Transactional
 	@Override
 	public String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList) {
-		// Generate Application Number
-//		SerialNumberRequest serialNumberRequest = new SerialNumberRequest();
-//		serialNumberRequest.setAppId(request.getAppId());
-//		serialNumberRequest.setSessionId(request.getSessionId());
-//
-//		SerialNumberResponse appNo = generateApplicationNo(serialNumberRequest);
 
 		ApplicationInstance applicationInstance = applicationInstanceRepository.findByRefId(request.getRefId())
 				.orElseThrow(
 						() -> new RuntimeException("ApplicationInstance not found for appNo: " + request.getRefId()));
+
 		applicationInstance.setCurrentStatus("Approved");
 		applicationInstanceRepository.saveAndFlush(applicationInstance);
 
@@ -2115,34 +2111,21 @@ public class WorkflowServiceImpl implements WorkflowService {
 			try {
 				callTranslationAPI(translationInputDTO);
 			} catch (Exception e) {
-				System.err.println(">>> Translation API failed: " + e.getMessage());
-				e.printStackTrace();
+				log.error("Translation API failed for AppInstanceId {} : {}", applicationInstance.getId(),
+						e.getMessage(), e);
 			}
 		} else {
-			System.out.println(">>> Translation not required.");
+			log.info("Translation not required for AppInstanceId {}", applicationInstance.getId());
 		}
 
-		// Prepare variables map
+		// Prepare workflow variables
 		Map<String, Object> variables = new HashMap<>();
-
-		// Handle receiverUserId
-		if (request.getReceiverUserId() == null || request.getReceiverUserId().toString().trim().isEmpty()) {
-			variables.put("receiverUserId", 0);
-		} else {
-			variables.put("receiverUserId", request.getReceiverUserId());
-		}
-
-		// Handle receiverRoleId
-		if (request.getReceiverRoleId() == null || request.getReceiverRoleId().toString().trim().isEmpty()) {
-			variables.put("receiverRoleId", 0);
-		} else {
-			variables.put("receiverRoleId", request.getReceiverRoleId());
-		}
-
-		// Fixed values
-		variables.put("actionTaken", "FINAL"); // hardcoded as per requirement
+		variables.put("receiverUserId", (request.getReceiverUserId() == null ? 0 : request.getReceiverUserId()));
+		variables.put("receiverRoleId", (request.getReceiverRoleId() == null ? 0 : request.getReceiverRoleId()));
+		variables.put("actionTaken", "FINAL");
 		variables.put("applicationInstanceId", applicationInstance.getId());
-		// Add to Notesheet
+
+		// Add Notesheet
 		Notesheet notesheet = NotesheetMapper.fromVariables(variables, null, documentList, request.getNote());
 		notesheetRepository.save(notesheet);
 
@@ -2152,9 +2135,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.actionTakenBy(utils.getUserIdFromAuthentication())
 				.actionTakenByName(utils.getUserFullNameFromAuthentication()).actionTakenOn(LocalDateTime.now())
 				.pendingWith(null).pendingWithName(null).pendingStartDate(LocalDateTime.now()).status("Approved")
-				.userIpAddress(Utils.getLoggedInUserIp(httpRequest)).build();
+				.userIpAddress(Utils.getLoggedInUserIp(httpRequest)).actionUrl(request.getActionUrl()).build();
 
 		workflowHistoryRepository.save(workflowHistory);
+
 		return "Document Approved Successfully";
 	}
 
