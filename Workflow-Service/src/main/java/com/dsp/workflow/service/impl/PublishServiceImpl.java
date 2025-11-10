@@ -633,10 +633,10 @@ public class PublishServiceImpl implements PublishService {
 	public List<ResponseDocsUuids> uploadTransmissionDocsLs() {
 		Long houseId = utils.getHouseIdFromAuthentication();
 		Specification<ETransmissionUploadTempEntity> spec = Specification.where(hasHouseId(houseId));
-		spec = spec.and(hasFileEng());
-		spec = spec.and(hasFileHin());
-		spec = spec.and(hasErrataEng());
-		spec = spec.and(hasErrataHin());
+		// spec = spec.and(hasFileEng());
+		// spec = spec.and(hasFileHin());
+		// spec = spec.and(hasErrataEng());
+		// spec = spec.and(hasErrataHin());
 		List<ETransmissionUploadTempEntity> urlList = eTransmissionRepository.findAll(spec);
 
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
@@ -678,10 +678,10 @@ public class PublishServiceImpl implements PublishService {
 		Long houseId = utils.getHouseIdFromAuthentication();
 		Specification<ETransmissionRSUploadTempEntity> spec = Specification.where(hasHouseIdRS(houseId));
 		List<ETransmissionRSUploadTempEntity> urlList = eTransmissionRSRepository.findAll(spec);
-		spec = spec.and(hasFileEngRS());
-		spec = spec.and(hasFileHinRS());
-		spec = spec.and(hasErrataEngRS());
-		spec = spec.and(hasErrataHinRS());
+		// spec = spec.and(hasFileEngRS());
+		// spec = spec.and(hasFileHinRS());
+		// spec = spec.and(hasErrataEngRS());
+		// spec = spec.and(hasErrataHinRS());
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
 		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
@@ -1045,8 +1045,8 @@ public class PublishServiceImpl implements PublishService {
 
 	public List<ResponseMember> uploadMemberDSP2LS(String house) {
 		Specification<MemberPhotoSignTemp> spec = Specification.where(hasHouseInMem(utils.getHouseAbbr()));
-		spec=spec.and(hasPhotoLs());
-		spec=spec.and(hasSignLs());
+		// spec=spec.and(hasPhotoLs());
+		// spec=spec.and(hasSignLs());
 		List<MemberPhotoSignTemp> urlList = memberTempRepo.findAll(spec);
 		List<ResponseMember> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
@@ -1123,8 +1123,8 @@ public class PublishServiceImpl implements PublishService {
 
 	public List<ResponseMember> uploadMemberDSP2RS(String house) {
 		Specification<MemberPhotoSignTempRS> spec = Specification.where(hasHouseInMemRs(utils.getHouseAbbr()));
-		spec=spec.and(hasPhotoRs());
-		spec=spec.and(hasSignRs());
+		// spec=spec.and(hasPhotoRs());
+		// spec=spec.and(hasSignRs());
 		List<MemberPhotoSignTempRS> urlList = memberTempRepoRs.findAll(spec);
 		List<ResponseMember> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
