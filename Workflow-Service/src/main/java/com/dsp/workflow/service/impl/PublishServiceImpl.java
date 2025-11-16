@@ -40,6 +40,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.dsp.workflow.dto.ApplicationInstanceProjection;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -48,6 +49,7 @@ import com.dsp.workflow.dto.ResponseMember;
 import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
+import com.dsp.workflow.entity.ApplicationInstance;
 import com.dsp.workflow.entity.ETransmissionRSUploadTempEntity;
 import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
@@ -65,6 +67,7 @@ import com.dsp.workflow.repository.MemberTempUploadRepositoryRS;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.repository.PublishTempDocsRsRepository;
+import com.dsp.workflow.service.Dsp1CacheService;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.util.ConstantsUtility;
 import com.dsp.workflow.util.ETransmissionDataUpload;
@@ -75,6 +78,7 @@ import com.dsp.workflow.util.Utils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 
 @Service
 public class PublishServiceImpl implements PublishService {
@@ -121,6 +125,9 @@ public class PublishServiceImpl implements PublishService {
 	private ApplicationInstanceRepository applicationInstanceRepository;
 	@Autowired
 	private ApplicationRepository appRepository;
+
+	@Autowired
+	private Dsp1CacheService dsp1CacheService;
 
 	@Override
 	public PublishHistoryDTO save(PublishHistoryDTO dto) {
@@ -263,10 +270,8 @@ public class PublishServiceImpl implements PublishService {
 		if (responseEntitys != null) {
 			for (PublishHistoryEntity entity : responseEntitys) {
 				UrlDto responseDto = UrlDto.builder().fileName(entity.getFileTypeName())
-						.name(entity.getApplicationName())
-						.fileType((entity.getFileType()).toUpperCase())
-						.url("" + entity.getPublishUuid())
-						.build();
+						.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
+						.url("" + entity.getPublishUuid()).build();
 				if (entity.getForDate() != null) {
 					responseDto.setDate(entity.getForDate().toString());
 				}
@@ -392,6 +397,7 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	@Override
+	@Transactional
 	public PublishHistoryDTO updateById(Long id, UnPublishRequest request) {
 
 		PublishHistoryEntity entity = repository.findById(id).get();
@@ -401,14 +407,18 @@ public class PublishServiceImpl implements PublishService {
 		}
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
-		entity = repository.save(entity);
+
+//		 Cache clearing
+		ApplicationInstance appInstId = applicationInstanceRepository.getByRefId(id);
+		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
+		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 
 		try {
 			// Fetch ID of related application instances
-			Long applicationInstId = repository.findApplicationInstanceIdsByAppNo(entity.getApplicationNo());
+			Long applicationInstId = repository.findApplicationInstanceIdsByAppNo(appDetails.getAppNo());
 
 			// Update publish status in master.application_instance
-			repository.updateUnpublishStatus(entity.getApplicationNo());
+			repository.updateUnpublishStatus(appDetails.getAppNo());
 
 			// Update publish status in workflow.workflow_history
 			repository.updateUnpublishStatusInWorkflowHistory(applicationInstId);
@@ -416,7 +426,21 @@ public class PublishServiceImpl implements PublishService {
 			System.out.println("Error updating unpublish status for application_no={}" + entity.getApplicationNo());
 		}
 
+		repository.saveAndFlush(entity);
+
 		return PublishMapper.toDTO(entity);
+	}
+
+	/**
+	 * @param id
+	 * @return
+	 */
+	private ApplicationInstanceProjection getAppDetails(Long appInstId) {
+		ApplicationInstanceProjection details = applicationInstanceRepository.findApplicationDetailsById(appInstId);
+		if (details == null) {
+			throw new IllegalArgumentException("Application instance not found for ID: " + appInstId);
+		}
+		return details;
 	}
 
 	@Override
@@ -770,8 +794,7 @@ public class PublishServiceImpl implements PublishService {
 		try {
 			// if (isUploadAllowed(response.getList1EngUrl(), response.getList1EngUuid(),
 			// response.getList1Eng())) {
-			fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
-					ConstantsUtility.F_EN);
+			fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(), ConstantsUtility.F_EN);
 
 			if (fileEngData != null && fileEngData.length > 0) {
 				ResponseDocsUuids res = eTransmissionUtils.processFile(response, existF_ENUuid, fileEngData,
@@ -884,8 +907,7 @@ public class PublishServiceImpl implements PublishService {
 		try {
 			// if (isUploadAllowed(response.getList1EngUrl(), response.getList1EngUuid(),
 			// response.getList1Eng())) {
-			fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(),
-					ConstantsUtility.F_EN);
+			fileEngData = eTransmissionUtils.getUrlAnReturnFileData(response.getList1EngUrl(), ConstantsUtility.F_EN);
 
 			if (fileEngData != null && fileEngData.length > 0) {
 				ResponseDocsUuids res = eTransmissionUtils.processFileRS(response, existF_ENUuid, fileEngData,
@@ -1227,56 +1249,33 @@ public class PublishServiceImpl implements PublishService {
 	private Specification<PublishDocumentTemp> hasPublishUuid() {
 		return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
 	}
+
 	private Specification<MemberPhotoSignTemp> hasUuidMemLs() {
-		return (root, query, cb) -> cb.or(
-				cb.and(
-						cb.isNotNull(root.get("photo")),
-						cb.isNull(root.get("photoUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("signature")),
-						cb.isNull(root.get("signatureUuid"))));
+		return (root, query, cb) -> cb.or(cb.and(cb.isNotNull(root.get("photo")), cb.isNull(root.get("photoUuid"))),
+				cb.and(cb.isNotNull(root.get("signature")), cb.isNull(root.get("signatureUuid"))));
 	}
 
 	private Specification<MemberPhotoSignTempRS> hasUuidMemRs() {
-		return (root, query, cb) -> cb.or(
-				cb.and(
-						cb.isNotNull(root.get("photo")),
-						cb.isNull(root.get("photoUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("signature")),
-						cb.isNull(root.get("signatureUuid"))));
+		return (root, query, cb) -> cb.or(cb.and(cb.isNotNull(root.get("photo")), cb.isNull(root.get("photoUuid"))),
+				cb.and(cb.isNotNull(root.get("signature")), cb.isNull(root.get("signatureUuid"))));
 	}
+
 	private Specification<ETransmissionUploadTempEntity> hasUuidTransLs() {
 		return (root, query, cb) -> cb.or(
-				cb.and(
-						cb.isNotNull(root.get("list1Eng")),
-						cb.isNull(root.get("list1EngUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("list1Hindi")),
-						cb.isNull(root.get("list1HindiUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("hindiErrata")),
-						cb.isNull(root.get("hindiErrataUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("list1Hindi")),
-						cb.isNull(root.get("list1HindiUuid"))));
+				cb.and(cb.isNotNull(root.get("list1Eng")), cb.isNull(root.get("list1EngUuid"))),
+				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))),
+				cb.and(cb.isNotNull(root.get("hindiErrata")), cb.isNull(root.get("hindiErrataUuid"))),
+				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))));
 	}
+
 	private Specification<ETransmissionRSUploadTempEntity> hasUuidTransRs() {
 		return (root, query, cb) -> cb.or(
-				cb.and(
-						cb.isNotNull(root.get("list1Eng")),
-						cb.isNull(root.get("list1EngUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("list1Hindi")),
-						cb.isNull(root.get("list1HindiUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("hindiErrata")),
-						cb.isNull(root.get("hindiErrataUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("list1Hindi")),
-						cb.isNull(root.get("list1HindiUuid"))));
+				cb.and(cb.isNotNull(root.get("list1Eng")), cb.isNull(root.get("list1EngUuid"))),
+				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))),
+				cb.and(cb.isNotNull(root.get("hindiErrata")), cb.isNull(root.get("hindiErrataUuid"))),
+				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))));
 	}
-	
+
 	private Specification<PublishDocumentTempRS> hasPublishUuidRs() {
 		return (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("publishUuid"));
 	}
