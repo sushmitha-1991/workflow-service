@@ -409,7 +409,8 @@ public class PublishServiceImpl implements PublishService {
 		entity.setPublishStatus(false);
 
 //		 Cache clearing
-		ApplicationInstance appInstId = applicationInstanceRepository.getByRefId(id);
+		String appNo=entity.getApplicationNo().split("_")[0];
+		ApplicationInstance appInstId = applicationInstanceRepository.getByApplicationNo(appNo);
 		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
 		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 
