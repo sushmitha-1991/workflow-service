@@ -84,4 +84,15 @@ public interface PublishRepository
 			""", nativeQuery = true)
 	void updateUnpublishStatusInWorkflowHistory(@Param("applicationInstId") Long applicationInstId);
 
+	/**
+	 * @param applicationId
+	 * @return
+	 */
+	@Query(value = """
+			select dsp1_document_name
+			from master.applications
+			WHERE id = :applicationId
+			""", nativeQuery = true)
+	String getDsp1DocName(@Param("applicationId") Long applicationId);
+
 }
