@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.dsp.workflow.dto.PublishDto;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -57,5 +58,10 @@ public interface PublishService {
 	List<ResponseMember> uploadMemberDSP2();
 
 	List<ResponseDocsUuids> uploadTransmissionDocs();
+
+	/**
+	 * @param dto
+	 */
+	String overridePublish(PublishDto dto);
 
 }

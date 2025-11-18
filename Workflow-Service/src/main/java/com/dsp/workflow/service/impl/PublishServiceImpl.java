@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -41,6 +42,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.ApplicationInstanceProjection;
+import com.dsp.workflow.dto.PublishDto;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -409,7 +411,7 @@ public class PublishServiceImpl implements PublishService {
 		entity.setPublishStatus(false);
 
 //		 Cache clearing
-		String appNo=entity.getApplicationNo().split("_")[0];
+		String appNo = entity.getApplicationNo().split("_")[0];
 		ApplicationInstance appInstId = applicationInstanceRepository.getByApplicationNo(appNo);
 		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
 		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
@@ -2064,4 +2066,57 @@ public class PublishServiceImpl implements PublishService {
 						.applicationName(row[15] != null ? row[15].toString() : "").build())
 				.toList();
 	}
+
+	@Override
+	public String overridePublish(PublishDto dto) {
+
+		String dsp1DocName = repository.getDsp1DocName(dto.getApplicationId());
+		LocalDate forDate = LocalDate.parse(dto.getForDate());
+
+		StringBuilder message = new StringBuilder();
+
+		// If English document exists ---
+		if (dto.getDocUuidEn() != null) {
+
+			String refEn = generateRef(dto.getLokSabhaSessionNo());
+
+			PublishHistoryEntity enEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
+					.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
+					.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refEn)
+					.publishUuid(dto.getDocUuidEn()).year(forDate.getYear()).month(forDate.getMonthValue())
+					.fileType("pdf").publishUrl("").title("Override Publish").forDate(forDate).publishStatus(true)
+					.publishByUser(utils.getUserFullNameFromAuthentication()).publishDate(LocalDate.now())
+					.officeId(utils.getOfficeIdFromAuthentication()).locale("en").fileTypeName("pdf").house("LS")
+					.build();
+
+			repository.save(enEntity);
+			message.append("English document published successfully. Reference: ").append(refEn).append(". ");
+		}
+
+		// If Hindi document exists ---
+		if (dto.getDocUuidHi() != null) {
+
+			String refHi = generateRef(dto.getLokSabhaSessionNo());
+
+			PublishHistoryEntity hiEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
+					.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
+					.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refHi)
+					.publishUuid(dto.getDocUuidHi()).year(forDate.getYear()).month(forDate.getMonthValue())
+					.fileType("pdf").publishUrl("").title("Override Publish").forDate(forDate).publishStatus(true)
+					.publishByUser(utils.getUserFullNameFromAuthentication()).publishDate(LocalDate.now())
+					.officeId(utils.getOfficeIdFromAuthentication()).locale("hi").fileTypeName("pdf").house("LS")
+					.build();
+
+			repository.save(hiEntity);
+			message.append("Hindi document published successfully. Reference: ").append(refHi).append(". ");
+		}
+
+		return message.toString().trim();
+	}
+
+	private String generateRef(String sessionNo) {
+		return "OVR-" + sessionNo + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
+				+ (new Random().nextInt(90000) + 10000);
+	}
+
 }
