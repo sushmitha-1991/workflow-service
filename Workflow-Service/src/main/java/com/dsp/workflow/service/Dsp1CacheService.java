@@ -77,27 +77,28 @@ public class Dsp1CacheService {
 				}
 
 			} else if (appAbbr.equalsIgnoreCase("B2")) {
+
 				for (Dsp1CacheRegistryProjection dsp1Cache : dsp1CacheList) {
+
 					String endpoint = dsp1Cache.getDsp1Endpoint();
-					if (endpoint.contains("bull2Day")) {
-						endpoint = endpoint
-								.replaceFirst("\\$", docDetails.getDay() != null ? docDetails.getDay().toString() : "")
-								.replaceFirst("\\$",
-										docDetails.getMonth() != null ? docDetails.getMonth().toString() : "")
-								.replaceFirst("\\$",
-										docDetails.getYear() != null ? docDetails.getYear().toString() : "")
-								.replaceFirst("\\$", docDetails.getLocale() != null ? docDetails.getLocale() : "");
-					} else {
-						endpoint = endpoint
-								.replaceFirst("\\$",
-										docDetails.getMonth() != null ? docDetails.getMonth().toString() : "")
-								.replaceFirst("\\$",
-										docDetails.getYear() != null ? docDetails.getYear().toString() : "")
-								.replaceFirst("\\$", docDetails.getLocale() != null ? docDetails.getLocale() : "");
+
+					if (endpoint.contains("bulletin2Url")) {
+
+						String urlEndpoint = endpoint.replaceFirst("\\$", docDetails.getDay().toString())
+								.replaceFirst("\\$", docDetails.getMonth().toString())
+								.replaceFirst("\\$", docDetails.getYear().toString())
+								.replaceFirst("\\$", docDetails.getLocale());
+
+						clearCacheFromDSP1(dsp1Cache.getDsp1CacheName() + "::" + urlEndpoint);
 					}
 
-					String redisKey = dsp1Cache.getDsp1CacheName() + "::" + endpoint;
-					clearCacheFromDSP1(redisKey);
+					if (endpoint.contains("bulletin2Dates")) {
+
+						String dateEndpoint = endpoint.replaceFirst("\\$", docDetails.getMonth().toString())
+								.replaceFirst("\\$", docDetails.getYear().toString());
+
+						clearCacheFromDSP1(dsp1Cache.getDsp1CacheName() + "::" + dateEndpoint);
+					}
 				}
 			}
 
