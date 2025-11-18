@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dsp.workflow.dto.PublishDto;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -337,4 +338,11 @@ public class PublishController {
 		}
 		return null;
 	}
+
+	@PostMapping("/override-publish")
+	public ResponseEntity<String> overridePublish(@RequestBody PublishDto dto) {
+		String message = publishService.overridePublish(dto);
+		return ResponseEntity.ok(message);
+	}
+
 }
