@@ -220,6 +220,4 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 	 * @return
 	 */
 	ApplicationInstance getByRefId(Long id);
-	
-	ApplicationInstance getByApplicationNo(String appNo);
 }
