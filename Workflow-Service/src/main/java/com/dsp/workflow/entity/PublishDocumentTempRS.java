@@ -20,7 +20,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "publish_document_temp_rs", schema = "migration")
+@Table(name = "publish_document_temp_rs_new", schema = "migration")
 public class PublishDocumentTempRS {
 
     @Id
