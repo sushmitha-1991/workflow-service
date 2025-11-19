@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dsp.workflow.dto.PublishDto;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -38,9 +39,9 @@ public class PublishController {
 
 	@Autowired
 	private PublishService publishService;
-	
-    @Autowired
-    private HttpServletRequest httpRequest;
+
+	@Autowired
+	private HttpServletRequest httpRequest;
 
 	@PostMapping("/create")
 	public PublishHistoryDTO save(@RequestBody PublishHistoryDTO dto) {
@@ -63,7 +64,8 @@ public class PublishController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateTo) {
 		try {
 			List<PublishHistoryResponseDTO> result = publishService.getFilteredPublishHistory(applicationId, lokSabhaNo,
-					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo, documentDateFrom, documentDateTo);
+					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo, documentDateFrom,
+					documentDateTo);
 
 			if (result.isEmpty()) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -79,50 +81,38 @@ public class PublishController {
 		}
 	}
 
-	
 	@GetMapping("/get-docs")
 	public ResponseEntity<GenericResponse<List<ResponseDTO>>> getPublishedDocsByAppId(
-			@RequestParam(required=false) Long appId,
-			@RequestParam(required=false) String abbr,
-			@RequestParam(required=false) String lsNo,
-			@RequestParam(required=false) String sesNo,
-			@RequestParam(required=false) LocalDate fromDate,
-			@RequestParam(required=false) LocalDate toDate
-			) {
-		List<ResponseDTO> responseDto = publishService.getDocsByAppId(appId,abbr,lsNo,sesNo,fromDate,toDate);
+			@RequestParam(required = false) Long appId, @RequestParam(required = false) String abbr,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sesNo,
+			@RequestParam(required = false) LocalDate fromDate, @RequestParam(required = false) LocalDate toDate) {
+		List<ResponseDTO> responseDto = publishService.getDocsByAppId(appId, abbr, lsNo, sesNo, fromDate, toDate);
 
 		if (responseDto.isEmpty()) {
 			return ResponseEntity.noContent().build();
 		}
-		GenericResponse<List<ResponseDTO>> response = 
-		new GenericResponse<>(true, "Record found", responseDto,HttpStatus.OK.value());
+		GenericResponse<List<ResponseDTO>> response = new GenericResponse<>(true, "Record found", responseDto,
+				HttpStatus.OK.value());
 		return ResponseEntity.ok(response);
 	}
 
 	@PostMapping("/getAll/publishedDocs")
 	public ResponseEntity<List<UrlDto>> getPublishedDocsFromDSP1(@RequestParam(required = false) LocalDate date,
-			@RequestParam(required = false) String applicationName,
-			 @RequestParam(required = false) String locale,
-			@RequestParam(required = false) String lsNo,
-			 @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo,
-			@RequestParam(required = false) String house
-			) {
-		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale,
-		 lsNo, sessNo, rssNo,house);
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house) {
+		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo,
+				rssNo, house);
 		return ResponseEntity.ok(responseDto);
 	}
-@GetMapping("/getAll/publishedDocs")
+
+	@GetMapping("/getAll/publishedDocs")
 	public ResponseEntity<List<UrlDto>> getPublishedDocsFromDSP1V2(@RequestParam(required = false) LocalDate date,
-			@RequestParam(required = false) String applicationName,
-			 @RequestParam(required = false) String locale,
-			@RequestParam(required = false) String lsNo,
-			 @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo,
-			@RequestParam(required = false) String house
-			) {
-		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale,
-		 lsNo, sessNo, rssNo,house);
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house) {
+		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo,
+				rssNo, house);
 		return ResponseEntity.ok(responseDto);
 	}
 
@@ -132,6 +122,7 @@ public class PublishController {
 		List<UrlDto> responseDto = publishService.getAllUnpublished(date, applicationName, locale);
 		return ResponseEntity.ok(responseDto); // Returns 200 OK with the list
 	}
+
 	@GetMapping("/getAll/unpublishedDocs")
 	public ResponseEntity<List<UrlDto>> getAllUnpublishedV2(@RequestParam(required = false) LocalDate date,
 			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
@@ -156,7 +147,7 @@ public class PublishController {
 		// }
 		return responseDto;
 	}
-	
+
 	@GetMapping("/getAll/publishedDoc")
 	public UrlDto getByDateDocV2(@RequestParam(required = false) LocalDate date,
 			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
@@ -170,8 +161,6 @@ public class PublishController {
 		// }
 		return responseDto;
 	}
-	
-
 
 	@PostMapping("/getAll/docBySession")
 	public UrlDto getBySession(@RequestParam(required = false) LocalDate date,
@@ -232,7 +221,6 @@ public class PublishController {
 	@PutMapping("/unpublish/{id}")
 	public ResponseEntity<GenericResponse<PublishHistoryDTO>> unpublishById(@PathVariable Long id,
 			@RequestBody UnPublishRequest request) {
-		System.out.println("Id need to be unpublished " + id);
 		if (id == null) {
 			throw new RuntimeException("id is NULL");
 		}
@@ -244,7 +232,6 @@ public class PublishController {
 				HttpStatus.OK.value());
 
 		return ResponseEntity.ok(response);
-		// return responseDto;
 	}
 
 	@PostMapping("/update/{id}")
@@ -285,73 +272,77 @@ public class PublishController {
 		return response;
 	}
 
-    @PostMapping("/getAll/docs")
-    public List<UrlDto> getAllDocs(@RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String applicationName,
-            @RequestParam(required = false) String locale) {
-        List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
-        return responseDto;
-    }
-   @PostMapping("/uploadDocDSP2/{appName}")
-    public ResponseEntity<List<String>> uploadToDsp2(@PathVariable String appName,
-    @RequestBody SessionDto dto) {
-        System.out.println("Received in Controller: ");
-        List<String> uuidString = publishService.uploadToDsp2(appName,dto);
-        return ResponseEntity.ok(uuidString);
-    }
+	@PostMapping("/getAll/docs")
+	public List<UrlDto> getAllDocs(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale) {
+		List<UrlDto> responseDto = publishService.getAllDocs(date, applicationName, locale);
+		return responseDto;
+	}
+
+	@PostMapping("/uploadDocDSP2/{appName}")
+	public ResponseEntity<List<String>> uploadToDsp2(@PathVariable String appName, @RequestBody SessionDto dto) {
+		System.out.println("Received in Controller: ");
+		List<String> uuidString = publishService.uploadToDsp2(appName, dto);
+		return ResponseEntity.ok(uuidString);
+	}
+
 	@PostMapping("/uploadDocDSP2/rs/{appName}")
-    public ResponseEntity<List<String>> uploadToDsp2Rs(@PathVariable String appName,
-    @RequestBody SessionDto dto) {
-        System.out.println("Received in Controller: ");
-        List<String> uuidString = publishService.uploadToDsp2Rs(appName,dto);
-        return ResponseEntity.ok(uuidString);
-    }
+	public ResponseEntity<List<String>> uploadToDsp2Rs(@PathVariable String appName, @RequestBody SessionDto dto) {
+		System.out.println("Received in Controller: ");
+		List<String> uuidString = publishService.uploadToDsp2Rs(appName, dto);
+		return ResponseEntity.ok(uuidString);
+	}
+
 	@GetMapping("/uploadMemberDSP2")
-    public ResponseEntity<List<ResponseMember>> uploadMembersToDsp2() {
-        System.out.println("Received in Controller: ");
-        List<ResponseMember> res = publishService.uploadMemberDSP2();
-        return ResponseEntity.ok(res);
-    }
+	public ResponseEntity<List<ResponseMember>> uploadMembersToDsp2() {
+		System.out.println("Received in Controller: ");
+		List<ResponseMember> res = publishService.uploadMemberDSP2();
+		return ResponseEntity.ok(res);
+	}
+
 	@GetMapping("/uploadTransmissionDsp2")
-    public ResponseEntity<List<ResponseDocsUuids>> uploadTransmissionDocs() {
-        System.out.println("Received in Controller: ");
-        List<ResponseDocsUuids> res = publishService.uploadTransmissionDocs();
-        return ResponseEntity.ok(res);
-    }
-	
-	
-   	@GetMapping("/create-folder-structure")
-    public ResponseEntity<String> folderStructure(
-		@RequestParam(required=false) String houseType,
-		@RequestParam(required=false) String lsNo,
-		@RequestParam(required=false) String sessionNo,
-		@RequestParam(required=false) String appName
-    ) {
-        System.out.println("Received in Controller: ");
-        
-        List<String> folders = new ArrayList<String>();
-        if (!StringUtils.isEmpty(houseType)) {
-        	folders.add(houseType);
-        }
-        if (!StringUtils.isEmpty(lsNo)) {
-        	folders.add(lsNo);
-        }
-        if (!StringUtils.isEmpty(sessionNo)) {
-        	folders.add(sessionNo);
-        }
+	public ResponseEntity<List<ResponseDocsUuids>> uploadTransmissionDocs() {
+		System.out.println("Received in Controller: ");
+		List<ResponseDocsUuids> res = publishService.uploadTransmissionDocs();
+		return ResponseEntity.ok(res);
+	}
+
+	@GetMapping("/create-folder-structure")
+	public ResponseEntity<String> folderStructure(@RequestParam(required = false) String houseType,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessionNo,
+			@RequestParam(required = false) String appName) {
+		System.out.println("Received in Controller: ");
+
+		List<String> folders = new ArrayList<String>();
+		if (!StringUtils.isEmpty(houseType)) {
+			folders.add(houseType);
+		}
+		if (!StringUtils.isEmpty(lsNo)) {
+			folders.add(lsNo);
+		}
+		if (!StringUtils.isEmpty(sessionNo)) {
+			folders.add(sessionNo);
+		}
 		folders.add(appName);
-        System.out.println(folders);
-        String folder = publishService.createDmsFolderStructure("/okm:root", folders);
+		System.out.println(folders);
+		String folder = publishService.createDmsFolderStructure("/okm:root", folders);
 
-        return ResponseEntity.ok(folder);
-    }
-   	
-    public String getTokenFromRequest() {
+		return ResponseEntity.ok(folder);
+	}
 
-        String authorizationHeader = httpRequest.getHeader("Authorization");
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.substring(7);
-        }
-        return null;
-    }
+	public String getTokenFromRequest() {
+
+		String authorizationHeader = httpRequest.getHeader("Authorization");
+		if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+			return authorizationHeader.substring(7);
+		}
+		return null;
+	}
+
+	@PostMapping("/override-publish")
+	public ResponseEntity<String> overridePublish(@RequestBody PublishDto dto) {
+		String message = publishService.overridePublish(dto);
+		return ResponseEntity.ok(message);
+	}
+
 }

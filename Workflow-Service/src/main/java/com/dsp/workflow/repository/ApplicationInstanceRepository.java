@@ -15,6 +15,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.dsp.workflow.dto.ApplicationInstanceProjection;
+import com.dsp.workflow.dto.Dsp1CacheRegistryProjection;
+import com.dsp.workflow.dto.PublishHistoryProjection;
 import com.dsp.workflow.entity.ApplicationInstance;
 
 /**
@@ -172,4 +175,51 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			+ "WHERE ai.id = :applicationInstanceId", nativeQuery = true)
 	String getModuleName(@Param("applicationInstanceId") Long applicationInstanceId);
 
+	/**
+	 * @param appInstId
+	 * @return
+	 */
+	@Query(value = """
+			    SELECT ai.application_no AS appNo,
+			           a.abbr AS abbr
+			    FROM master.application_instance ai
+			    LEFT JOIN master.applications a ON a.id = ai.application_id
+			    WHERE ai.id = :appInstId
+			""", nativeQuery = true)
+	ApplicationInstanceProjection findApplicationDetailsById(@Param("appInstId") Long appInstId);
+
+	@Query(value = """
+			    SELECT ph.lok_sabha_no AS lokSabhaNo,
+			           ph.lok_sabha_session_no AS lokSabhaSessionNo,
+			           ph.rajya_sabha_session_no AS rajyaSabhaSessionNo,
+			           ph.application_no AS applicationNo,
+			           ph.application_id AS applicationId,
+			           ph.locale AS locale,
+			           CAST(EXTRACT(YEAR FROM ph.for_date) AS TEXT) AS year,
+			           CAST(EXTRACT(MONTH FROM ph.for_date) AS TEXT) AS month,
+			           CAST(EXTRACT(DAY FROM ph.for_date) AS TEXT) AS day
+			    FROM workflow.publish_history ph
+			    WHERE ph.application_no = :appNo
+			""", nativeQuery = true)
+	PublishHistoryProjection getAppDetailsByAbbr(@Param("appNo") String appNo);
+
+	@Query(value = """
+			    SELECT dcr.application_abbr AS applicationAbbr,
+			           dcr.application_id AS applicationId,
+			           dcr.dsp1_cache_name AS dsp1CacheName,
+			           dcr.dsp1_endpoint AS dsp1Endpoint
+			      FROM template.dsp1_cache_registry dcr
+			     WHERE dcr.application_id = :applicationId
+			       AND dcr.is_active = true
+			       AND dcr.is_deleted = false
+			""", nativeQuery = true)
+	List<Dsp1CacheRegistryProjection> getDsp1CacheDataList(@Param("applicationId") Long applicationId);
+
+	/**
+	 * @param id
+	 * @return
+	 */
+	ApplicationInstance getByRefId(Long id);
+	
+	ApplicationInstance getByApplicationNo(String appNo);
 }

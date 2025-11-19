@@ -61,7 +61,7 @@ public interface PublishRepository
 	@Query(value = "SELECT ai.id FROM master.application_instance ai WHERE ai.application_no = :applicationNo", nativeQuery = true)
 	Long findApplicationInstanceIdsByAppNo(@Param("applicationNo") String applicationNo);
 
-	@Modifying
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Transactional
 	@Query(value = """
 			UPDATE master.application_instance
@@ -74,7 +74,7 @@ public interface PublishRepository
 	/**
 	 * @param applicationInstId
 	 */
-	@Modifying
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Transactional
 	@Query(value = """
 			UPDATE workflow.workflow_history
@@ -83,5 +83,16 @@ public interface PublishRepository
 			  AND status = 'Published'
 			""", nativeQuery = true)
 	void updateUnpublishStatusInWorkflowHistory(@Param("applicationInstId") Long applicationInstId);
+
+	/**
+	 * @param applicationId
+	 * @return
+	 */
+	@Query(value = """
+			select dsp1_document_name
+			from master.applications
+			WHERE id = :applicationId
+			""", nativeQuery = true)
+	String getDsp1DocName(@Param("applicationId") Long applicationId);
 
 }
