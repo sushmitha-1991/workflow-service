@@ -340,9 +340,13 @@ public class PublishController {
 	}
 
 	@PostMapping("/override-publish")
-	public ResponseEntity<String> overridePublish(@RequestBody PublishDto dto) {
+	public ResponseEntity<GenericResponse<String>> overridePublish(@RequestBody PublishDto dto) {
+
 		String message = publishService.overridePublish(dto);
-		return ResponseEntity.ok(message);
+
+		GenericResponse<String> response = new GenericResponse<>(true, message, null, HttpStatus.OK.value());
+
+		return ResponseEntity.ok(response);
 	}
 
 }
