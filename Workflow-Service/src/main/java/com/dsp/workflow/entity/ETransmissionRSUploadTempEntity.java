@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "etransmission_rs_temp_new", schema = "migration")
+@Table(name = "etransmission_rs_temp", schema = "migration")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
