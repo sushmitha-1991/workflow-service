@@ -661,7 +661,6 @@ public class PublishServiceImpl implements PublishService {
 		return null;
 	}
 
-	// uploadTransmissionDocsLs
 	public List<ResponseDocsUuids> uploadTransmissionDocsLs() {
 		Long houseId = utils.getHouseIdFromAuthentication();
 		Specification<ETransmissionUploadTempEntity> spec = Specification.where(hasHouseId(houseId));
@@ -706,8 +705,8 @@ public class PublishServiceImpl implements PublishService {
 	public List<ResponseDocsUuids> uploadTransmissionDocsRs() {
 		Long houseId = utils.getHouseIdFromAuthentication();
 		Specification<ETransmissionRSUploadTempEntity> spec = Specification.where(hasHouseIdRS(houseId));
-		List<ETransmissionRSUploadTempEntity> urlList = eTransmissionRSRepository.findAll(spec);
 		spec = spec.or(hasUuidTransRs());
+		List<ETransmissionRSUploadTempEntity> urlList = eTransmissionRSRepository.findAll(spec);
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
 		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
@@ -1278,10 +1277,18 @@ public class PublishServiceImpl implements PublishService {
 
 	private Specification<ETransmissionRSUploadTempEntity> hasUuidTransRs() {
 		return (root, query, cb) -> cb.or(
-				cb.and(cb.isNotNull(root.get("list1Eng")), cb.isNull(root.get("list1EngUuid"))),
-				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))),
-				cb.and(cb.isNotNull(root.get("hindiErrata")), cb.isNull(root.get("hindiErrataUuid"))),
-				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))));
+				cb.and(
+						cb.isNotNull(root.get("list1Eng")),
+						cb.isNull(root.get("list1EngUuid"))),
+				cb.and(
+						cb.isNotNull(root.get("list1Hindi")),
+						cb.isNull(root.get("list1HindiUuid"))),
+				cb.and(
+						cb.isNotNull(root.get("hindiErrata")),
+						cb.isNull(root.get("hindiErrataUuid"))),
+				cb.and(
+						cb.isNotNull(root.get("engErrata")),
+						cb.isNull(root.get("engErrataUuid"))));
 	}
 
 	private Specification<PublishDocumentTempRS> hasPublishUuidRs() {
