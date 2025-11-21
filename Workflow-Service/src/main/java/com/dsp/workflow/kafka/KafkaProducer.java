@@ -44,4 +44,22 @@ public class KafkaProducer {
 			e.printStackTrace();
 		}
 	}
+	
+	public void sendUnpublishEvent(String refNo, Long historyId) {
+	    try {
+	        Map<String, Object> payload = new HashMap<>();
+	        payload.put("eventType", "UNPUBLISH_TRANSLATION");
+	        payload.put("refNo", refNo);
+	        payload.put("historyId", historyId);
+
+	        String jsonMessage = mapper.writeValueAsString(payload);
+	        System.out.println(">>> Sending UNPUBLISH_TRANSLATION event: " + jsonMessage);
+
+	        kafkaTemplate.send(TOPIC, jsonMessage);
+
+	    } catch (Exception e) {
+	        System.out.println("#### EXCEPTION (unpublish event) - " + e);
+	        e.printStackTrace();
+	    }
+	}
 }
