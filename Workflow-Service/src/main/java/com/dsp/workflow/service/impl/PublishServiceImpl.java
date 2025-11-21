@@ -59,6 +59,7 @@ import com.dsp.workflow.entity.MemberPhotoSignTempRS;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
+import com.dsp.workflow.kafka.KafkaProducer;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.ApplicationRepository;
@@ -130,6 +131,9 @@ public class PublishServiceImpl implements PublishService {
 
 	@Autowired
 	private Dsp1CacheService dsp1CacheService;
+	
+	@Autowired
+	private KafkaProducer kafkaProducer;
 
 	@Override
 	public PublishHistoryDTO save(PublishHistoryDTO dto) {
@@ -431,6 +435,7 @@ public class PublishServiceImpl implements PublishService {
 
 		repository.saveAndFlush(entity);
 
+		kafkaProducer.sendUnpublishEvent(appNo, id);
 		return PublishMapper.toDTO(entity);
 	}
 
