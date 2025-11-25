@@ -6,13 +6,16 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -267,7 +270,7 @@ public class PublishServiceImpl implements PublishService {
 		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
 		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
 		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
-		// System.out.println("responseEntitys " + responseEntitys);
+		System.out.println("responseEntitys " + responseEntitys);
 
 		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
 				.collect(Collectors.toList());
@@ -286,7 +289,55 @@ public class PublishServiceImpl implements PublishService {
 		}
 		System.out.println("list of urlDto" + urlDto);
 
+		if ("UNCORRECTED_DEBATE".equalsIgnoreCase(documentName)) {
+			return getFilteredVerbatim(urlDto);
+		}
 		return urlDto;
+	}
+
+	private LocalTime convertToLocalTime(String timeStr) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
+    return LocalTime.parse(timeStr.toUpperCase().replace(" ", ""), formatter);
+}
+
+	public List<UrlDto> getFilteredVerbatim(List<UrlDto> urlList) {
+		List<UrlDto> sorted = urlList.stream()
+				.sorted(Comparator
+						.comparing(UrlDto::getDate)
+						.thenComparing((UrlDto dto) -> {
+							String fileName = dto.getFileName();
+
+							// Full Day always first
+							if (fileName.equalsIgnoreCase("FULL DAY")) {
+								return LocalTime.MIN; // 00:00 but treated highest priority
+							}
+
+							// Extract start time -> "10:55AM to 11:05AM"
+							String startTime = fileName.split(" to ")[0];
+
+							DateTimeFormatter fmt = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
+							LocalTime time = LocalTime.parse(startTime.toUpperCase(), fmt);
+
+							// Custom bucket:
+							// 1 → Full Day
+							// 2 → 05:00 AM to 11:59 PM
+							// 3 → 12:00 AM to 04:59 AM
+							int bucket;
+
+							if (!fileName.equalsIgnoreCase("FULL DAY")) {
+								if (time.isAfter(LocalTime.of(4, 59)) && time.isBefore(LocalTime.MIDNIGHT)) {
+									bucket = 2; // 05 AM to 11 PM
+								} else {
+									bucket = 3; // 12 AM to 04:59 AM 00:00
+								}
+							} else {
+								bucket = 1; // Full Day
+							}
+
+							return LocalTime.of(bucket, time.getHour(), time.getMinute());
+						}))
+				.collect(Collectors.toList());
+		return sorted;
 	}
 
 	@Override
@@ -414,7 +465,7 @@ public class PublishServiceImpl implements PublishService {
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
 
-//		 Cache clearing
+		// Cache clearing
 		String appNo = entity.getApplicationNo().split("_")[0];
 		ApplicationInstance appInstId = applicationInstanceRepository.getByApplicationNo(appNo);
 		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
