@@ -456,8 +456,7 @@ public class PublishServiceImpl implements PublishService {
 	@Override
 	@Transactional
 	public PublishHistoryDTO updateById(Long id, UnPublishRequest request) {
-
-		PublishHistoryEntity entity = repository.findById(id)
+	PublishHistoryEntity entity = repository.findById(id)
             .orElseThrow(() -> new RuntimeException("PublishHistory not found for ID: " + id));
 		entity.setUnpublishByUser(request.getUnpublishByUser());
 		if (request.getUnpublishDate() == null) {
@@ -465,20 +464,13 @@ public class PublishServiceImpl implements PublishService {
 		}
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
-		System.out.println(entity);
-		// Cache clearing
-		String appNo = entity.getApplicationNo().split("_")[0];
-		System.out.println(appNo);
-		if(!VERBATIM.equalsIgnoreCase(entity.getApplicationName()))
+		if(VERBATIM.equalsIgnoreCase(entity.getApplicationName()))
 		{
+			return unPublishVerbatim(id,entity);
+		}
+		String appNo = entity.getApplicationNo().split("_")[0];
 			 ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
-            if (appInst == null) {
-                throw new RuntimeException("ApplicationInstance not found for: " + appNo);
-            }
             ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
-            if (appDetails == null) {
-                throw new RuntimeException("Application details not found for ID: " + appInst.getId());
-            }
 			dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 		try {
 			// Fetch ID of related application instances
@@ -490,10 +482,13 @@ public class PublishServiceImpl implements PublishService {
 		} catch (Exception e) {
 			System.out.println("Error updating unpublish status for application_no={}" + entity.getApplicationNo());
 		}
-	}
 		repository.saveAndFlush(entity);
-
 		kafkaProducer.sendUnpublishEvent(appNo, id);
+		return PublishMapper.toDTO(entity);
+	}
+
+	public PublishHistoryDTO unPublishVerbatim(Long id, PublishHistoryEntity entity) {
+		repository.saveAndFlush(entity);
 		return PublishMapper.toDTO(entity);
 	}
 
