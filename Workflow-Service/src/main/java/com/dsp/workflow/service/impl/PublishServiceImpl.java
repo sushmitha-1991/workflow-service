@@ -289,7 +289,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 		System.out.println("list of urlDto" + urlDto);
 
-		if ("UNCORRECTED_DEBATE".equalsIgnoreCase(documentName)) {
+		if (VERBATIM.equalsIgnoreCase(documentName)) {
 			return getFilteredVerbatim(urlDto);
 		}
 		return urlDto;
