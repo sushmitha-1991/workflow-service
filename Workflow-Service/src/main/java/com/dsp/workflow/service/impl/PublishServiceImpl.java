@@ -109,7 +109,7 @@ public class PublishServiceImpl implements PublishService {
 	// Regex to detect version suffix like "_v1", "_v12", "_v123" before the
 	// extension
 	private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+(?=\\.[^.]+$)", Pattern.CASE_INSENSITIVE);
-
+	public static final String VERBATIM="UNCORRECTED_DEBATE";
 	@Autowired
 	private ETransmissionDataUpload eTransmissionUtils;
 	@Autowired
@@ -289,7 +289,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 		System.out.println("list of urlDto" + urlDto);
 
-		if ("UNCORRECTED_DEBATE".equalsIgnoreCase(documentName)) {
+		if (VERBATIM.equalsIgnoreCase(documentName)) {
 			return getFilteredVerbatim(urlDto);
 		}
 		return urlDto;
@@ -456,37 +456,39 @@ public class PublishServiceImpl implements PublishService {
 	@Override
 	@Transactional
 	public PublishHistoryDTO updateById(Long id, UnPublishRequest request) {
-
-		PublishHistoryEntity entity = repository.findById(id).get();
+	PublishHistoryEntity entity = repository.findById(id)
+            .orElseThrow(() -> new RuntimeException("PublishHistory not found for ID: " + id));
 		entity.setUnpublishByUser(request.getUnpublishByUser());
 		if (request.getUnpublishDate() == null) {
 			request.setUnpublishDate(LocalDate.now());
 		}
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
-
-		// Cache clearing
+		if(VERBATIM.equalsIgnoreCase(entity.getApplicationName()))
+		{
+			return unPublishVerbatim(id,entity);
+		}
 		String appNo = entity.getApplicationNo().split("_")[0];
-		ApplicationInstance appInstId = applicationInstanceRepository.getByApplicationNo(appNo);
-		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
-		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
-
+			 ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
+            ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
+			dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 		try {
 			// Fetch ID of related application instances
 			Long applicationInstId = repository.findApplicationInstanceIdsByAppNo(appDetails.getAppNo());
-
 			// Update publish status in master.application_instance
 			repository.updateUnpublishStatus(appDetails.getAppNo());
-
 			// Update publish status in workflow.workflow_history
 			repository.updateUnpublishStatusInWorkflowHistory(applicationInstId);
 		} catch (Exception e) {
 			System.out.println("Error updating unpublish status for application_no={}" + entity.getApplicationNo());
 		}
-
 		repository.saveAndFlush(entity);
-
 		kafkaProducer.sendUnpublishEvent(appNo, id);
+		return PublishMapper.toDTO(entity);
+	}
+
+	public PublishHistoryDTO unPublishVerbatim(Long id, PublishHistoryEntity entity) {
+		repository.saveAndFlush(entity);
 		return PublishMapper.toDTO(entity);
 	}
 
