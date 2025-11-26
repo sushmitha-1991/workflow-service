@@ -62,6 +62,7 @@ import com.dsp.workflow.entity.MemberPhotoSignTempRS;
 import com.dsp.workflow.entity.PublishDocumentTemp;
 import com.dsp.workflow.entity.PublishDocumentTempRS;
 import com.dsp.workflow.entity.PublishHistoryEntity;
+import com.dsp.workflow.kafka.KafkaProducer;
 import com.dsp.workflow.mapper.PublishMapper;
 import com.dsp.workflow.repository.ApplicationInstanceRepository;
 import com.dsp.workflow.repository.ApplicationRepository;
@@ -108,7 +109,7 @@ public class PublishServiceImpl implements PublishService {
 	// Regex to detect version suffix like "_v1", "_v12", "_v123" before the
 	// extension
 	private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+(?=\\.[^.]+$)", Pattern.CASE_INSENSITIVE);
-
+	public static final String VERBATIM="UNCORRECTED_DEBATE";
 	@Autowired
 	private ETransmissionDataUpload eTransmissionUtils;
 	@Autowired
@@ -133,6 +134,9 @@ public class PublishServiceImpl implements PublishService {
 
 	@Autowired
 	private Dsp1CacheService dsp1CacheService;
+	
+	@Autowired
+	private KafkaProducer kafkaProducer;
 
 	@Override
 	public PublishHistoryDTO save(PublishHistoryDTO dto) {
@@ -453,35 +457,43 @@ public class PublishServiceImpl implements PublishService {
 	@Transactional
 	public PublishHistoryDTO updateById(Long id, UnPublishRequest request) {
 
-		PublishHistoryEntity entity = repository.findById(id).get();
+		PublishHistoryEntity entity = repository.findById(id)
+            .orElseThrow(() -> new RuntimeException("PublishHistory not found for ID: " + id));
 		entity.setUnpublishByUser(request.getUnpublishByUser());
 		if (request.getUnpublishDate() == null) {
 			request.setUnpublishDate(LocalDate.now());
 		}
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
-
+		System.out.println(entity);
 		// Cache clearing
 		String appNo = entity.getApplicationNo().split("_")[0];
-		ApplicationInstance appInstId = applicationInstanceRepository.getByApplicationNo(appNo);
-		ApplicationInstanceProjection appDetails = getAppDetails(appInstId.getId());
-		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
-
+		System.out.println(appNo);
+		if(!VERBATIM.equalsIgnoreCase(entity.getApplicationName()))
+		{
+			 ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
+            if (appInst == null) {
+                throw new RuntimeException("ApplicationInstance not found for: " + appNo);
+            }
+            ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
+            if (appDetails == null) {
+                throw new RuntimeException("Application details not found for ID: " + appInst.getId());
+            }
+			dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 		try {
 			// Fetch ID of related application instances
 			Long applicationInstId = repository.findApplicationInstanceIdsByAppNo(appDetails.getAppNo());
-
 			// Update publish status in master.application_instance
 			repository.updateUnpublishStatus(appDetails.getAppNo());
-
 			// Update publish status in workflow.workflow_history
 			repository.updateUnpublishStatusInWorkflowHistory(applicationInstId);
 		} catch (Exception e) {
 			System.out.println("Error updating unpublish status for application_no={}" + entity.getApplicationNo());
 		}
-
+	}
 		repository.saveAndFlush(entity);
 
+		kafkaProducer.sendUnpublishEvent(appNo, id);
 		return PublishMapper.toDTO(entity);
 	}
 

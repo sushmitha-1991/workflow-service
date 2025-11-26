@@ -20,12 +20,12 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "publish_document_temp_rs", schema = "migration")
+@Table(name = "publish_document_temp_rs_new", schema = "migration")
 public class PublishDocumentTempRS {
 
     @Id
     private Long id;
-@Column(name = "lsno")
+    @Column(name = "lsno")
     private String lsNo;
 
     private String sesNo;
@@ -44,7 +44,6 @@ public class PublishDocumentTempRS {
 
     private Integer recordCount;
 
-
     private String publishUrl;
 
     private UUID publishUuid;
@@ -54,4 +53,3 @@ public class PublishDocumentTempRS {
     private Boolean isUpdatedUuid;
 
 }
-
