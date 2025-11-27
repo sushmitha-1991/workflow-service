@@ -109,7 +109,7 @@ public class PublishServiceImpl implements PublishService {
 	// Regex to detect version suffix like "_v1", "_v12", "_v123" before the
 	// extension
 	private static final Pattern VERSION_PATTERN = Pattern.compile("_v\\d+(?=\\.[^.]+$)", Pattern.CASE_INSENSITIVE);
-	public static final String VERBATIM="UNCORRECTED_DEBATE";
+	public static final String VERBATIM = "UNCORRECTED_DEBATE";
 	@Autowired
 	private ETransmissionDataUpload eTransmissionUtils;
 	@Autowired
@@ -134,7 +134,7 @@ public class PublishServiceImpl implements PublishService {
 
 	@Autowired
 	private Dsp1CacheService dsp1CacheService;
-	
+
 	@Autowired
 	private KafkaProducer kafkaProducer;
 
@@ -296,48 +296,46 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	private LocalTime convertToLocalTime(String timeStr) {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
-    return LocalTime.parse(timeStr.toUpperCase().replace(" ", ""), formatter);
-}
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
+		return LocalTime.parse(timeStr.toUpperCase().replace(" ", ""), formatter);
+	}
 
 	public List<UrlDto> getFilteredVerbatim(List<UrlDto> urlList) {
-		List<UrlDto> sorted = urlList.stream()
+
+		DateTimeFormatter fmt = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
+
+		List<UrlDto> res= urlList.stream()
 				.sorted(Comparator
-						.comparing(UrlDto::getDate)
+						.comparingInt((UrlDto dto) -> {
+							String fileName = dto.getFileName();
+
+							if (fileName.equalsIgnoreCase("FULL DAY")) {
+								return 1; // Full Day FIRST
+							}
+
+							String startTime = fileName.split(" to ")[0];
+							LocalTime time = LocalTime.parse(startTime.toUpperCase(), fmt);
+
+							if (time.isAfter(LocalTime.of(4, 59))) {
+								return 2; // 05:00 AM to 11:59 PM
+							} else {
+								return 3; // 12:00 AM to 04:59 AM (BOTTOM)
+							}
+						})
 						.thenComparing((UrlDto dto) -> {
 							String fileName = dto.getFileName();
 
-							// Full Day always first
 							if (fileName.equalsIgnoreCase("FULL DAY")) {
-								return LocalTime.MIN; // 00:00 but treated highest priority
+								return LocalTime.MIN; // Keep Full Day first inside bucket
 							}
 
-							// Extract start time -> "10:55AM to 11:05AM"
 							String startTime = fileName.split(" to ")[0];
-
-							DateTimeFormatter fmt = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
-							LocalTime time = LocalTime.parse(startTime.toUpperCase(), fmt);
-
-							// Custom bucket:
-							// 1 → Full Day
-							// 2 → 05:00 AM to 11:59 PM
-							// 3 → 12:00 AM to 04:59 AM
-							int bucket;
-
-							if (!fileName.equalsIgnoreCase("FULL DAY")) {
-								if (time.isAfter(LocalTime.of(4, 59)) && time.isBefore(LocalTime.MIDNIGHT)) {
-									bucket = 2; // 05 AM to 11 PM
-								} else {
-									bucket = 3; // 12 AM to 04:59 AM 00:00
-								}
-							} else {
-								bucket = 1; // Full Day
-							}
-
-							return LocalTime.of(bucket, time.getHour(), time.getMinute());
+							return LocalTime.parse(startTime.toUpperCase(), fmt);
 						}))
 				.collect(Collectors.toList());
-		return sorted;
+				System.out.println("dto");
+				System.out.println(res);
+				return res;
 	}
 
 	@Override
@@ -456,22 +454,21 @@ public class PublishServiceImpl implements PublishService {
 	@Override
 	@Transactional
 	public PublishHistoryDTO updateById(Long id, UnPublishRequest request) {
-	PublishHistoryEntity entity = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("PublishHistory not found for ID: " + id));
+		PublishHistoryEntity entity = repository.findById(id)
+				.orElseThrow(() -> new RuntimeException("PublishHistory not found for ID: " + id));
 		entity.setUnpublishByUser(request.getUnpublishByUser());
 		if (request.getUnpublishDate() == null) {
 			request.setUnpublishDate(LocalDate.now());
 		}
 		entity.setUnpublishDate(request.getUnpublishDate());
 		entity.setPublishStatus(false);
-		if(VERBATIM.equalsIgnoreCase(entity.getApplicationName()))
-		{
-			return unPublishVerbatim(id,entity);
+		if (VERBATIM.equalsIgnoreCase(entity.getApplicationName())) {
+			return unPublishVerbatim(id, entity);
 		}
 		String appNo = entity.getApplicationNo().split("_")[0];
-			 ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
-            ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
-			dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
+		ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
+		ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
+		dsp1CacheService.clearCacheDsp1(appDetails.getAppNo(), appDetails.getAbbr());
 		try {
 			// Fetch ID of related application instances
 			Long applicationInstId = repository.findApplicationInstanceIdsByAppNo(appDetails.getAppNo());
