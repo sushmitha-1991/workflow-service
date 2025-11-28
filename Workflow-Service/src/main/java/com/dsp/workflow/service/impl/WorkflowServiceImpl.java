@@ -2248,11 +2248,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	public Map<String, Object> canRecall(Long applicationInstanceId) {
+
+		String actionUrl = workflowHistoryRepository.getApplicationAbbrByApplicationInstanceId(applicationInstanceId);
 		Boolean isEligible = workflowHistoryRepository.checkRecallEligibility(applicationInstanceId,
 				utils.getUserIdFromAuthentication());
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("recall", isEligible != null ? isEligible : false);
+		response.put("actionUrl", actionUrl != null ? actionUrl : null);
 
 		return response;
 	}
