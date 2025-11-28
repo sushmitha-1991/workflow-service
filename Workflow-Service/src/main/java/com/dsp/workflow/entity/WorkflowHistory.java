@@ -103,4 +103,7 @@ public class WorkflowHistory extends Auditable {
 	@Column(name = "ip_address", nullable = true)
 	private String userIpAddress;
 
+	@Column(name = "is_recall")
+	private Boolean isRecall;
+
 }

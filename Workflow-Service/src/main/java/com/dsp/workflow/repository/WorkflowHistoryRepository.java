@@ -445,4 +445,55 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			""", nativeQuery = true)
 	InProgressCountResponse getInProgressStatusCount(@Param("userId") Long userId, @Param("houseId") Long houseId);
 
+	/**
+	 * @param applicationInstanceId
+	 * @param userId
+	 * @return
+	 */
+
+	@Query(value = "SELECT CASE " + "         WHEN ( " + "                SELECT t1.pending_with = t2.action_taken_by "
+			+ "                FROM ( "
+			+ "                       SELECT pending_with, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "                       FROM workflow.workflow_history "
+			+ "                       WHERE application_instance_id = :applicationInstanceId "
+			+ "                     ) t1 " + "                JOIN ( "
+			+ "                       SELECT action_taken_by, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "                       FROM workflow.workflow_history "
+			+ "                       WHERE application_instance_id = :applicationInstanceId "
+			+ "                     ) t2 " + "                ON t1.rn = 1 AND t2.rn = 2 " + "              ) = TRUE "
+			+ "         THEN FALSE " + "         WHEN ( " + "                SELECT COUNT(*) FROM ( "
+			+ "                    SELECT action_taken_by, status, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "                    FROM workflow.workflow_history "
+			+ "                    WHERE application_instance_id = :applicationInstanceId " + "                ) t "
+			+ "                WHERE t.rn = 2 " + "                  AND t.action_taken_by = :userId "
+			+ "                  AND t.status IN ('In Progress', 'Returned') " + "              ) > 0 "
+			+ "         THEN TRUE " + "         ELSE FALSE " + "       END AS result", nativeQuery = true)
+	Boolean checkRecallEligibility(@Param("applicationInstanceId") Long applicationInstanceId,
+			@Param("userId") Long userId);
+
+	/**
+	 * @param processInstanceId
+	 * @param applicationInstanceId
+	 * @param senderUserId
+	 * @param userName
+	 * @param actionTakenOn
+	 * @param status
+	 * @param statusKey
+	 * @param taskId
+	 * @param receiverUserId
+	 * @param receiverUserName
+	 * @param userIp
+	 */
+	@Modifying
+	@Transactional
+	@Query(value = "UPDATE workflow.workflow_history SET action_taken_by = :senderUserId, action_taken_by_name = :userName, "
+			+ "status = :status, status_key = :statusKey, action_taken_on = :actionTakenOn, current_task_id = :taskId, pending_with = :receiverUserId, pending_with_name = :receiverUserName, pending_start_date = :actionTakenOn, ip_address = :userIp, is_recall = :isRecall "
+			+ "WHERE process_instance_id = :processInstanceId AND application_instance_id = :applicationInstanceId "
+			+ "AND action_taken_by IS NULL", nativeQuery = true)
+	void updateWorkflowHistoryForStepTypeRecall(@Param("processInstanceId") String processInstanceId,
+			@Param("applicationInstanceId") Long applicationInstanceId, @Param("senderUserId") Long senderUserId,
+			@Param("userName") String userName, @Param("actionTakenOn") LocalDateTime actionTakenOn,
+			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId,
+			@Param("receiverUserId") Long receiverUserId, @Param("receiverUserName") String receiverUserName,
+			@Param("userIp") String userIp, @Param("isRecall") Boolean isRecall);
 }

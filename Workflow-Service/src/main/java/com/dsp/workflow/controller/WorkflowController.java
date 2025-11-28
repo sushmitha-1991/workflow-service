@@ -451,4 +451,67 @@ public class WorkflowController {
 		return ResponseEntity.ok(genericResponse);
 	}
 
+	@Operation(summary = "Flexi Recall", description = "Handles the initiation or completion of a task based on the stepType.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Task processed successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid request data"),
+			@ApiResponse(responseCode = "500", description = "Internal error processing task") })
+	@PostMapping("/flexi-recall")
+	public GenericResponse<String> flexiRecall(@Valid @RequestBody CompleteTaskRequestDTO completeTaskRequestDTO) {
+		String processInstanceId;
+		String taskId;
+
+		if ("INTER".equals(completeTaskRequestDTO.getStepType())) {
+			processInstanceId = completeTaskRequestDTO.getProcessInstanceId();
+			taskId = completeTaskRequestDTO.getTaskId();
+		} else {
+			return new GenericResponse<>(false, "Invalid stepType provided", null, HttpStatus.BAD_REQUEST.value());
+		}
+
+		// Proceed with completing the task regardless of the stepType
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("processInstanceId", processInstanceId);
+		variables.put("receiverRoleId",
+				completeTaskRequestDTO.getReceiverRoleId() != null ? completeTaskRequestDTO.getReceiverRoleId() : 0);
+		variables.put("receiverUserId",
+				completeTaskRequestDTO.getReceiverUserId() != null ? completeTaskRequestDTO.getReceiverUserId() : 0);
+		variables.put("receiverUserName",
+				completeTaskRequestDTO.getReceiverUserName() != null ? completeTaskRequestDTO.getReceiverUserName()
+						: "");
+		variables.put("senderUserId", utils.getUserIdFromAuthentication());
+		variables.put("historyId", taskId);
+		variables.put("applicationInstanceId", completeTaskRequestDTO.getApplicationInstanceId());
+		variables.put("actionTaken", completeTaskRequestDTO.getActionTaken());
+		variables.put("sendTo",
+				completeTaskRequestDTO.getSendTo() != null ? completeTaskRequestDTO.getSendTo().name() : null);
+		variables.put("officeId",
+				completeTaskRequestDTO.getOfficeId() != null ? completeTaskRequestDTO.getOfficeId() : 0);
+		variables.put("application_no", completeTaskRequestDTO.getApplication_no());
+		variables.put("additional_details", completeTaskRequestDTO.getAdditional_details());
+		variables.put("stepType", completeTaskRequestDTO.getStepType());
+		variables.put("status", completeTaskRequestDTO.getStatus());
+
+		// Complete the task with provided variables and document list
+		String newTaskId = workflowService.flexiRecall(taskId, variables, completeTaskRequestDTO.getDocument(),
+				completeTaskRequestDTO.getActionUrl(), completeTaskRequestDTO.getNote());
+
+		// Return success or failure based on the completion of the task
+		if (newTaskId != null) {
+			return new GenericResponse<>(true, "Task processed successfully", newTaskId, HttpStatus.OK.value());
+		} else {
+			return new GenericResponse<>(false, "Failed to process task", taskId, HttpStatus.BAD_REQUEST.value());
+		}
+	}
+
+	@GetMapping("/can-recall")
+	public ResponseEntity<GenericResponse<Map<String, Object>>> getRecallEligibility(
+			@RequestParam Long applicationInstanceId) {
+
+		Map<String, Object> data = workflowService.canRecall(applicationInstanceId);
+
+		GenericResponse<Map<String, Object>> response = new GenericResponse<>(true,
+				"Recall eligibility fetched successfully", data, HttpStatus.OK.value());
+
+		return ResponseEntity.ok(response);
+	}
+
 }
