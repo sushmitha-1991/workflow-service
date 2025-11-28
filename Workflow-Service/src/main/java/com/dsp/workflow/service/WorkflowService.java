@@ -42,6 +42,22 @@ public interface WorkflowService {
 			String actionUrl, String note);
 
 	/**
+	 * Flexi Recall to complete a task with the given task ID and variables.
+	 * 
+	 * @param taskId              The ID of the task to complete.
+	 * @param variables           The variables to pass for task completion.
+	 * @param list
+	 * @param actionUrl
+	 * @param note
+	 * @param translationInputDTO
+	 * @param translationFlag
+	 * @param senderRoleId
+	 * @return The new task ID, or null if no new task is created.
+	 */
+	String flexiRecall(String taskId, Map<String, Object> variables, List<ProcessStepwiseDocumentsDTO> list,
+			String actionUrl, String note);
+
+	/**
 	 * Retrieves a task ID by process instance ID.
 	 * 
 	 * @param processInstanceId The ID of the process instance.
@@ -159,4 +175,11 @@ public interface WorkflowService {
 	 * @return
 	 */
 	String overrideApproval(ApprovalOverrideRequest request, List<ProcessStepwiseDocumentsDTO> documentList);
+
+	/**
+	 * @param applicationInstanceId
+	 * @param userId
+	 * @return
+	 */
+	Map<String, Object> canRecall(Long applicationInstanceId);
 }
