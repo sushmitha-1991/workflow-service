@@ -2142,4 +2142,119 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return "Document Approved Successfully";
 	}
 
+	@Transactional
+	public String flexiRecall(String taskId, Map<String, Object> variables,
+			List<ProcessStepwiseDocumentsDTO> documentList, String actionUrl, String note) {
+
+		try {
+			log.info("Starting flexiRecall for taskId: {}", taskId);
+
+			// Build Camunda REST URL
+			String url = camundaRestUrl + "/task/" + taskId + "/complete";
+
+			// Prepare headers
+			HttpHeaders headers = new HttpHeaders();
+			headers.setBasicAuth(camundaAdminId, camundaAdminPassword);
+			headers.setContentType(MediaType.APPLICATION_JSON);
+
+			// Prepare Camunda request body
+			Map<String, Object> requestBody = new HashMap<>();
+			requestBody.put("variables", formatVariablesForCamunda(variables));
+
+			log.debug("Camunda complete task request payload: {}", requestBody);
+
+			// Make API call
+			HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+			log.info("Invoking Camunda complete task API: {}", url);
+
+			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+			log.info("Camunda complete task response status: {}", response.getStatusCode());
+
+			// Extract variables
+			String userName = utils.getUserFullNameFromAuthentication();
+			Long senderUserId = ((Number) variables.get("senderUserId")).longValue();
+			Long receiverUserId = ((Number) variables.get("receiverUserId")).longValue();
+			Long applicationInstanceId = ((Number) variables.get("applicationInstanceId")).longValue();
+			String processInstanceId = (String) variables.get("processInstanceId");
+			String applicationNo = (String) variables.get("application_no");
+			String actionTaken = (String) variables.get("actionTaken");
+			String status = (String) variables.get("status");
+			String receiverUserName = (String) variables.get("receiverUserName");
+
+			String statusKey = applicationNo + "." + actionTaken + ".PRESTATUS";
+			String initialStatusKey = applicationNo + "." + actionTaken + ".POSTSTATUS";
+
+			LocalDateTime actionTakenOn = LocalDateTime.now();
+			String userIp = Utils.getLoggedInUserIp(httpRequest);
+
+			// Fetch next task ID
+			String nextTaskId = fetchNextTaskId(processInstanceId);
+			log.info("Fetched next taskId: {}", nextTaskId);
+
+			// If Camunda task completion is successful
+			if (response.getStatusCode().is2xxSuccessful()) {
+
+				String stepType = (String) variables.get("stepType");
+				log.info("Processing stepType: {}", stepType);
+
+				if ("INTER".equals(stepType)) {
+					log.info("Handling INTER step...");
+
+					updateApplicationInstance(applicationInstanceId, processInstanceId, taskId, status);
+					log.info("Application instance updated for INTER step");
+
+					// Save notesheet
+					Notesheet notesheet = NotesheetMapper.fromVariables(variables, taskId, documentList, note);
+					notesheetRepository.save(notesheet);
+					log.info("Notesheet saved for INTER step");
+
+					// Update workflow history for previous step
+					workflowHistoryRepository.updateWorkflowHistoryForStepTypeRecall(processInstanceId,
+							applicationInstanceId, senderUserId, userName, actionTakenOn, status, statusKey, taskId,
+							receiverUserId, receiverUserName, userIp, true);
+					log.info("Workflow history updated for INTER step");
+
+					// Save new workflow history entry
+					WorkflowHistory entry = WorkflowHistory.builder().processInstanceId(processInstanceId)
+							.subModuleId(applicationNo).applicationInstanceId(applicationInstanceId).actionTakenBy(null)
+							.actionTakenByName(null).actionTakenOn(null).status(null).statusKey(null)
+							.pendingWith(receiverUserId).pendingWithName(receiverUserName)
+							.pendingStartDate(LocalDateTime.now()).initalStatusKey(initialStatusKey).note(note)
+							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp).build();
+
+					workflowHistoryRepository.save(entry);
+					log.info("Workflow history entry created for INTER step");
+				}
+
+				// Workflow end check
+				if (nextTaskId == null) {
+					log.info("Workflow completed for processInstanceId: {}", processInstanceId);
+					return "Workflow has ended";
+				}
+
+				log.info("Returning nextTaskId: {}", nextTaskId);
+				return nextTaskId;
+			}
+
+			// If API call failed
+			log.error("Failed to complete Camunda task. Status: {}", response.getStatusCode());
+			throw new RuntimeException("Failed to complete task with Camunda API");
+
+		} catch (Exception ex) {
+			log.error("Error during Camunda flexiRecall execution", ex);
+			throw new CamundaException("Error completing task with external Camunda API: " + ex.getMessage(), ex);
+		}
+	}
+
+	public Map<String, Object> canRecall(Long applicationInstanceId) {
+		Boolean isEligible = workflowHistoryRepository.checkRecallEligibility(applicationInstanceId,
+				utils.getUserIdFromAuthentication());
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("recall", isEligible != null ? isEligible : false);
+
+		return response;
+	}
+
 }
