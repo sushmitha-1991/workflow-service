@@ -496,4 +496,11 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 			@Param("status") String status, @Param("statusKey") String statusKey, @Param("taskId") String taskId,
 			@Param("receiverUserId") Long receiverUserId, @Param("receiverUserName") String receiverUserName,
 			@Param("userIp") String userIp, @Param("isRecall") Boolean isRecall);
+
+	@Query(value = "SELECT fr.action_url " + "FROM master.application_instance ai "
+			+ "LEFT JOIN master.applications a ON a.id = ai.application_id "
+			+ "LEFT JOIN workflow.forwarding_rights fr ON fr.application_id = a.id "
+			+ "WHERE ai.id = :applicationInstanceId " + "LIMIT 1", nativeQuery = true)
+	String getApplicationAbbrByApplicationInstanceId(@Param("applicationInstanceId") Long applicationInstanceId);
+
 }
