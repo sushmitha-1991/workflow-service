@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -238,7 +239,7 @@ public class PublishServiceImpl implements PublishService {
 
 	@Override
 	public List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo,
-			String sesNo, String rssNo, String house) {
+			String sesNo, String rssNo, String house, Integer month, Integer year) {
 
 		List<UrlDto> urlDto = new ArrayList<>();
 		// if (locale == null) {
@@ -247,6 +248,12 @@ public class PublishServiceImpl implements PublishService {
 		Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
 		if (date != null) {
 			spec = spec.and(hasForDate(date));
+		}
+		if (year != null) {
+			spec = spec.and(hasYear(year));
+		}
+		if (month != null) {
+			spec = spec.and(hasMonth(month));
 		}
 		if (StringUtils.isNotBlank(documentName)) {
 			spec = spec.and(hasApplicationName(documentName));
@@ -304,7 +311,7 @@ public class PublishServiceImpl implements PublishService {
 
 		DateTimeFormatter fmt = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
 
-		List<UrlDto> res= urlList.stream()
+		List<UrlDto> res = urlList.stream()
 				.sorted(Comparator
 						.comparingInt((UrlDto dto) -> {
 							String fileName = dto.getFileName();
@@ -333,9 +340,9 @@ public class PublishServiceImpl implements PublishService {
 							return LocalTime.parse(startTime.toUpperCase(), fmt);
 						}))
 				.collect(Collectors.toList());
-				System.out.println("dto");
-				System.out.println(res);
-				return res;
+		System.out.println("dto");
+		System.out.println(res);
+		return res;
 	}
 
 	@Override
@@ -1739,10 +1746,33 @@ public class PublishServiceImpl implements PublishService {
 		};
 	}
 
-	/*
-	 * 
-	 */
 	// Specifications publish history
+	public static Specification<PublishHistoryEntity> hasYear(Integer year) {
+		return (root, query, cb) -> {
+			if (year != null) {
+				return cb.equal(
+						cb.function("date_part", Integer.class,
+								cb.literal("year"),
+								root.get("forDate")),
+						year);
+			}
+			return cb.conjunction();
+		};
+	}
+
+	public static Specification<PublishHistoryEntity> hasMonth(Integer month) {
+		return (root, query, cb) -> {
+			if (month != null) {
+				return cb.equal(
+						cb.function("date_part", Integer.class,
+								cb.literal("month"),
+								root.get("forDate")),
+						month);
+			}
+			return cb.conjunction();
+		};
+	}
+
 	public static Specification<PublishHistoryEntity> hasForDate(LocalDate date) {
 		return (root, query, criteriaBuilder) -> {
 			if (date != null) {
