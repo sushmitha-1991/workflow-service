@@ -100,9 +100,10 @@ public class PublishController {
 	public ResponseEntity<List<UrlDto>> getPublishedDocsFromDSP1(@RequestParam(required = false) LocalDate date,
 			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
 			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house) {
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house,
+			@RequestParam(required = false) Integer month,@RequestParam(required = false) Integer year) {
 		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo,
-				rssNo, house);
+				rssNo, house,month,year);
 		return ResponseEntity.ok(responseDto);
 	}
 
@@ -110,9 +111,10 @@ public class PublishController {
 	public ResponseEntity<List<UrlDto>> getPublishedDocsFromDSP1V2(@RequestParam(required = false) LocalDate date,
 			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
 			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house) {
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house,
+			@RequestParam(required=false) Integer month,Integer year) {
 		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo,
-				rssNo, house);
+				rssNo, house,month,year);
 		return ResponseEntity.ok(responseDto);
 	}
 

@@ -19,7 +19,7 @@ public interface PublishService {
 	PublishHistoryDTO save(PublishHistoryDTO dto);
 
 	List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
-			String rssNo, String house);
+			String rssNo, String house,Integer month,Integer year);
 
 	UrlDto getByDateDoc(LocalDate date, String documentName, String locale);
 
