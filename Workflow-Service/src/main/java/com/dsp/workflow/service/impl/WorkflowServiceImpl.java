@@ -236,8 +236,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                (ai.application_no) ai.application_no as applicationNo,
 			                case
 			                	when (ai.translation_document_type_id is not null)
-			        							then (select coalesce(app.document_display_name, app."name") from master.applications app
-			        							where app.id = ai.translation_document_type_id)
+        							then (select coalesce(app.document_display_name, app."name") from master.applications app
+        							where app.id = ai.translation_document_type_id)
 			                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
 			        		end
 			        		as documentName,
@@ -499,20 +499,20 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
 
 			union
+				-- Allocation to Translators
 			                     SELECT
 			                     distinct on (ah.ref_no)
 			                  ah.ref_no as applicationNo,
-			                  ma.document_display_name as documentName,
+			                  case
+			                  	when (inp.sub_document_type is not null) then inp.sub_document_type
+			                  	else ma.document_display_name
+			                  end
+			                  as documentName,
 			                  inp.document_date as date,
 			                  lsm.lok_sabha_number as LSNo,
 			                  lssm.session_number as SSNo,
 			                  rssm.session_number as RSSNo,
 			                  ah.status as status,
-			        				  --case
-								  	--when (inp.status = 'Returned') then inp.status
-								  	--else 'In Progress'
-							  --end
-			                  --as status,
 			          CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			          null as refId,
 			          null as applicationId,
@@ -538,7 +538,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			      left join master.applications ma on ma.id = inp.document_type_id
 			      left join master.lok_sabha_session_masters lssm on lssm.id = inp.lok_sabha_session_no
 			      left join master.lok_sabha_masters lsm on lsm.id = inp.lok_sabha_no
-			  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
+			  	  left join master.rajya_sabha_session_master rssm on rssm.id = inp.rajya_sabha_session_no
 			      left join authentication.base_user bu on bu.id = ah.sent_to_user_id
 					left join workflow.drafted_document dd on dd.application_no=ah.ref_no
 					left join workflow.workflow_history wh on wh.draft_id=dd.id
@@ -546,12 +546,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 			    	left join authentication.user_roles ur on bu.id = ur.user_id
 					LEFT JOIN authentication.roles ar ON ur.role_id = ar.id
 					LEFT JOIN master.offices o ON o.id = ur.office_id
-
 			      WHERE ah.sent_to_user_id = :userId
 			      and wh.draft_id is null
 			      AND inp.document_date IS NOT NULL
 			      and ah.is_active = true
 			      and ah.is_deleted = false
+			      and ah.status <> 'Submitted'
 
 			    union
 
