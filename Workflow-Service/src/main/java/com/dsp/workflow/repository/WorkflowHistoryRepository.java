@@ -451,23 +451,31 @@ public interface WorkflowHistoryRepository extends JpaRepository<WorkflowHistory
 	 * @return
 	 */
 
-	@Query(value = "SELECT CASE " + "         WHEN ( " + "                SELECT t1.pending_with = t2.action_taken_by "
-			+ "                FROM ( "
-			+ "                       SELECT pending_with, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
-			+ "                       FROM workflow.workflow_history "
-			+ "                       WHERE application_instance_id = :applicationInstanceId "
-			+ "                     ) t1 " + "                JOIN ( "
-			+ "                       SELECT action_taken_by, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
-			+ "                       FROM workflow.workflow_history "
-			+ "                       WHERE application_instance_id = :applicationInstanceId "
-			+ "                     ) t2 " + "                ON t1.rn = 1 AND t2.rn = 2 " + "              ) = TRUE "
-			+ "         THEN FALSE " + "         WHEN ( " + "                SELECT COUNT(*) FROM ( "
-			+ "                    SELECT action_taken_by, status, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
-			+ "                    FROM workflow.workflow_history "
-			+ "                    WHERE application_instance_id = :applicationInstanceId " + "                ) t "
-			+ "                WHERE t.rn = 2 " + "                  AND t.action_taken_by = :userId "
-			+ "                  AND t.status IN ('In Progress', 'Returned') " + "              ) > 0 "
-			+ "         THEN TRUE " + "         ELSE FALSE " + "       END AS result", nativeQuery = true)
+	@Query(value = "SELECT CASE " +
+	// NEW RULE: If latest row is Approved → recall is FALSE
+			"   WHEN ( " + "       SELECT status FROM workflow.workflow_history "
+			+ "       WHERE application_instance_id = :applicationInstanceId " + "       ORDER BY id DESC LIMIT 1 "
+			+ "   ) = 'Approved' THEN FALSE " +
+
+			// RULE 1: latest.pending_with == previous.action_taken_by → FALSE
+			"   WHEN ( " + "       SELECT t1.pending_with = t2.action_taken_by " + "       FROM ( "
+			+ "           SELECT pending_with, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "           FROM workflow.workflow_history "
+			+ "           WHERE application_instance_id = :applicationInstanceId " + "       ) t1 " + "       JOIN ( "
+			+ "           SELECT action_taken_by, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "           FROM workflow.workflow_history "
+			+ "           WHERE application_instance_id = :applicationInstanceId " + "       ) t2 "
+			+ "       ON t1.rn = 1 AND t2.rn = 2 " + "   ) = TRUE THEN FALSE " +
+
+			// RULE 2: user performed previous action AND status In Progress/Returned
+			"   WHEN ( " + "       SELECT COUNT(*) FROM ( "
+			+ "           SELECT action_taken_by, status, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn "
+			+ "           FROM workflow.workflow_history "
+			+ "           WHERE application_instance_id = :applicationInstanceId " + "       ) t "
+			+ "       WHERE t.rn = 2 " + "         AND t.action_taken_by = :userId "
+			+ "         AND t.status IN ('In Progress', 'Returned') " + "   ) > 0 THEN TRUE " +
+
+			"   ELSE FALSE " + "END AS result", nativeQuery = true)
 	Boolean checkRecallEligibility(@Param("applicationInstanceId") Long applicationInstanceId,
 			@Param("userId") Long userId);
 
