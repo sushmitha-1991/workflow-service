@@ -310,8 +310,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ii.lok_sabha_session as LSNo,
 			                ii.lok_sabha_session_number as SSNo,
 			                ii.rajya_sabha_session as RSSNo,
-			                case
-			                        when ii.application_instance_id is not null
+				            case
+			                        when ii.current_status in ('Returned') then ii.current_status
+				                	when ii.application_instance_id is not null
 			                        and applicationInstance.id = ii.application_instance_id
 			                        and applicationInstance.current_status not in ('Returned', 'Draft') then applicationInstance.current_status
 			                        else ii.current_status
