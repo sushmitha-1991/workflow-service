@@ -2077,10 +2077,14 @@ public class PublishServiceImpl implements PublishService {
 						wf.application_id             AS applicationId,
 						 wf.application_no             AS applicationNo,
 						o.office_name                 AS officeName,
-						COALESCE(a.name, wf.application_name) AS documentName
+						COALESCE(a.name, wf.application_name) AS documentName,
+						ai.ref_id as refId,
+						wh.action_url as actionUrl
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
 				    LEFT JOIN master.applications a ON wf.application_id = a.id
+				     left join master.application_instance ai on split_part(wf.application_no,'_',1) =ai.application_no 
+				     left join (select * from workflow.workflow_history where id in (select min(id) from workflow.workflow_history group by application_instance_id) ) wh on ai.id = wh.application_instance_id
 				    WHERE 1=1
 				""");
 
@@ -2155,7 +2159,10 @@ public class PublishServiceImpl implements PublishService {
 						.applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
 						.applicationNo(row[13] != null ? row[13].toString() : "")
 						.branch(row[14] != null ? row[14].toString() : "")
-						.applicationName(row[15] != null ? row[15].toString() : "").build())
+						.applicationName(row[15] != null ? row[15].toString() : "")
+						.refId(row[16] != null? ((Number) row[16]).longValue():null)
+						.actionUrl(row[17] != null? row[17].toString():"")
+						.build())
 				.toList();
 	}
 
