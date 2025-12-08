@@ -2085,9 +2085,18 @@ public class PublishServiceImpl implements PublishService {
 				    LEFT JOIN master.applications a ON wf.application_id = a.id
 				     left join master.application_instance ai on split_part(wf.application_no,'_',1) =ai.application_no
 				    WHERE 1=1
+				    AND wf.office_id IN (
+				    SELECT ur.office_id
+				    FROM authentication.user_roles ur
+				    WHERE ur.user_id = :userId
+				      AND ur.is_active = true
+				      AND ur.is_deleted = false
+				)
 				""");
 
 		Map<String, Object> params = new HashMap<>();
+		Long userId = utils.getUserIdFromAuthentication();
+		params.put("userId", userId);
 
 		String house = utils.getHouseAbbr();
 		if (house != null && !house.isBlank()) {

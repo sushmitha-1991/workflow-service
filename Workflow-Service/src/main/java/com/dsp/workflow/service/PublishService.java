@@ -51,7 +51,7 @@ public interface PublishService {
 
 	List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
 			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
-			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo);;
+			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo);
 
 	List<String> uploadToDsp2Rs(String applicationName, SessionDto dto);
 
