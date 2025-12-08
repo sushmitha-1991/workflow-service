@@ -28,6 +28,6 @@ public class PublishHistoryResponseDTO {
 	private String branch;
 	private String applicationName;
 	private Long refId;
-	private String actionUrl;
+	private String publishedUrl;
 
 }
