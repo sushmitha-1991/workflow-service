@@ -2136,6 +2136,11 @@ public class PublishServiceImpl implements PublishService {
 		@SuppressWarnings("unchecked")
 		List<Object[]> rows = query.getResultList();
 
+		if(rows.isEmpty())
+		{
+			return new ArrayList<>();
+		}
+		
 		return rows.stream()
 				.map(row -> PublishHistoryResponseDTO.builder()
 						.id(row[0] != null ? ((Number) row[0]).longValue() : null)
