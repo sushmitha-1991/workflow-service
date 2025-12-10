@@ -37,7 +37,8 @@ public interface ApplicationInstanceRepository extends JpaRepository<Application
 			    a.translate_flag AS translateFlag,
 			    ai.starting_page_no as startingPageNo,
 			    oom.document_key as docUuid,
-			    oom.dsp2_key as dsp2key
+			    oom.dsp2_key as dsp2key,
+			    ai.document_display_name as subDocumentType
 			FROM master.application_instance ai
 			LEFT JOIN master.applications a ON a.id = ai.application_id
 			left join master.lok_sabha_masters lsm on lsm.lok_sabha_number = ai.lok_sabha_session

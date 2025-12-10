@@ -2077,14 +2077,26 @@ public class PublishServiceImpl implements PublishService {
 						wf.application_id             AS applicationId,
 						 wf.application_no             AS applicationNo,
 						o.office_name                 AS officeName,
-						COALESCE(a.name, wf.application_name) AS documentName
+						COALESCE(a.name, wf.application_name) AS documentName,
+						ai.ref_id as refId,
+						a.published_url as publishedUrl
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
 				    LEFT JOIN master.applications a ON wf.application_id = a.id
+				     left join master.application_instance ai on split_part(wf.application_no,'_',1) =ai.application_no
 				    WHERE 1=1
+				    AND wf.office_id IN (
+				    SELECT ur.office_id
+				    FROM authentication.user_roles ur
+				    WHERE ur.user_id = :userId
+				      AND ur.is_active = true
+				      AND ur.is_deleted = false
+				)
 				""");
 
 		Map<String, Object> params = new HashMap<>();
+		Long userId = utils.getUserIdFromAuthentication();
+		params.put("userId", userId);
 
 		String house = utils.getHouseAbbr();
 		if (house != null && !house.isBlank()) {
@@ -2160,7 +2172,10 @@ public class PublishServiceImpl implements PublishService {
 						.applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
 						.applicationNo(row[13] != null ? row[13].toString() : "")
 						.branch(row[14] != null ? row[14].toString() : "")
-						.applicationName(row[15] != null ? row[15].toString() : "").build())
+						.applicationName(row[15] != null ? row[15].toString() : "")
+						.refId(row[16] != null? ((Number) row[16]).longValue():null)
+						.publishedUrl(row[17] != null? row[17].toString():"")
+						.build())
 				.toList();
 	}
 
