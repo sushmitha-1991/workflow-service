@@ -55,9 +55,11 @@ public class PublishController {
 
 	@GetMapping("/get-published-docs")
 	public ResponseEntity<GenericResponse<List<PublishHistoryResponseDTO>>> getPublishedDocs(
-			@RequestParam(required = false) Long applicationId, @RequestParam(required = false) String lokSabhaNo,
+			@RequestParam(required = false) Long applicationId, 
+			@RequestParam(required = false) String lokSabhaNo,
 			@RequestParam(required = false) String lokSabhaSessionNo,
-			@RequestParam(required = false) String rajyaSabhaSessionNo, @RequestParam(required = false) Long officeId,
+			@RequestParam(required = false) String rajyaSabhaSessionNo, 
+			@RequestParam(required = false) Long officeId,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateFrom,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateTo,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateFrom,
@@ -66,11 +68,6 @@ public class PublishController {
 			List<PublishHistoryResponseDTO> result = publishService.getFilteredPublishHistory(applicationId, lokSabhaNo,
 					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo, documentDateFrom,
 					documentDateTo);
-
-			if (result.isEmpty()) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND)
-						.body(new GenericResponse<>(false, "No records found", null, HttpStatus.OK.value()));
-			}
 
 			return ResponseEntity
 					.ok(new GenericResponse<>(true, "Records retrieved successfully", result, HttpStatus.OK.value()));
