@@ -1247,6 +1247,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
 				.dsp2key(!StringUtils.isEmpty((String) row[9]) ? (String) row[9] : null)
 				.subDocumentType(!StringUtils.isEmpty((String) row[10]) ? (String) row[10] : null)
+				.applicationNo(!StringUtils.isEmpty((String) row[11]) ? (String) row[11] : null)
 				.build();
 	}
 
