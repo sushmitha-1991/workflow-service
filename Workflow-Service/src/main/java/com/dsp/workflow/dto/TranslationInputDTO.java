@@ -37,6 +37,7 @@ public class TranslationInputDTO {
 	//
 	private Boolean translationFlag;
     private String subDocumentType;
+    private String applicationNo;
 
 
 }
