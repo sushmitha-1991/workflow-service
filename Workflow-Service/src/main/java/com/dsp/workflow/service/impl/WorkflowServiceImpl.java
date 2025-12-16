@@ -1782,12 +1782,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
 		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
-		System.out.println("Corrected Debate ID: " + corrDebateId);
 
 		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(corrDebateId).append(" as applicationId, ")
 				.append(allDocumentsQuery1).append(" where 1 = 1 ");
-
-		System.out.println("Final Query: " + qry);
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
 

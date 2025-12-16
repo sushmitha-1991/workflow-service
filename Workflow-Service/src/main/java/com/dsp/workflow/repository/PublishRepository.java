@@ -95,4 +95,15 @@ public interface PublishRepository
 			""", nativeQuery = true)
 	String getDsp1DocName(@Param("applicationId") Long applicationId);
 
+	/**
+	 * @param applicationId
+	 * @return
+	 */
+	@Query(value = """
+			select abbr
+			from master.applications
+			WHERE id = :applicationId
+			""", nativeQuery = true)
+	String getAppAbbr(@Param("applicationId") Long applicationId);
+
 }
