@@ -591,7 +591,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
 			left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
 			left join authentication.base_user bu on bu.id = da.allocateto
+			left join workflow.drafted_document dd on dd.application_no=da.ref_no
+			left join workflow.workflow_history wh on wh.draft_id=dd.id
 			WHERE da.allocateto = :userId
+			and wh.draft_id is null
 			and da.status <> 'Completed'
 
 			union
@@ -644,7 +647,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 				left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
 				left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
 				left join authentication.base_user bu on bu.id = da.sent_to_user_id
+				left join workflow.drafted_document dd on dd.application_no=da.ref_no
+				left join workflow.workflow_history wh on wh.draft_id=dd.id
 				WHERE da.sent_to_user_id = :userId
+				and wh.draft_id is null
 				and da.status <> 'Completed'
 
 			union
