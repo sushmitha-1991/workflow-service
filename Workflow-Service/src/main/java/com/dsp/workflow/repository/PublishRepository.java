@@ -41,7 +41,7 @@ public interface PublishRepository
 	List<PublishHistoryEntity> findByApplicationIdAndLokSabhaNoAndLokSabhaSessionNo(Long appId, String lsNo,
 			String sesNo);
 
-	@Query(value = "select lssm.session_number as sesNo,lsm.lok_sabha_numberas lsNo from master.lok_sabha_session_masters lssm "
+	@Query(value = "select lssm.session_number as sesNo,lsm.lok_sabha_number as lsNo from master.lok_sabha_session_masters lssm "
 			+ "left join master.lok_sabha_masters lsm on lssm.lok_sabha_master_id =lsm.id "
 			+ "order by lssm.session_start desc limit 1", nativeQuery = true)
 	Map<String, Object> findLatestLS();
