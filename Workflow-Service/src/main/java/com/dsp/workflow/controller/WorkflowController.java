@@ -345,6 +345,17 @@ public class WorkflowController {
 		return ResponseEntity.ok(new GenericResponse<>(true, "Record Deleted", data, 200));
 	}
 
+	@PostMapping("/save-as-draft/delete")
+	public ResponseEntity<GenericResponse<String>> deleteDraftedRecord(@RequestParam("draftId") Long draftId) {
+
+		String data = workflowService.softDeleteDraftById(draftId);
+
+		if (StringUtils.isBlank(data)) {
+			return ResponseEntity.ok(new GenericResponse<>(false, "No record found", null, HttpStatus.OK.value()));
+		}
+		return ResponseEntity.ok(new GenericResponse<>(true, "Record Deleted", data, HttpStatus.OK.value()));
+	}
+
 	@GetMapping("/getDraftByAppId/{applicationId}")
 	public ResponseEntity<GenericResponse<List<DraftDataDTO>>> getDraftByAppId(
 			@PathVariable("applicationId") Long applicationId) {

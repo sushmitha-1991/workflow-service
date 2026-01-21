@@ -236,8 +236,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                (ai.application_no) ai.application_no as applicationNo,
 			                case
 			                	when (ai.translation_document_type_id is not null)
-        							then (select coalesce(app.document_display_name, app."name") from master.applications app
-        							where app.id = ai.translation_document_type_id)
+			     							then (select coalesce(app.document_display_name, app."name") from master.applications app
+			     							where app.id = ai.translation_document_type_id)
 			                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
 			        		end
 			        		as documentName,
@@ -1253,8 +1253,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
 				.dsp2key(!StringUtils.isEmpty((String) row[9]) ? (String) row[9] : null)
 				.subDocumentType(!StringUtils.isEmpty((String) row[10]) ? (String) row[10] : null)
-				.applicationNo(!StringUtils.isEmpty((String) row[11]) ? (String) row[11] : null)
-				.build();
+				.applicationNo(!StringUtils.isEmpty((String) row[11]) ? (String) row[11] : null).build();
 	}
 
 	private LocalDate convertToLocalDate(Object dateObj) {
@@ -2265,6 +2264,26 @@ public class WorkflowServiceImpl implements WorkflowService {
 		response.put("actionUrl", actionUrl != null ? actionUrl : null);
 
 		return response;
+	}
+
+	@Transactional
+	@Override
+	public String softDeleteDraftById(Long draftId) {
+
+		if (draftId == null) {
+			return "";
+		}
+
+		return draftDocumentRepository.findByIdAndIsActiveTrueAndIsDeletedFalse(draftId).map(draft -> {
+			// Soft delete flags
+			draft.setIsActive(false);
+			draft.setIsDeleted(true);
+
+			draftDocumentRepository.save(draft);
+
+			// ✅ Always return fixed success message
+			return "Record deleted successfully";
+		}).orElse("");
 	}
 
 }
