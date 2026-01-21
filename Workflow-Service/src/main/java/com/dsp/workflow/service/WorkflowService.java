@@ -182,4 +182,6 @@ public interface WorkflowService {
 	 * @return
 	 */
 	Map<String, Object> canRecall(Long applicationInstanceId);
+
+	String softDeleteDraftById(Long draftId);
 }
