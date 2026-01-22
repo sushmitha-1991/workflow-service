@@ -353,14 +353,14 @@ public class WorkflowController {
 		if (StringUtils.isBlank(data)) {
 			return ResponseEntity.ok(new GenericResponse<>(false, "No record found", null, HttpStatus.OK.value()));
 		}
-		return ResponseEntity.ok(new GenericResponse<>(true, "Record Deleted", data, HttpStatus.OK.value()));
+		return ResponseEntity
+				.ok(new GenericResponse<>(true, "Drafted record deleted successfully", data, HttpStatus.OK.value()));
 	}
 
 	@GetMapping("/getDraftByAppId/{applicationId}")
 	public ResponseEntity<GenericResponse<List<DraftDataDTO>>> getDraftByAppId(
 			@PathVariable("applicationId") Long applicationId) {
 		// Call the service method to fetch the draft data
-		System.out.println("######-" + applicationId);
 		List<DraftDataDTO> data = workflowService.getDraftByAppId(applicationId);
 		// Return appropriate response based on whether data is found
 		if (data.isEmpty()) {

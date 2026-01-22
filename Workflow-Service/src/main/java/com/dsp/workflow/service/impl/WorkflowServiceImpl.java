@@ -2281,8 +2281,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			draftDocumentRepository.save(draft);
 
-			// ✅ Always return fixed success message
-			return "Record deleted successfully";
+			return "Drafted record deleted successfully";
 		}).orElse("");
 	}
 
