@@ -569,7 +569,10 @@ public class PublishServiceImpl implements PublishService {
 		if (StringUtils.isNotBlank(dto.getLocale())) {
 			spec = spec.and(hasLocaleTemp(dto.getLocale()));
 		}
+		logger.info("spec");
 		List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
+
+		logger.info(applicationName);
 		List<String> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
 		System.out.println("urlList " + urlList.size());
@@ -2058,7 +2061,7 @@ public class PublishServiceImpl implements PublishService {
 	@Override
 	public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
 			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
-			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo) {
+			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo, String appName) {
 
 		StringBuilder sql = new StringBuilder("""
 				    SELECT
@@ -2107,6 +2110,17 @@ public class PublishServiceImpl implements PublishService {
 			sql.append(" AND wf.application_id = :applicationId");
 			params.put("applicationId", applicationId);
 		}
+		// if (StringUtils.isNotBlank(appName)) {
+		// 	System.out.println("app "+appName);
+		// 	sql.append(" AND a.abbr = :appName");
+		// 	params.put("appName", appName);
+		// }
+		if (StringUtils.isNotBlank(appName)) {
+			System.out.println("app "+appName);
+			sql.append(" AND a.dsp1_document_name = :appName");
+			params.put("appName", appName);
+		}
+
 		if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
 			sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
 			params.put("lokSabhaNo", lokSabhaNo);
