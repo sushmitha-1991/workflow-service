@@ -7,7 +7,6 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -311,35 +310,31 @@ public class PublishServiceImpl implements PublishService {
 
 		DateTimeFormatter fmt = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
 
-		List<UrlDto> res = urlList.stream()
-				.sorted(Comparator
-						.comparingInt((UrlDto dto) -> {
-							String fileName = dto.getFileName();
+		List<UrlDto> res = urlList.stream().sorted(Comparator.comparingInt((UrlDto dto) -> {
+			String fileName = dto.getFileName();
 
-							if (fileName.equalsIgnoreCase("FULL DAY")) {
-								return 1; // Full Day FIRST
-							}
+			if (fileName.equalsIgnoreCase("FULL DAY")) {
+				return 1; // Full Day FIRST
+			}
 
-							String startTime = fileName.split(" to ")[0];
-							LocalTime time = LocalTime.parse(startTime.toUpperCase(), fmt);
+			String startTime = fileName.split(" to ")[0];
+			LocalTime time = LocalTime.parse(startTime.toUpperCase(), fmt);
 
-							if (time.isAfter(LocalTime.of(4, 59))) {
-								return 2; // 05:00 AM to 11:59 PM
-							} else {
-								return 3; // 12:00 AM to 04:59 AM (BOTTOM)
-							}
-						})
-						.thenComparing((UrlDto dto) -> {
-							String fileName = dto.getFileName();
+			if (time.isAfter(LocalTime.of(4, 59))) {
+				return 2; // 05:00 AM to 11:59 PM
+			} else {
+				return 3; // 12:00 AM to 04:59 AM (BOTTOM)
+			}
+		}).thenComparing((UrlDto dto) -> {
+			String fileName = dto.getFileName();
 
-							if (fileName.equalsIgnoreCase("FULL DAY")) {
-								return LocalTime.MIN; // Keep Full Day first inside bucket
-							}
+			if (fileName.equalsIgnoreCase("FULL DAY")) {
+				return LocalTime.MIN; // Keep Full Day first inside bucket
+			}
 
-							String startTime = fileName.split(" to ")[0];
-							return LocalTime.parse(startTime.toUpperCase(), fmt);
-						}))
-				.collect(Collectors.toList());
+			String startTime = fileName.split(" to ")[0];
+			return LocalTime.parse(startTime.toUpperCase(), fmt);
+		})).collect(Collectors.toList());
 		System.out.println("dto");
 		System.out.println(res);
 		return res;
@@ -1337,18 +1332,10 @@ public class PublishServiceImpl implements PublishService {
 
 	private Specification<ETransmissionRSUploadTempEntity> hasUuidTransRs() {
 		return (root, query, cb) -> cb.or(
-				cb.and(
-						cb.isNotNull(root.get("list1Eng")),
-						cb.isNull(root.get("list1EngUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("list1Hindi")),
-						cb.isNull(root.get("list1HindiUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("hindiErrata")),
-						cb.isNull(root.get("hindiErrataUuid"))),
-				cb.and(
-						cb.isNotNull(root.get("engErrata")),
-						cb.isNull(root.get("engErrataUuid"))));
+				cb.and(cb.isNotNull(root.get("list1Eng")), cb.isNull(root.get("list1EngUuid"))),
+				cb.and(cb.isNotNull(root.get("list1Hindi")), cb.isNull(root.get("list1HindiUuid"))),
+				cb.and(cb.isNotNull(root.get("hindiErrata")), cb.isNull(root.get("hindiErrataUuid"))),
+				cb.and(cb.isNotNull(root.get("engErrata")), cb.isNull(root.get("engErrataUuid"))));
 	}
 
 	private Specification<PublishDocumentTempRS> hasPublishUuidRs() {
@@ -1753,11 +1740,7 @@ public class PublishServiceImpl implements PublishService {
 	public static Specification<PublishHistoryEntity> hasYear(Integer year) {
 		return (root, query, cb) -> {
 			if (year != null) {
-				return cb.equal(
-						cb.function("date_part", Integer.class,
-								cb.literal("year"),
-								root.get("forDate")),
-						year);
+				return cb.equal(cb.function("date_part", Integer.class, cb.literal("year"), root.get("forDate")), year);
 			}
 			return cb.conjunction();
 		};
@@ -1766,10 +1749,7 @@ public class PublishServiceImpl implements PublishService {
 	public static Specification<PublishHistoryEntity> hasMonth(Integer month) {
 		return (root, query, cb) -> {
 			if (month != null) {
-				return cb.equal(
-						cb.function("date_part", Integer.class,
-								cb.literal("month"),
-								root.get("forDate")),
+				return cb.equal(cb.function("date_part", Integer.class, cb.literal("month"), root.get("forDate")),
 						month);
 			}
 			return cb.conjunction();
@@ -2162,11 +2142,10 @@ public class PublishServiceImpl implements PublishService {
 		@SuppressWarnings("unchecked")
 		List<Object[]> rows = query.getResultList();
 
-		if(rows.isEmpty())
-		{
+		if (rows.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
+
 		return rows.stream()
 				.map(row -> PublishHistoryResponseDTO.builder()
 						.id(row[0] != null ? ((Number) row[0]).longValue() : null)
@@ -2187,61 +2166,77 @@ public class PublishServiceImpl implements PublishService {
 						.applicationNo(row[13] != null ? row[13].toString() : "")
 						.branch(row[14] != null ? row[14].toString() : "")
 						.applicationName(row[15] != null ? row[15].toString() : "")
-						.refId(row[16] != null? ((Number) row[16]).longValue():null)
-						.publishedUrl(row[17] != null? row[17].toString():"")
-						.build())
+						.refId(row[16] != null ? ((Number) row[16]).longValue() : null)
+						.publishedUrl(row[17] != null ? row[17].toString() : "").build())
 				.toList();
 	}
 
 	@Override
 	public String overridePublish(PublishDto dto) {
 
-		String dsp1DocName = repository.getDsp1DocName(dto.getApplicationId());
-		LocalDate forDate = LocalDate.parse(dto.getForDate());
+		try {
+			String dsp1DocName = repository.getDsp1DocName(dto.getApplicationId());
+			LocalDate forDate = LocalDate.parse(dto.getForDate());
+			String appAbbr = repository.getAppAbbr(dto.getApplicationId());
 
-		StringBuilder message = new StringBuilder();
+			StringBuilder message = new StringBuilder();
 
-		// If English document exists ---
-		if (dto.getDocUuidEn() != null) {
+			// =========================
+			// English Document
+			// =========================
+			if (dto.getDocUuidEn() != null) {
 
-			String refEn = generateRef(dto.getLokSabhaSessionNo());
+				String refEn = generateRef(dto.getLokSabhaSessionNo(), appAbbr);
 
-			PublishHistoryEntity enEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
-					.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
-					.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refEn)
-					.publishUuid(dto.getDocUuidEn()).year(forDate.getYear()).month(forDate.getMonthValue())
-					.fileType("pdf").publishUrl("").title("Override Publish").forDate(forDate).publishStatus(true)
-					.publishByUser(utils.getUserFullNameFromAuthentication()).publishDate(LocalDate.now())
-					.officeId(utils.getOfficeIdFromAuthentication()).locale("en").fileTypeName("pdf").house("LS")
-					.build();
+				PublishHistoryEntity enEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
+						.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
+						.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refEn)
+						.publishUuid(dto.getDocUuidEn()).year(forDate.getYear()).month(forDate.getMonthValue())
+						.fileType("pdf").fileTypeName("pdf").publishUrl("").title("Override Publish").forDate(forDate)
+						.publishStatus(true).publishByUser(utils.getUserFullNameFromAuthentication())
+						.publishDate(LocalDate.now()).officeId(utils.getOfficeIdFromAuthentication()).locale("en")
+						.house("LS").build();
 
-			repository.save(enEntity);
-			message.append("English document published successfully. Reference: ").append(refEn).append(". ");
+				repository.save(enEntity);
+
+				message.append("English document published successfully. Reference: ").append(refEn).append(". ");
+			}
+
+			// =========================
+			// Hindi Document
+			// =========================
+			if (dto.getDocUuidHi() != null) {
+
+				String refHi = generateRef(dto.getLokSabhaSessionNo(), appAbbr);
+
+				PublishHistoryEntity hiEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
+						.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
+						.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refHi)
+						.publishUuid(dto.getDocUuidHi()).year(forDate.getYear()).month(forDate.getMonthValue())
+						.fileType("pdf").fileTypeName("pdf").publishUrl("").title("Override Publish").forDate(forDate)
+						.publishStatus(true).publishByUser(utils.getUserFullNameFromAuthentication())
+						.publishDate(LocalDate.now()).officeId(utils.getOfficeIdFromAuthentication()).locale("hi")
+						.house("LS").build();
+
+				repository.save(hiEntity);
+
+				message.append("Hindi document published successfully. Reference: ").append(refHi).append(". ");
+			}
+
+			if (message.length() == 0) {
+				throw new IllegalArgumentException("No document UUID provided for publishing.");
+			}
+
+			return message.toString().trim();
+
+		} catch (Exception ex) {
+			// Any exception → transaction rollback
+			throw new RuntimeException("Failed to override publish document. Please try again.", ex);
 		}
-
-		// If Hindi document exists ---
-		if (dto.getDocUuidHi() != null) {
-
-			String refHi = generateRef(dto.getLokSabhaSessionNo());
-
-			PublishHistoryEntity hiEntity = PublishHistoryEntity.builder().lokSabhaNo(dto.getLokSabhaNo())
-					.lokSabhaSessionNo(dto.getLokSabhaSessionNo()).rajyaSabhaSessionNo(dto.getRajyaSabhaSession())
-					.applicationId(dto.getApplicationId()).applicationName(dsp1DocName).applicationNo(refHi)
-					.publishUuid(dto.getDocUuidHi()).year(forDate.getYear()).month(forDate.getMonthValue())
-					.fileType("pdf").publishUrl("").title("Override Publish").forDate(forDate).publishStatus(true)
-					.publishByUser(utils.getUserFullNameFromAuthentication()).publishDate(LocalDate.now())
-					.officeId(utils.getOfficeIdFromAuthentication()).locale("hi").fileTypeName("pdf").house("LS")
-					.build();
-
-			repository.save(hiEntity);
-			message.append("Hindi document published successfully. Reference: ").append(refHi).append(". ");
-		}
-
-		return message.toString().trim();
 	}
 
-	private String generateRef(String sessionNo) {
-		return "OVR-" + sessionNo + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
+	private String generateRef(String sessionNo, String appAbbr) {
+		return appAbbr + sessionNo + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
 				+ (new Random().nextInt(90000) + 10000);
 	}
 

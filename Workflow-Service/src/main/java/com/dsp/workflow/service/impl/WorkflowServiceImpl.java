@@ -236,8 +236,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                (ai.application_no) ai.application_no as applicationNo,
 			                case
 			                	when (ai.translation_document_type_id is not null)
-        							then (select coalesce(app.document_display_name, app."name") from master.applications app
-        							where app.id = ai.translation_document_type_id)
+			     							then (select coalesce(app.document_display_name, app."name") from master.applications app
+			     							where app.id = ai.translation_document_type_id)
 			                	else coalesce(ai.document_display_name,  coalesce(a.document_display_name, a."name"))
 			        		end
 			        		as documentName,
@@ -591,7 +591,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
 			left join master.rajya_sabha_session_master rssm on rssm.id = da.rajya_sabha_session_no
 			left join authentication.base_user bu on bu.id = da.allocateto
+			left join workflow.drafted_document dd on dd.application_no=da.ref_no
+			left join workflow.workflow_history wh on wh.draft_id=dd.id
 			WHERE da.allocateto = :userId
+			and wh.draft_id is null
 			and da.status <> 'Completed'
 
 			union
@@ -644,7 +647,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 				left join master.lok_sabha_session_masters lssm on lssm.id = i.lok_sabha_session_no
 				left join master.rajya_sabha_session_master rssm on rssm.id = i.rajya_sabha_session_no
 				left join authentication.base_user bu on bu.id = da.sent_to_user_id
+				left join workflow.drafted_document dd on dd.application_no=da.ref_no
+				left join workflow.workflow_history wh on wh.draft_id=dd.id
 				WHERE da.sent_to_user_id = :userId
+				and wh.draft_id is null
 				and da.status <> 'Completed'
 
 			union
@@ -1247,7 +1253,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				.contentUUID(convertToString(row[8]) != null ? UUID.fromString(convertToString(row[8])) : null)
 				.dsp2key(!StringUtils.isEmpty((String) row[9]) ? (String) row[9] : null)
 				.subDocumentType(!StringUtils.isEmpty((String) row[10]) ? (String) row[10] : null)
-				.build();
+				.applicationNo(!StringUtils.isEmpty((String) row[11]) ? (String) row[11] : null).build();
 	}
 
 	private LocalDate convertToLocalDate(Object dateObj) {
@@ -1781,12 +1787,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public List<Map<String, Object>> filterAllDocumentsTab(Long userId, TaskQueryDTO queryDto) {
 
 		Long corrDebateId = utils.getApplicationId(CORRECTED_DEBATES_ABBR);
-		System.out.println("Corrected Debate ID: " + corrDebateId);
 
 		StringBuffer qry = new StringBuffer(allDocumentsQuery).append(corrDebateId).append(" as applicationId, ")
 				.append(allDocumentsQuery1).append(" where 1 = 1 ");
-
-		System.out.println("Final Query: " + qry);
 
 		MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("userId", userId);
 
@@ -2261,6 +2264,25 @@ public class WorkflowServiceImpl implements WorkflowService {
 		response.put("actionUrl", actionUrl != null ? actionUrl : null);
 
 		return response;
+	}
+
+	@Transactional
+	@Override
+	public String softDeleteDraftById(Long draftId) {
+
+		if (draftId == null) {
+			return "";
+		}
+
+		return draftDocumentRepository.findByIdAndIsActiveTrueAndIsDeletedFalse(draftId).map(draft -> {
+			// Soft delete flags
+			draft.setIsActive(false);
+			draft.setIsDeleted(true);
+
+			draftDocumentRepository.save(draft);
+
+			return "Drafted record deleted successfully";
+		}).orElse("");
 	}
 
 }
