@@ -20,6 +20,7 @@ import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -1020,9 +1021,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							}
 
 							try {
-								debateTaggingDTO.setApplicationId(81L);
+								DebateTaggingDTO debateTaggingDTO1 = new DebateTaggingDTO();
+								BeanUtils.copyProperties(debateTaggingDTO, debateTaggingDTO1);
+								debateTaggingDTO1.setApplicationId(81L);
 								System.out.println(">>> async call for debate tagging");
-								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
+								translationService.callDebateTaggingAsync(debateTaggingDTO1, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (Supplementary) failed", e);
