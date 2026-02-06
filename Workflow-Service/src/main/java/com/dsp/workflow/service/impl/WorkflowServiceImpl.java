@@ -20,6 +20,7 @@ import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -495,7 +496,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			WHERE rd.editor_id = :userId
 			AND r.roster_date IS NOT NULL
 			AND r.roster_type = 'Daily'
-			and rd.task_status <> 'Completed'
+			and (rd.task_status <> 'Completed' or 
+			(select count(*) from workflow.workflow_history wh where wh.application_instance_id = (select max(id) from synopsis.synopsis where synopsis.roster_detail_id = rd.id))=0)
 			         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
 			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
 
@@ -1020,9 +1022,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 							}
 
 							try {
-								debateTaggingDTO.setApplicationId(81L);
+								DebateTaggingDTO debateTaggingDTO1 = new DebateTaggingDTO();
+								BeanUtils.copyProperties(debateTaggingDTO, debateTaggingDTO1);
+								debateTaggingDTO1.setApplicationId(81L);
 								System.out.println(">>> async call for debate tagging");
-								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
+								translationService.callDebateTaggingAsync(debateTaggingDTO1, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
 								log.error("Debate tagging (Supplementary) failed", e);
