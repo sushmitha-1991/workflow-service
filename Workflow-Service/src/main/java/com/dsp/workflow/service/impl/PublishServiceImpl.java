@@ -300,6 +300,67 @@ public class PublishServiceImpl implements PublishService {
 		}
 		return urlDto;
 	}
+	@Override
+	public List<String> getPublishedDocsFromDSP1Dates(LocalDate date, String documentName, String locale, String lsNo,
+			String sesNo, String rssNo, String house, Integer month, Integer year) {
+
+		List<UrlDto> urlDto = new ArrayList<>();
+		Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
+		if (date != null) {
+			spec = spec.and(hasForDate(date));
+		}
+		if (year != null) {
+			spec = spec.and(hasYear(year));
+		}
+		if (month != null) {
+			spec = spec.and(hasMonth(month));
+		}
+		if (StringUtils.isNotBlank(documentName)) {
+			spec = spec.and(hasApplicationName(documentName));
+		}
+		if (lsNo != null) {
+			spec = spec.and(hasLokSabhaNo(lsNo));
+		}
+		if (StringUtils.isNotBlank(sesNo)) {
+			spec = spec.and(hasLokSabhaSessionNo(sesNo));
+		}
+		if (rssNo != null) {
+			spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
+		}
+		if (StringUtils.isNotBlank(locale)) {
+			spec = spec.and(hasLocale(locale));
+		}
+		if (StringUtils.isNotBlank(house)) {
+			spec = spec.and(hasHouse(house));
+		}
+
+		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
+		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
+		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
+		System.out.println("responseEntitys " + responseEntitys);
+
+		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
+				.collect(Collectors.toList());
+
+		// System.out.println("list of Docs " + listOfDTOs);
+		if (responseEntitys != null) {
+			for (PublishHistoryEntity entity : responseEntitys) {
+				UrlDto responseDto = new UrlDto();
+				//  UrlDto.builder().fileName(entity.getFileTypeName())
+				// 		.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
+				// 		.url("" + entity.getPublishUuid()).build();
+				if (entity.getForDate() != null) {
+					responseDto.setDate(entity.getForDate().toString());
+				}
+				urlDto.add(responseDto);
+			}
+		}
+		System.out.println("list of urlDto" + urlDto);
+		return urlDto.stream()
+		.map(UrlDto::getDate)
+		.distinct()
+		.collect(Collectors.toList());
+	}
 
 	private LocalTime convertToLocalTime(String timeStr) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
