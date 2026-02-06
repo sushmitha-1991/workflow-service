@@ -20,6 +20,9 @@ public interface PublishService {
 
 	List<UrlDto> getPublishedDocsFromDSP1(LocalDate date, String documentName, String locale, String lsNo, String sesNo,
 			String rssNo, String house,Integer month,Integer year);
+	
+	List<String> getPublishedDocsFromDSP1Dates(LocalDate date, String documentName, String locale, String lsNo,
+			String sesNo, String rssNo, String house, Integer month, Integer year);
 
 	UrlDto getByDateDoc(LocalDate date, String documentName, String locale);
 
@@ -51,7 +54,7 @@ public interface PublishService {
 
 	List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
 			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
-			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo);
+			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo, String appName);
 
 	List<String> uploadToDsp2Rs(String applicationName, SessionDto dto);
 

@@ -63,11 +63,12 @@ public class PublishController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateFrom,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime publishDateTo,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateFrom,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateTo) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDateTo,
+			@RequestParam(required = false) String applicationName) {
 		try {
 			List<PublishHistoryResponseDTO> result = publishService.getFilteredPublishHistory(applicationId, lokSabhaNo,
 					lokSabhaSessionNo, rajyaSabhaSessionNo, officeId, publishDateFrom, publishDateTo, documentDateFrom,
-					documentDateTo);
+					documentDateTo, applicationName);
 
 			return ResponseEntity
 					.ok(new GenericResponse<>(true, "Records retrieved successfully", result, HttpStatus.OK.value()));
@@ -100,6 +101,17 @@ public class PublishController {
 			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house,
 			@RequestParam(required = false) Integer month,@RequestParam(required = false) Integer year) {
 		List<UrlDto> responseDto = publishService.getPublishedDocsFromDSP1(date, applicationName, locale, lsNo, sessNo,
+				rssNo, house,month,year);
+		return ResponseEntity.ok(responseDto);
+	}
+
+	@GetMapping("/getAll/dates")
+	public ResponseEntity<List<String>> getPublishedDocsFromDSP1Dates(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
+			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house,
+			@RequestParam(required = false) Integer month,@RequestParam(required = false) Integer year) {
+		List<String> responseDto = publishService.getPublishedDocsFromDSP1Dates(date, applicationName, locale, lsNo, sessNo,
 				rssNo, house,month,year);
 		return ResponseEntity.ok(responseDto);
 	}

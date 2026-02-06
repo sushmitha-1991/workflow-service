@@ -66,7 +66,7 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests((authz) -> authz
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/workflow/**", "/camunda/**",
-						"/notesheet/**", "/publish-history/getAll/publishedDocs")
+						"/notesheet/**", "/publish-history/getAll/publishedDocs","/publish-history/getAll/dates")
 				.permitAll()
 				// Save as
 				.requestMatchers("/save-as-draft", "/get-save-as-draft", "/delete-save-as-draft").hasRole("ADMIN")

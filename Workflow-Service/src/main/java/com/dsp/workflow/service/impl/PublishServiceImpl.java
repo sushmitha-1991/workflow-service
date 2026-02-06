@@ -300,6 +300,67 @@ public class PublishServiceImpl implements PublishService {
 		}
 		return urlDto;
 	}
+	@Override
+	public List<String> getPublishedDocsFromDSP1Dates(LocalDate date, String documentName, String locale, String lsNo,
+			String sesNo, String rssNo, String house, Integer month, Integer year) {
+
+		List<UrlDto> urlDto = new ArrayList<>();
+		Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
+		if (date != null) {
+			spec = spec.and(hasForDate(date));
+		}
+		if (year != null) {
+			spec = spec.and(hasYear(year));
+		}
+		if (month != null) {
+			spec = spec.and(hasMonth(month));
+		}
+		if (StringUtils.isNotBlank(documentName)) {
+			spec = spec.and(hasApplicationName(documentName));
+		}
+		if (lsNo != null) {
+			spec = spec.and(hasLokSabhaNo(lsNo));
+		}
+		if (StringUtils.isNotBlank(sesNo)) {
+			spec = spec.and(hasLokSabhaSessionNo(sesNo));
+		}
+		if (rssNo != null) {
+			spec = spec.and(hasRajyaSabhaSessionNo(rssNo));
+		}
+		if (StringUtils.isNotBlank(locale)) {
+			spec = spec.and(hasLocale(locale));
+		}
+		if (StringUtils.isNotBlank(house)) {
+			spec = spec.and(hasHouse(house));
+		}
+
+		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
+		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
+		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
+		System.out.println("responseEntitys " + responseEntitys);
+
+		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
+				.collect(Collectors.toList());
+
+		// System.out.println("list of Docs " + listOfDTOs);
+		if (responseEntitys != null) {
+			for (PublishHistoryEntity entity : responseEntitys) {
+				UrlDto responseDto = new UrlDto();
+				//  UrlDto.builder().fileName(entity.getFileTypeName())
+				// 		.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
+				// 		.url("" + entity.getPublishUuid()).build();
+				if (entity.getForDate() != null) {
+					responseDto.setDate(entity.getForDate().toString());
+				}
+				urlDto.add(responseDto);
+			}
+		}
+		System.out.println("list of urlDto" + urlDto);
+		return urlDto.stream()
+		.map(UrlDto::getDate)
+		.distinct()
+		.collect(Collectors.toList());
+	}
 
 	private LocalTime convertToLocalTime(String timeStr) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
@@ -564,7 +625,10 @@ public class PublishServiceImpl implements PublishService {
 		if (StringUtils.isNotBlank(dto.getLocale())) {
 			spec = spec.and(hasLocaleTemp(dto.getLocale()));
 		}
+		logger.info("spec");
 		List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
+
+		logger.info(applicationName);
 		List<String> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
 		System.out.println("urlList " + urlList.size());
@@ -2038,7 +2102,7 @@ public class PublishServiceImpl implements PublishService {
 	@Override
 	public List<PublishHistoryResponseDTO> getFilteredPublishHistory(Long applicationId, String lokSabhaNo,
 			String lokSabhaSessionNo, String rajyaSabhaSessionNo, Long officeId, LocalDateTime publishDateFrom,
-			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo) {
+			LocalDateTime publishDateTo, LocalDate documentDateFrom, LocalDate documentDateTo, String appName) {
 
 		StringBuilder sql = new StringBuilder("""
 				    SELECT
@@ -2076,6 +2140,7 @@ public class PublishServiceImpl implements PublishService {
 
 		Map<String, Object> params = new HashMap<>();
 		Long userId = utils.getUserIdFromAuthentication();
+		System.out.println(userId);
 		params.put("userId", userId);
 
 		String house = utils.getHouseAbbr();
@@ -2087,6 +2152,12 @@ public class PublishServiceImpl implements PublishService {
 			sql.append(" AND wf.application_id = :applicationId");
 			params.put("applicationId", applicationId);
 		}
+		
+		if (StringUtils.isNotBlank(appName)) {
+			sql.append(" AND a.dsp1_document_name = :appName");
+			params.put("appName", appName);
+		}
+
 		if (lokSabhaNo != null && !lokSabhaNo.isBlank()) {
 			sql.append(" AND wf.lok_sabha_no = :lokSabhaNo");
 			params.put("lokSabhaNo", lokSabhaNo);
@@ -2121,6 +2192,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 
 		sql.append(" ORDER BY wf.publish_date DESC");
+		System.out.println(sql);
 
 		Query query = entityManager.createNativeQuery(sql.toString());
 		params.forEach(query::setParameter);
