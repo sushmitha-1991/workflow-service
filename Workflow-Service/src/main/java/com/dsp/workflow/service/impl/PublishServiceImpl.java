@@ -2140,6 +2140,7 @@ public class PublishServiceImpl implements PublishService {
 
 		Map<String, Object> params = new HashMap<>();
 		Long userId = utils.getUserIdFromAuthentication();
+		System.out.println(userId);
 		params.put("userId", userId);
 
 		String house = utils.getHouseAbbr();
@@ -2151,13 +2152,8 @@ public class PublishServiceImpl implements PublishService {
 			sql.append(" AND wf.application_id = :applicationId");
 			params.put("applicationId", applicationId);
 		}
-		// if (StringUtils.isNotBlank(appName)) {
-		// 	System.out.println("app "+appName);
-		// 	sql.append(" AND a.abbr = :appName");
-		// 	params.put("appName", appName);
-		// }
+		
 		if (StringUtils.isNotBlank(appName)) {
-			System.out.println("app "+appName);
 			sql.append(" AND a.dsp1_document_name = :appName");
 			params.put("appName", appName);
 		}
@@ -2196,6 +2192,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 
 		sql.append(" ORDER BY wf.publish_date DESC");
+		System.out.println(sql);
 
 		Query query = entityManager.createNativeQuery(sql.toString());
 		params.forEach(query::setParameter);
