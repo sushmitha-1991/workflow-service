@@ -301,20 +301,12 @@ public class PublishServiceImpl implements PublishService {
 		return urlDto;
 	}
 	@Override
-	public List<String> getPublishedDocsFromDSP1Dates(LocalDate date, String documentName, String locale, String lsNo,
-			String sesNo, String rssNo, String house, Integer month, Integer year) {
+	public List<String> getPublishedDocsFromDSP1Dates(String documentName, String locale, String lsNo,
+			String sesNo, String rssNo, String house) {
 
 		List<UrlDto> urlDto = new ArrayList<>();
 		Specification<PublishHistoryEntity> spec = Specification.where(isPublishStatus(true));
-		if (date != null) {
-			spec = spec.and(hasForDate(date));
-		}
-		if (year != null) {
-			spec = spec.and(hasYear(year));
-		}
-		if (month != null) {
-			spec = spec.and(hasMonth(month));
-		}
+
 		if (StringUtils.isNotBlank(documentName)) {
 			spec = spec.and(hasApplicationName(documentName));
 		}
@@ -334,9 +326,8 @@ public class PublishServiceImpl implements PublishService {
 			spec = spec.and(hasHouse(house));
 		}
 
-		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
+		Sort sort = Sort.by(Sort.Order.desc("forDate"));
 		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
-		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
 		System.out.println("responseEntitys " + responseEntitys);
 
 		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
@@ -346,9 +337,6 @@ public class PublishServiceImpl implements PublishService {
 		if (responseEntitys != null) {
 			for (PublishHistoryEntity entity : responseEntitys) {
 				UrlDto responseDto = new UrlDto();
-				//  UrlDto.builder().fileName(entity.getFileTypeName())
-				// 		.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
-				// 		.url("" + entity.getPublishUuid()).build();
 				if (entity.getForDate() != null) {
 					responseDto.setDate(entity.getForDate().toString());
 				}
