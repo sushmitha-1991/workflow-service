@@ -106,11 +106,13 @@ public class PublishController {
 	}
 
 	@GetMapping("/getAll/dates")
-	public ResponseEntity<List<String>> getPublishedDocsFromDSP1Dates(@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
+	public ResponseEntity<List<String>> getPublishedDocsFromDSP1Dates(@RequestParam(required = false) LocalDate date,
+			@RequestParam(required = false) String applicationName, @RequestParam(required = false) String locale,
 			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessNo,
-			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house) {
-		List<String> responseDto = publishService.getPublishedDocsFromDSP1Dates(applicationName, locale, lsNo, sessNo,
-				rssNo, house);
+			@RequestParam(required = false) String rssNo, @RequestParam(required = false) String house,
+			@RequestParam(required = false) Integer month,@RequestParam(required = false) Integer year) {
+		List<String> responseDto = publishService.getPublishedDocsFromDSP1Dates(date, applicationName, locale, lsNo, sessNo,
+				rssNo, house,month,year);
 		return ResponseEntity.ok(responseDto);
 	}
 
