@@ -55,6 +55,7 @@ import com.dsp.workflow.dto.SessionDto;
 import com.dsp.workflow.dto.UnPublishRequest;
 import com.dsp.workflow.dto.UrlDto;
 import com.dsp.workflow.entity.ApplicationInstance;
+import com.dsp.workflow.entity.Constants;
 import com.dsp.workflow.entity.ETransmissionRSUploadTempEntity;
 import com.dsp.workflow.entity.ETransmissionUploadTempEntity;
 import com.dsp.workflow.entity.MemberPhotoSignTemp;
@@ -300,6 +301,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 		return urlDto;
 	}
+
 	@Override
 	public List<String> getPublishedDocsFromDSP1Dates(LocalDate date, String documentName, String locale, String lsNo,
 			String sesNo, String rssNo, String house, Integer month, Integer year) {
@@ -346,9 +348,9 @@ public class PublishServiceImpl implements PublishService {
 		if (responseEntitys != null) {
 			for (PublishHistoryEntity entity : responseEntitys) {
 				UrlDto responseDto = new UrlDto();
-				//  UrlDto.builder().fileName(entity.getFileTypeName())
-				// 		.name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
-				// 		.url("" + entity.getPublishUuid()).build();
+				// UrlDto.builder().fileName(entity.getFileTypeName())
+				// .name(entity.getApplicationName()).fileType((entity.getFileType()).toUpperCase())
+				// .url("" + entity.getPublishUuid()).build();
 				if (entity.getForDate() != null) {
 					responseDto.setDate(entity.getForDate().toString());
 				}
@@ -356,10 +358,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 		}
 		System.out.println("list of urlDto" + urlDto);
-		return urlDto.stream()
-		.map(UrlDto::getDate)
-		.distinct()
-		.collect(Collectors.toList());
+		return urlDto.stream().map(UrlDto::getDate).distinct().collect(Collectors.toList());
 	}
 
 	private LocalTime convertToLocalTime(String timeStr) {
@@ -528,6 +527,12 @@ public class PublishServiceImpl implements PublishService {
 		if (VERBATIM.equalsIgnoreCase(entity.getApplicationName())) {
 			return unPublishVerbatim(id, entity);
 		}
+
+		if (Constants.CREATION_OF_NOTICES_UNDER_RULE_377.equalsIgnoreCase(entity.getApplicationName())) {
+
+			handleCNUR377Unpublish(entity);
+		}
+
 		String appNo = entity.getApplicationNo().split("_")[0];
 		ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
 		ApplicationInstanceProjection appDetails = getAppDetails(appInst.getId());
@@ -2123,6 +2128,7 @@ public class PublishServiceImpl implements PublishService {
 						o.office_name                 AS officeName,
 						COALESCE(a.name, wf.application_name) AS documentName,
 						ai.ref_id as refId,
+						ai.id as aiId,
 						a.published_url as publishedUrl
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
@@ -2152,7 +2158,7 @@ public class PublishServiceImpl implements PublishService {
 			sql.append(" AND wf.application_id = :applicationId");
 			params.put("applicationId", applicationId);
 		}
-		
+
 		if (StringUtils.isNotBlank(appName)) {
 			sql.append(" AND a.dsp1_document_name = :appName");
 			params.put("appName", appName);
@@ -2204,28 +2210,38 @@ public class PublishServiceImpl implements PublishService {
 			return new ArrayList<>();
 		}
 
-		return rows.stream()
-				.map(row -> PublishHistoryResponseDTO.builder()
-						.id(row[0] != null ? ((Number) row[0]).longValue() : null)
-						.lokSabhaNo(row[1] != null ? row[1].toString() : "")
-						.lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
-						.rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
-						.publishDate(row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime() : null)
-						.publishByUser(row[5] != null ? row[5].toString() : "")
-						.publishUuid(row[6] != null
-								? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString()))
-								: null)
-						.publishStatus(row[7] != null && (Boolean) row[7])
-						.unpublishDate(row[8] != null ? ((java.sql.Timestamp) row[8]).toLocalDateTime() : null)
-						.unpublishByUser(row[9] != null ? row[9].toString() : "")
-						.documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
-						.officeId(row[11] != null ? ((Number) row[11]).longValue() : null)
-						.applicationId(row[12] != null ? ((Number) row[12]).longValue() : null)
-						.applicationNo(row[13] != null ? row[13].toString() : "")
-						.branch(row[14] != null ? row[14].toString() : "")
-						.applicationName(row[15] != null ? row[15].toString() : "")
-						.refId(row[16] != null ? ((Number) row[16]).longValue() : null)
-						.publishedUrl(row[17] != null ? row[17].toString() : "").build())
+		return rows.stream().map(row -> {
+
+			// Handling the case for CNUR 377 Unpublishing
+			Long applicationIdValue = row[12] != null ? ((Number) row[12]).longValue() : null;
+
+			Long refIdValue;
+			if (Constants.CREATION_OF_NOTICES_UNDER_RULE_377_ID.equals(applicationIdValue)) {
+				refIdValue = row[17] != null ? ((Number) row[17]).longValue() : null;
+			} else {
+				refIdValue = row[16] != null ? ((Number) row[16]).longValue() : null;
+			}
+
+			return PublishHistoryResponseDTO.builder().id(row[0] != null ? ((Number) row[0]).longValue() : null)
+					.lokSabhaNo(row[1] != null ? row[1].toString() : "")
+					.lokSabhaSessionNo(row[2] != null ? row[2].toString() : "")
+					.rajyaSabhaSessionNo(row[3] != null ? row[3].toString() : "")
+					.publishDate(row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime() : null)
+					.publishByUser(row[5] != null ? row[5].toString() : "")
+					.publishUuid(row[6] != null
+							? (row[6] instanceof UUID ? (UUID) row[6] : UUID.fromString(row[6].toString()))
+							: null)
+					.publishStatus(row[7] != null && (Boolean) row[7])
+					.unpublishDate(row[8] != null ? ((java.sql.Timestamp) row[8]).toLocalDateTime() : null)
+					.unpublishByUser(row[9] != null ? row[9].toString() : "")
+					.documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
+					.officeId(row[11] != null ? ((Number) row[11]).longValue() : null).applicationId(applicationIdValue)
+					.applicationNo(row[13] != null ? row[13].toString() : "")
+					.branch(row[14] != null ? row[14].toString() : "")
+					.applicationName(row[15] != null ? row[15].toString() : "").refId(refIdValue)
+					.publishedUrl(row[18] != null ? row[18].toString() : "").build();
+		})
+
 				.toList();
 	}
 
@@ -2296,6 +2312,38 @@ public class PublishServiceImpl implements PublishService {
 	private String generateRef(String sessionNo, String appAbbr) {
 		return appAbbr + sessionNo + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
 				+ (new Random().nextInt(90000) + 10000);
+	}
+
+	private void handleCNUR377Unpublish(PublishHistoryEntity entity) {
+
+		String refNoCNUR377 = entity.getApplicationNo();
+
+		if (refNoCNUR377 == null || refNoCNUR377.isBlank()) {
+			throw new IllegalStateException("Application number is missing for CNUR377 unpublish.");
+		}
+
+		Long cnur377Id = repository.getRefIDByApplicationNo(refNoCNUR377);
+
+		if (cnur377Id == null) {
+			throw new IllegalStateException("No reference ID found for application number: " + refNoCNUR377);
+		}
+
+		String mpCode = repository.getMpCodeByCNUR377Id(cnur377Id);
+
+		if (mpCode == null || mpCode.isBlank()) {
+			throw new IllegalStateException("MP Code not found for CNUR377 ID: " + cnur377Id);
+		}
+
+		if (entity.getPublishUuid() == null) {
+			throw new IllegalStateException("Publish UUID is missing for CNUR377 unpublish.");
+		}
+
+		int rowsUpdated = repository.unPublishFromUploadedDocuments(mpCode, entity.getPublishUuid().toString());
+
+		if (rowsUpdated == 0) {
+			throw new IllegalStateException("No uploaded_document record updated for MP Code: " + mpCode + " and UUID: "
+					+ entity.getPublishUuid());
+		}
 	}
 
 }
