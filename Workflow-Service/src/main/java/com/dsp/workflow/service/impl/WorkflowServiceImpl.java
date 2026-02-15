@@ -398,6 +398,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        where
 			                wh.pending_with = :userId
 			                AND wh.draft_id IS NOT NULL
+			                AND dd.is_active = true AND dd.is_deleted = false
 			union
 			        select
 			                distinct on

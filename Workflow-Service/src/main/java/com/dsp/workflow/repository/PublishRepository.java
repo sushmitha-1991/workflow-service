@@ -106,4 +106,32 @@ public interface PublishRepository
 			""", nativeQuery = true)
 	String getAppAbbr(@Param("applicationId") Long applicationId);
 
+	@Query(value = """
+			select ai.ref_id
+			from master.application_instance ai
+			WHERE ai.application_no = :refNoCNUR377
+			""", nativeQuery = true)
+	Long getRefIDByApplicationNo(@Param("refNoCNUR377") String refNoCNUR377);
+
+	@Query(value = """
+	        SELECT pd.mp_code
+	        FROM notices.notice_details nd
+	        JOIN members.personal_details pd 
+	            ON nd.member_id = pd.id
+	        WHERE nd.id = :cnur377Id
+	        """, nativeQuery = true)
+	String getMpCodeByCNUR377Id(@Param("cnur377Id") Long cnur377Id);
+
+
+	@Transactional
+	@Modifying
+	@Query(value = """
+			UPDATE section_login.uploaded_document
+			SET is_active = false,
+			    is_deleted = true
+			WHERE receiver_id = :mpCode
+			  AND document_uuid = :docUUID
+			""", nativeQuery = true)
+	int unPublishFromUploadedDocuments(@Param("mpCode") String mpCode, @Param("docUUID") String docUUID);
+
 }
