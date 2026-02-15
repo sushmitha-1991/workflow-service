@@ -528,10 +528,10 @@ public class PublishServiceImpl implements PublishService {
 			return unPublishVerbatim(id, entity);
 		}
 
-		if (Constants.CREATION_OF_NOTICES_UNDER_RULE_377.equalsIgnoreCase(entity.getApplicationName())) {
-
-			handleCNUR377Unpublish(entity);
-		}
+//		if (Constants.CREATION_OF_NOTICES_UNDER_RULE_377.equalsIgnoreCase(entity.getApplicationName())) {
+//
+//			handleCNUR377Unpublish(entity);
+//		}
 
 		String appNo = entity.getApplicationNo().split("_")[0];
 		ApplicationInstance appInst = applicationInstanceRepository.getByApplicationNo(appNo);
