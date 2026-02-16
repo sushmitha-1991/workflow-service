@@ -2129,7 +2129,8 @@ public class PublishServiceImpl implements PublishService {
 						COALESCE(a.name, wf.application_name) AS documentName,
 						ai.ref_id as refId,
 						ai.id as aiId,
-						a.published_url as publishedUrl
+						a.published_url as publishedUrl,
+						ai.ref_id AS noticeId
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
 				    LEFT JOIN master.applications a ON wf.application_id = a.id
@@ -2216,10 +2217,14 @@ public class PublishServiceImpl implements PublishService {
 			Long applicationIdValue = row[12] != null ? ((Number) row[12]).longValue() : null;
 
 			Long refIdValue;
+			Long noticeIdValue;
 			if (Constants.CREATION_OF_NOTICES_UNDER_RULE_377_ID.equals(applicationIdValue)) {
 				refIdValue = row[17] != null ? ((Number) row[17]).longValue() : null;
+				noticeIdValue = row[19] != null ? ((Number) row[19]).longValue() : null;
+
 			} else {
 				refIdValue = row[16] != null ? ((Number) row[16]).longValue() : null;
+				noticeIdValue = null;
 			}
 
 			return PublishHistoryResponseDTO.builder().id(row[0] != null ? ((Number) row[0]).longValue() : null)
@@ -2239,7 +2244,9 @@ public class PublishServiceImpl implements PublishService {
 					.applicationNo(row[13] != null ? row[13].toString() : "")
 					.branch(row[14] != null ? row[14].toString() : "")
 					.applicationName(row[15] != null ? row[15].toString() : "").refId(refIdValue)
-					.publishedUrl(row[18] != null ? row[18].toString() : "").build();
+					.publishedUrl(row[18] != null ? row[18].toString() : "")
+					.noticeId(noticeIdValue)
+					.build();
 		})
 
 				.toList();
