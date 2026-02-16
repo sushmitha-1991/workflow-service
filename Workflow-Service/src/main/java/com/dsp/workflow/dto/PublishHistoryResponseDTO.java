@@ -1,10 +1,13 @@
 package com.dsp.workflow.dto;
 
-import lombok.*;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -24,10 +27,11 @@ public class PublishHistoryResponseDTO {
 	private LocalDate documentDate;
 	private Long officeId;
 	private Long applicationId;
-    private String applicationNo;
+	private String applicationNo;
 	private String branch;
 	private String applicationName;
 	private Long refId;
 	private String publishedUrl;
+	private Long noticeId;
 
 }
