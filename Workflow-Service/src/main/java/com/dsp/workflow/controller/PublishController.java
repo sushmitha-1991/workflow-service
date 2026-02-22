@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dsp.workflow.dto.PublishDto;
+import com.dsp.workflow.dto.PublishHistoryBranchViewResponseDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -360,4 +362,25 @@ public class PublishController {
 		return ResponseEntity.ok(response);
 	}
 
+	 @GetMapping("/search")
+	    public ResponseEntity<GenericResponse<Page<PublishHistoryBranchViewResponseDTO>>> search(
+	            @RequestParam(required = false) String lokSabhaNo,
+	            @RequestParam(required = false) String sessionNo,
+	            @RequestParam(required = false)
+	            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	            LocalDate forDate,
+	            @RequestParam(required = false) Long applicationId,
+	            @RequestParam(defaultValue = "0") int page,
+	            @RequestParam(defaultValue = "10") int size
+	    ) {
+
+			Page<PublishHistoryBranchViewResponseDTO> response = publishService.searchPublishHistory(lokSabhaNo,
+					sessionNo, forDate, applicationId, page, size);
+
+	        return (!response.isEmpty())? ResponseEntity.ok(
+	                new GenericResponse<>(true, "Fetched publish history successfully", response, HttpStatus.OK.value())
+	        ):ResponseEntity.ok(
+	                new GenericResponse<>(true, "Data Not Found", response, HttpStatus.NO_CONTENT.value())
+	        );
+	    }
 }

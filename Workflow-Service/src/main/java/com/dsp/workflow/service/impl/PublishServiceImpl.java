@@ -32,6 +32,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
@@ -46,6 +49,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.dsp.workflow.dto.ApplicationInstanceProjection;
 import com.dsp.workflow.dto.PublishDto;
+import com.dsp.workflow.dto.PublishHistoryBranchViewResponseDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -2353,4 +2357,21 @@ public class PublishServiceImpl implements PublishService {
 		}
 	}
 
+	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo, String sessionNo,
+			LocalDate forDate, Long applicationId, int page, int size) {
+
+		Pageable pageable = PageRequest.of(page, size);
+		
+		String house = getHouse();
+		
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, forDate, applicationId,house,
+				pageable);
+
+		return result.map(row -> PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0])
+				.sessionNo((String) row[1])
+				.forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
+				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
+				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
+				.downloadUrl((String) row[8]).build());
+	}
 }

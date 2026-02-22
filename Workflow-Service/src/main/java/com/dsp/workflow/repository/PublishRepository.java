@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -134,4 +136,39 @@ public interface PublishRepository
 			""", nativeQuery = true)
 	int unPublishFromUploadedDocuments(@Param("mpCode") String mpCode, @Param("docUUID") String docUUID);
 
+	@Query(value = """
+			select ph.lok_sabha_no,ph.lok_sabha_session_no,ph.for_date,ph.application_name ,ph.application_id,ph.application_no,ph.locale ,ph.publish_url,o.download_url from workflow.publish_history ph
+			left join master.applications a on a.id=ph.application_id
+			left join master.application_instance a2 on a2.application_no = REGEXP_REPLACE(ph.application_no, '_(HI|EN)$', '')
+			left join onlyoffice.only_office_metadata o on o.dsp2_key =a2.only_office_dsp2_key
+			where ph.application_id in (34,31,33,63) and ph.house=CAST(:house AS varchar)
+			 and (CAST(:lokSabhaNo AS varchar) is null or ph.lok_sabha_no = CAST(:lokSabhaNo AS varchar))
+			  and (
+			     CAST(:sessionNo AS varchar) is null
+			     or (:house = 'LS' and ph.lok_sabha_session_no = CAST(:sessionNo AS varchar))
+			     or (:house = 'RS' and ph.rajya_sabha_session_no = CAST(:sessionNo AS varchar))
+			   )
+			 and (CAST(:forDate AS DATE) is null or ph.for_date = CAST(:forDate AS DATE))
+			 and (CAST(:applicationId AS bigint) is null or ph.application_id = CAST(:applicationId AS bigint))
+			 and ph.publish_status =true and ph.is_active =true
+			 order by ph.for_date desc
+						""", 
+			countQuery = """
+					select count(*)
+					from workflow.publish_history ph
+					where ph.application_id in (34,31,33,63) and ph.house=CAST(:house AS varchar)
+					 and (CAST(:lokSabhaNo AS varchar) is null or ph.lok_sabha_no = CAST(:lokSabhaNo AS varchar))
+					  and (
+					     CAST(:sessionNo AS varchar) is null
+					     or (:house = 'LS' and ph.lok_sabha_session_no = CAST(:sessionNo AS varchar))
+					     or (:house = 'RS' and ph.rajya_sabha_session_no = CAST(:sessionNo AS varchar))
+					   )
+					 and (CAST(:forDate AS DATE) is null or ph.for_date = CAST(:forDate AS DATE))
+					 and (CAST(:applicationId AS bigint) is null or ph.application_id = CAST(:applicationId AS bigint))
+					  and ph.publish_status = true
+					  and ph.is_active = true
+			""", nativeQuery = true)
+	Page<Object[]> getPublishedDocuments(@Param("lokSabhaNo") String lokSabhaNo, @Param("sessionNo") String sessionNo,
+			@Param("forDate") LocalDate forDate, @Param("applicationId") Long applicationId,
+			@Param("house") String house,Pageable pageable);
 }
