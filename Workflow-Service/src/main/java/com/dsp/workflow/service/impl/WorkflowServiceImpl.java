@@ -178,7 +178,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			SELECT distinct applicationNo, documentName, "date", LSNo, SSNo, RSSNo, status, pendingAt, refId,
 			applicationId, applicationinstanceId, taskName, taskId, actionPerformed, formUrl, actionUrl, draftId, publishedUrl, documentUUIDEn, documentUUIDHi, htmlContentEn, htmlContentHi, editorId, ma.translate_flag, ma.download_flag,
-			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid, only_office_dsp2_key, dsp2_key_hi
+			coalesce(adm.save_as_draft_url, ma.save_as_draft_url) as save_as_draft_url, uploaded_document_uuid, only_office_dsp2_key, dsp2_key_hi, memberName
 			FROM (
 			                            select
 			                    distinct on
@@ -218,13 +218,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 							null as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
-			     	                null as draft_abbr
+			     	        null as draft_abbr,
+			     	        nd.member_name as memberName
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
 			                wh.application_instance_id = ai.id
 			        join master.applications a on
 			                ai.application_id = a.id
+			        left join notices.notice_details nd on nd.id = ai.ref_id   
+			        AND nd.application_id = ai.application_id
 			        where
 			                wh.pending_with = :userId
 			                and wh.action_taken_by is null
@@ -269,7 +272,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							null as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
-			                null as draft_abbr
+			                null as draft_abbr,
+			                nd.member_name as memberName
 			        from
 			                (
 			                select
@@ -298,6 +302,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                wh.application_instance_id = ai.id
 			        join master.applications a on
 			                ai.application_id = a.id
+			        left join notices.notice_details nd on nd.id = ai.ref_id   
+			        AND nd.application_id = ai.application_id
 			                 where (ai.current_status != 'Approved' and ai.current_status != 'Published')
 			                 and a.id not in (select a.id from master.applications a, master.modules m
 			                        where a.module_id = m.id and a.abbr in ('SYN')  and m.house_id = :houseId)
@@ -345,7 +351,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							null as dsp2_key_hi,
 			                null as editorId,
 			                applicationInstance.uploaded_document_uuid as uploaded_document_uuid,
-			                null as draft_abbr
+			                null as draft_abbr,
+			                null as memberName
 			        from
 			                master.input_instance ii
 			        join master.applications a on
@@ -386,7 +393,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							null as dsp2_key_hi,
 			                null as editorId,
 			                null as uploaded_document_uuid,
-			                dd.abbr as draft_abbr
+			                dd.abbr as draft_abbr,
+			                null as memberName
 			        from
 			        	workflow.drafted_document dd
 				        left join  workflow.workflow_history wh on
@@ -435,13 +443,16 @@ public class WorkflowServiceImpl implements WorkflowService {
 							ai.dsp2_key_hi as dsp2_key_hi,
 			                null as editorId,
 			                ai.uploaded_document_uuid as uploaded_document_uuid,
-			                null as draft_abbr
+			                null as draft_abbr,
+			                nd.member_name as memberName
 			        from
 			                workflow.workflow_history wh
 			        join master.application_instance ai on
 			                wh.application_instance_id = ai.id
 			        join master.applications a on
 			                ai.application_id = a.id
+			        left join notices.notice_details nd on nd.id = ai.ref_id   
+			        AND nd.application_id = ai.application_id
 			        where
 			                (ai.current_status = 'Approved'
 			                        or ai.current_status = 'Published')
@@ -481,7 +492,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 							null as dsp2_key_hi,
 			                CAST(rd.editor_id AS VARCHAR) as editorId,
 			                null as uploaded_document_uuid,
-			                null as draft_abbr
+			                null as draft_abbr,
+			                null as memberName
 			FROM synopsis.roster_detail rd
 			JOIN synopsis.roster r ON rd.roster_id = r.id
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
@@ -536,7 +548,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 						  null as dsp2_key_hi,
 			              CAST(ah.sent_to_user_id AS VARCHAR) as editorId,
 			              null as uploaded_document_uuid,
-			              null as draft_abbr
+			              null as draft_abbr,
+			              null as memberName
 			      FROM translation.translation_input inp
 			      JOIN translation.allocation_history ah ON inp.id = ah.translation_input_id
 			      left join master.applications ma on ma.id = inp.document_type_id
@@ -588,7 +601,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					null as dsp2_key_hi,
 			        CAST(da.allocateto AS VARCHAR) as editorId,
 			        null as uploaded_document_uuid,
-			           null as draft_abbr
+			        null as draft_abbr,
+			        null as memberName
 			FROM corrected_debate.allocation da
 			left join master.lok_sabha_masters lsm on lsm.id = da.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = da.lok_sabha_session_no
@@ -643,7 +657,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					null as dsp2_key_hi,
 				    CAST(da.sent_to_user_id AS VARCHAR) as editorId,
 				    null as uploaded_document_uuid,
-			           null as draft_abbr
+			        null as draft_abbr,
+			        null as memberName
 				FROM corrected_debate.allocation_history da
 				left join corrected_debate.translation_input i on i.id = da.translation_input_id
 				left join master.lok_sabha_masters lsm on lsm.id = i.lok_sabha_no
@@ -685,7 +700,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					   null as dsp2_key_hi,
 				       null as editorId,
 				       null as uploaded_document_uuid,
-			           null as draft_abbr
+			           null as draft_abbr,
+			           null as memberName
 				   FROM agenda_papers.e_summon es
 				   where es.status = 'Published' and es.house_id = :houseId
 				   and es.is_active = true and es.is_deleted = false
@@ -725,7 +741,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 					null as dsp2_key_hi,
 			        null as editorId,
 			        null as uploaded_document_uuid,
-			        null as draft_abbr
+			        null as draft_abbr,
+			        null as memberName
 			from
 			        workflow.workflow_history wh
 			join master.application_instance ai on
@@ -1882,6 +1899,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			rowMap.put("uploadedDocumentUUID", row.getUploadedDocumentUuid());
 			rowMap.put("onlyOfficeDsp2Key", row.getOnlyOfficeDsp2Key());
 			rowMap.put("dsp2KeyHi", row.getDsp2KeyHi());
+			rowMap.put("memberName", row.getMemberName());
 			return rowMap;
 		}).collect(Collectors.toList());
 
