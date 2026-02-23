@@ -40,7 +40,7 @@ public class DocumentRowMapper {
 	String actionUrl;
 	Boolean translateFlag;
 	Boolean downloadFlag;
-	Long draftId; 
+	Long draftId;
 	@NoEscape
 	String publishedUrl;
 	UUID documentUUIDEn;
@@ -51,9 +51,10 @@ public class DocumentRowMapper {
 	String htmlContentHi;
 	String editorId;
 	@NoEscape
-    String saveAsDraftUrl;
-        UUID uploadedDocumentUuid;
-        String onlyOfficeDsp2Key;
-        String dsp2KeyHi;
-    
+	String saveAsDraftUrl;
+	UUID uploadedDocumentUuid;
+	String onlyOfficeDsp2Key;
+	String dsp2KeyHi;
+	String memberName;
+
 }

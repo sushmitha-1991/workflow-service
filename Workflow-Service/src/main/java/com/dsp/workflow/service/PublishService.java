@@ -4,7 +4,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.dsp.workflow.dto.PublishDto;
+import com.dsp.workflow.dto.PublishHistoryBranchViewResponseDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
 import com.dsp.workflow.dto.PublishHistoryResponseDTO;
 import com.dsp.workflow.dto.ResponseDTO;
@@ -67,4 +70,5 @@ public interface PublishService {
 	 */
 	String overridePublish(PublishDto dto);
 
+	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo,String sessionNo,LocalDate fromDate,LocalDate toDate,Long applicationId,int page,int size,String keyword);
 }
