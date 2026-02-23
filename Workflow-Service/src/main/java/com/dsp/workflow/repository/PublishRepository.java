@@ -137,7 +137,7 @@ public interface PublishRepository
 	int unPublishFromUploadedDocuments(@Param("mpCode") String mpCode, @Param("docUUID") String docUUID);
 
 	@Query(value = """
-						select ph.lok_sabha_no,ph.lok_sabha_session_no,ph.for_date,ph.application_name ,ph.application_id,ph.application_no,ph.locale ,ph.publish_url,o.download_url from workflow.publish_history ph
+						select ph.lok_sabha_no,ph.lok_sabha_session_no,ph.for_date,ph.application_name ,ph.application_id,ph.application_no,ph.locale ,ph.publish_url,o.download_url,o.dsp2_key from workflow.publish_history ph
 						left join master.applications a on a.id=ph.application_id
 						left join master.application_instance a2 on a2.application_no = REGEXP_REPLACE(ph.application_no, '_(HI|EN)$', '')
 						left join onlyoffice.only_office_metadata o on o.dsp2_key =a2.only_office_dsp2_key
