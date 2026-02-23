@@ -20,6 +20,8 @@
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
 		<java.version>17</java.version>
+		<log4j2.version>2.25.3</log4j2.version>
+		<spring-security.version>6.3.8</spring-security.version>
 	</properties>
 
 	<dependencyManagement>
