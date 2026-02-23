@@ -2358,14 +2358,14 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo, String sessionNo,
-			LocalDate forDate, Long applicationId, int page, int size) {
+			LocalDate fromDate,LocalDate toDate, Long applicationId, int page, int size,String keyword) {
 
 		Pageable pageable = PageRequest.of(page, size);
 		
 		String house = getHouse();
 		
-		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, forDate, applicationId,house,
-				pageable);
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate,toDate, applicationId,house,
+				keyword,pageable);
 
 		return result.map(row -> PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0])
 				.sessionNo((String) row[1])
