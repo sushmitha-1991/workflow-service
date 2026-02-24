@@ -22,4 +22,5 @@ public class PublishHistoryBranchViewResponseDTO {
     private String locale;
     private String publishUrl;
     private String downloadUrl;
+    private String dsp2Key;
 }
