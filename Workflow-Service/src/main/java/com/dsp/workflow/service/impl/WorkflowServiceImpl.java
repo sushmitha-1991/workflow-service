@@ -318,7 +318,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                ii.lok_sabha_session_number as SSNo,
 			                ii.rajya_sabha_session as RSSNo,
 				            case
-			                        when ii.current_status in ('Returned') then ii.current_status
+			                        when ii.current_status in ('Recalled','Returned') then ii.current_status
 				                	when ii.application_instance_id is not null
 			                        and applicationInstance.id = ii.application_instance_id
 			                        and applicationInstance.current_status not in ('Returned', 'Draft') then applicationInstance.current_status
@@ -336,7 +336,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                'IN-PROCESS' as taskName,
 			                null as taskId,
 			                case
-			                        when ii.current_status = 'Returned' then 'True'
+			                        when ii.current_status in ('Recalled', 'Returned') then 'True'
 			                        else 'False'
 			                end as actionPerformed,
 			                a.form_url as formUrl,
