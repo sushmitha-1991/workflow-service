@@ -367,7 +367,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 			        select
 			                distinct on
 			                (dd.application_no) dd.application_no as applicationNo,
-			                coalesce(a.document_display_name, a."name") as documentName,
+			                 case when a.id=34
+			             then mc.code_data->>'en'
+			             else
+			             coalesce(a.document_display_name, a."name")
+			             end as documentName,
+			                --coalesce(a.document_display_name, a."name") as documentName,
 			                coalesce((dd.draft_data->>'documentDate')::date,dd.for_date) as date,
 			                --dd.for_date as date,
 			                dd.lok_sabha_session as LSNo,
@@ -401,6 +406,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                dd.id = wh.draft_id
 			        left join master.applications a on
 			                a.id = dd.application_id
+			                left join master.codes mc on mc.id = NULLIF(dd.draft_data ->> 'lobType','')::int
 			        left join authentication.base_user u on
 			                u.id = wh.pending_with
 			        where
