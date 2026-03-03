@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -46,8 +47,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.dsp.workflow.dto.ApplicationInstanceProjection;
+import com.dsp.workflow.dto.DocumentDTO;
 import com.dsp.workflow.dto.PublishDto;
 import com.dsp.workflow.dto.PublishHistoryBranchViewResponseDTO;
 import com.dsp.workflow.dto.PublishHistoryDTO;
@@ -78,6 +81,7 @@ import com.dsp.workflow.repository.MemberTempUploadRepositoryRS;
 import com.dsp.workflow.repository.PublishDocumentTempRepo;
 import com.dsp.workflow.repository.PublishRepository;
 import com.dsp.workflow.repository.PublishTempDocsRsRepository;
+import com.dsp.workflow.response.GenericResponse;
 import com.dsp.workflow.service.Dsp1CacheService;
 import com.dsp.workflow.service.PublishService;
 import com.dsp.workflow.util.ConstantsUtility;
@@ -103,6 +107,10 @@ public class PublishServiceImpl implements PublishService {
 	private EntityManager entityManager;
 	@Value("${service.url}")
 	private String openKmUrl;
+	
+	@Value("${notices.SOM377.url}")
+	private String noticeSomUrl;
+	
 	@Autowired
 	private ETransmissionRepository eTransmissionRepository;
 	@Autowired
@@ -2373,5 +2381,76 @@ public class PublishServiceImpl implements PublishService {
 				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
 				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
 				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).build());
+	}
+	
+	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo, String sessionNo,
+			LocalDate fromDate, LocalDate toDate, String applicationAbbr, int page, int size, String keyword) {
+		Pageable pageable = PageRequest.of(page, size);
+		String house = getHouse();
+		// SOM377 handled via external API
+		if (isSom377(applicationAbbr)) {
+			return getSom377PublishHistory(fromDate, pageable);
+		}
+		// Normal DB flow
+		Long applicationId = utils.getApplicationId(applicationAbbr);
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,
+				house, keyword, pageable);
+		return result.map(this::mapRowToDto);
+	}
+
+	private Page<PublishHistoryBranchViewResponseDTO> getSom377PublishHistory(LocalDate date, Pageable pageable) {
+		DocumentDTO somDoc = getStatementOfMatter377Documents(date, "S377");
+		if (somDoc == null) {
+			return Page.empty(pageable);
+		}
+		PublishHistoryBranchViewResponseDTO dto = PublishHistoryBranchViewResponseDTO.builder()
+				.lokSabhaNo(somDoc.getLokSabhaNo()).sessionNo(somDoc.getLokSabhaSessionNo()).forDate(somDoc.getDate())
+				.applicationName("Statement Of Matter 377").applicationId(somDoc.getApplicationId())
+				.applicationNo(somDoc.getApplicationNo()).locale("EN").publishUrl(null).downloadUrl(null)
+				.dsp2Key(somDoc.getDsp2Key()).build();
+		return new PageImpl<>(List.of(dto), pageable, 1);
+	}
+
+	private PublishHistoryBranchViewResponseDTO mapRowToDto(Object[] row) {
+		return PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0]).sessionNo((String) row[1])
+				.forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
+				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
+				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
+				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).build();
+	}
+
+	private boolean isSom377(String doc) {
+		return doc != null && (doc.equalsIgnoreCase("SOM377") || doc.equalsIgnoreCase("S377")
+				|| doc.equalsIgnoreCase("StatementOfMatter377") || doc.equalsIgnoreCase("StatementOfMatter"));
+	}
+
+	public DocumentDTO getStatementOfMatter377Documents(LocalDate date, String doc) {
+		logger.info("SOM-377 URL: {}", noticeSomUrl);
+		try {
+			// Build query params ?date=yyyy-MM-dd&doc=...
+			UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(noticeSomUrl).queryParam("date", date)
+					.queryParam("doc", doc);
+
+			// Propagate Authorization header if present
+			HttpHeaders headers = new HttpHeaders();
+			String token = getTokenFromRequest();
+			if (token != null) {
+				headers.set("Authorization", "Bearer " + token);
+			}
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			HttpEntity<Void> entity = new HttpEntity<>(headers);
+			ParameterizedTypeReference<GenericResponse<DocumentDTO>> responseType = new ParameterizedTypeReference<GenericResponse<DocumentDTO>>() {
+			};
+			ResponseEntity<GenericResponse<DocumentDTO>> response = restTemplate.exchange(builder.toUriString(),
+					HttpMethod.GET, entity, responseType);
+			if (response != null && response.getBody() != null && response.getBody().getData() != null) {
+				return response.getBody().getData();
+			}
+			logger.warn("SOM-377 response body or data is null for date={}, doc={}", date, doc);
+			return null;
+		} catch (Exception e) {
+			logger.error("Error during SOM-377 external API call: {}", e.getMessage(), e);
+			return null;
+		}
 	}
 }
