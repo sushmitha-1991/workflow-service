@@ -387,4 +387,30 @@ public class PublishController {
 	                new GenericResponse<>(true, "Data Not Found", response, HttpStatus.NO_CONTENT.value())
 	        );
 	    }
+	 
+	 @GetMapping("/getDocuments")
+	    public ResponseEntity<GenericResponse<Page<PublishHistoryBranchViewResponseDTO>>> getDocuments(
+	            @RequestParam(required = false) String lokSabhaNo,
+	            @RequestParam(required = false) String sessionNo,
+	            @RequestParam(required = false)
+	            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	            LocalDate fromDate,
+	            @RequestParam(required = false)
+	            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	            LocalDate toDate,
+	            @RequestParam(required = false) String applicationAbbr,
+	            @RequestParam(defaultValue = "0") int page,
+	            @RequestParam(defaultValue = "100") int size,
+	            @RequestParam(required = false)String keyword
+	    ) {
+
+			Page<PublishHistoryBranchViewResponseDTO> response = publishService.getDocumentsPublishHistory(lokSabhaNo,
+					sessionNo, fromDate,toDate, applicationAbbr, page, size,keyword);
+
+	        return (!response.isEmpty())? ResponseEntity.ok(
+	                new GenericResponse<>(true, "Fetched publish history successfully", response, HttpStatus.OK.value())
+	        ):ResponseEntity.ok(
+	                new GenericResponse<>(true, "Data Not Found", response, HttpStatus.NO_CONTENT.value())
+	        );
+	    }
 }
