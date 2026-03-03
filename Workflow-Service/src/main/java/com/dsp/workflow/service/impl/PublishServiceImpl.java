@@ -2399,7 +2399,7 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	private Page<PublishHistoryBranchViewResponseDTO> getSom377PublishHistory(LocalDate date, Pageable pageable) {
-		DocumentDTO somDoc = getStatementOfMatter377Documents(date, "S377");
+		DocumentDTO somDoc = getStatementOfMatter377Documents(date, "StatementOfMatter377");
 		if (somDoc == null) {
 			return Page.empty(pageable);
 		}
