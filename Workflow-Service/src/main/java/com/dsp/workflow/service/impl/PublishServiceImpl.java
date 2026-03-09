@@ -2141,7 +2141,9 @@ public class PublishServiceImpl implements PublishService {
 						COALESCE(a.name, wf.application_name) AS documentName,
 						ai.ref_id as refId,
 						ai.id as aiId,
-						a.published_url as publishedUrl,
+						case when ai.application_no ilike '%TRP%' then 'translation/paper/get/'
+						else a.published_url 
+						end as publishedUrl,
 						ai.ref_id AS noticeId
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
