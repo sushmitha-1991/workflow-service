@@ -141,7 +141,7 @@ public interface PublishRepository
 						left join master.applications a on a.id=ph.application_id
 						left join master.application_instance a2 on a2.application_no = REGEXP_REPLACE(ph.application_no, '_(HI|EN)$', '')
 						left join onlyoffice.only_office_metadata o on o.dsp2_key =a2.only_office_dsp2_key
-						where ph.application_id in (34,31,33,63) and ph.house=CAST(:house AS varchar)
+						where ph.application_id in (34,31,33,63,104) and ph.house=CAST(:house AS varchar)
 						 and (CAST(:lokSabhaNo AS varchar) is null or ph.lok_sabha_no = CAST(:lokSabhaNo AS varchar))
 						  and (
 						     CAST(:sessionNo AS varchar) is null
@@ -173,7 +173,7 @@ public interface PublishRepository
 								left join master.applications a on a.id=ph.application_id
 						left join master.application_instance a2 on a2.application_no = REGEXP_REPLACE(ph.application_no, '_(HI|EN)$', '')
 						left join onlyoffice.only_office_metadata o on o.dsp2_key =a2.only_office_dsp2_key
-								where ph.application_id in (34,31,33,63) and ph.house=CAST(:house AS varchar)
+								where ph.application_id in (34,31,33,63,104) and ph.house=CAST(:house AS varchar)
 								 and (CAST(:lokSabhaNo AS varchar) is null or ph.lok_sabha_no = CAST(:lokSabhaNo AS varchar))
 								  and (
 								     CAST(:sessionNo AS varchar) is null
