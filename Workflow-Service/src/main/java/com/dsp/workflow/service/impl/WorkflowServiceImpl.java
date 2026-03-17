@@ -478,7 +478,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                lsm.lok_sabha_number as LSNo,
 			                lssm.session_number as SSNo,
 			                rssm.session_number as RSSNo,
-			                'In Progress' as status,
+			                COALESCE(ai.current_status, 'In Progress') AS status,
 			          		CONCAT(bu.first_name, ' ', bu.last_name, '-', d.abbr, ' (', o.office_name, ')') as pendingAt,
 			                null as refId,
 			                null as applicationId,
@@ -502,6 +502,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 			                null as memberName
 			FROM synopsis.roster_detail rd
 			JOIN synopsis.roster r ON rd.roster_id = r.id
+			left join synopsis.synopsis syn on rd.id = syn.roster_detail_id
+			left join master.application_instance ai on syn.id = ai.id
 			left join master.lok_sabha_masters lsm on lsm.id = r.lok_sabha_no
 			left join master.lok_sabha_session_masters lssm on lssm.id = r.lok_sabha_session_no
 			left join master.rajya_sabha_session_master rssm on rssm.id = r.rajya_sabha_session_no
@@ -518,7 +520,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			and (rd.task_status <> 'Completed' or 
 			(select count(*) from workflow.workflow_history wh where wh.application_instance_id = (select max(id) from synopsis.synopsis where synopsis.roster_detail_id = rd.id))=0)
 			         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
-			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name
+			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name, ai.current_status
 
 			union
 				-- Allocation to Translators
