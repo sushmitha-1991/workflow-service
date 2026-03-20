@@ -2144,7 +2144,8 @@ public class PublishServiceImpl implements PublishService {
 						case when ai.application_no ilike '%TRP%' then 'translation/paper/get/'
 						else a.published_url 
 						end as publishedUrl,
-						ai.ref_id AS noticeId
+						ai.ref_id AS noticeId,
+						wf.file_type_name AS fileTypeName
 				    FROM workflow.publish_history wf
 				    JOIN master.offices o ON wf.office_id = o.id
 				    LEFT JOIN master.applications a ON wf.application_id = a.id
@@ -2260,6 +2261,7 @@ public class PublishServiceImpl implements PublishService {
 					.applicationName(row[15] != null ? row[15].toString() : "").refId(refIdValue)
 					.publishedUrl(row[18] != null ? row[18].toString() : "")
 					.noticeId(noticeIdValue)
+					.fileTypeName(row[20] != null ? row[20].toString() : "")
 					.build();
 		})
 
