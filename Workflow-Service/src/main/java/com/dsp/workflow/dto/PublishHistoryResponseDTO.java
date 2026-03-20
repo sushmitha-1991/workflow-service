@@ -33,5 +33,6 @@ public class PublishHistoryResponseDTO {
 	private Long refId;
 	private String publishedUrl;
 	private Long noticeId;
+	private String fileTypeName;
 
 }
