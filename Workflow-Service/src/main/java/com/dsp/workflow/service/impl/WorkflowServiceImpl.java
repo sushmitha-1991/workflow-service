@@ -517,8 +517,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			WHERE rd.editor_id = :userId
 			AND r.roster_date IS NOT NULL
 			AND r.roster_type = 'Daily'
-			and (rd.task_status <> 'Completed' or 
-			(select count(*) from workflow.workflow_history wh where wh.application_instance_id = (select max(id) from synopsis.synopsis where synopsis.roster_detail_id = rd.id))=0)
+			and rd.task_status <> 'Completed'
 			         GROUP BY r.ref_no, r.roster_date, rd.editor_id, lsm.lok_sabha_number, lssm.session_number, rssm.session_number,
 			        rd.supplementary_flag, bu.first_name, bu.last_name, d.abbr, o.office_name, ai.current_status
 
