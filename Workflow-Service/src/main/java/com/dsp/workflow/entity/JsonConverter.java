@@ -33,8 +33,6 @@ import java.io.IOException;
 
     @Override
     public List<Map<String, Object>> convertToEntityAttribute(String dbData) {
-        System.out.println("jjjjjjjjjjjjj");
-        System.out.println(dbData);
         if (dbData == null || dbData.isEmpty()) {
             return null;
         }

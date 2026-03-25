@@ -144,7 +144,6 @@ public class WorkflowController {
 	@GetMapping("/pending")
 	public ResponseEntity<GenericResponse<List<TaskResponseDTO>>> getPendingTasks() {
 		Long receiverUserId = utils.getUserIdFromAuthentication();
-		System.out.println("### receiverUserId - " + receiverUserId);
 
 		List<TaskResponseDTO> pendingTasks = workflowService.getTasksByReceiverUserId(receiverUserId);
 

@@ -55,7 +55,7 @@ public class FolderCreationUtils {
             logger.error("Authorization token is missing. Cannot upload file.");
             return "";
         }
-        System.out.println("folder " + folders);
+//        System.out.println("folder " + folders);
         String folderName = "";
         for (int i = 0; i < folders.size(); i++) {
             int size = folders.size();
@@ -68,14 +68,14 @@ public class FolderCreationUtils {
 
             } catch (Exception e) {
 
-                System.out.println(e.getLocalizedMessage());
+//                System.out.println(e.getLocalizedMessage());
             }
-            System.out.println("path " + path);
-            System.out.println("folderName " + folderName);
+//            System.out.println("path " + path);
+//            System.out.println("folderName " + folderName);
 
         }
 
-        System.out.println("complete path " + path + " createdolders " + folderName);
+//        System.out.println("complete path " + path + " createdolders " + folderName);
         if (path.endsWith("/"))
             return path + "" + folderName;
         else
@@ -84,7 +84,7 @@ public class FolderCreationUtils {
 
     public String createFolderIfNotExists(String parentPath, String folderName, String token) {
 
-        System.out.println("parent path " + parentPath);
+//        System.out.println("parent path " + parentPath);
         // System.out.println("folder name "+folderName);
         if (StringUtils.isBlank(parentPath))
             parentPath = "/okm:root";
@@ -118,7 +118,7 @@ public class FolderCreationUtils {
             GenericResponse<String> responseBody = response.getBody();
             // System.out.println("status " + responseBody);
             if (responseBody != null) {
-                System.out.println("status " + responseBody.getStatusCode());
+//                System.out.println("status " + responseBody.getStatusCode());
                 if (responseBody.getStatusCode() == 200)
                 // responseBody.isSuccess())
                 {
@@ -126,25 +126,25 @@ public class FolderCreationUtils {
                 } else if (responseBody.getStatusCode() == 409) {
                     return folderPath;
                 } else {
-                    System.out.println("Unexpected response: " + responseBody.getMessage());
+//                    System.out.println("Unexpected response: " + responseBody.getMessage());
                     return null;
                 }
             } else {
-                System.out.println("Empty response received from folder creation API");
+//                System.out.println("Empty response received from folder creation API");
                 return null;
             }
 
         } catch (HttpClientErrorException.Conflict e) {
-            System.out.println("status already exist conflict exception ");
+//            System.out.println("status already exist conflict exception ");
             // e.printStackTrace();
             return folderPath;
         } catch (HttpClientErrorException e) {
-            System.out.println("status already exist exception");
+//            System.out.println("status already exist exception");
             // e.printStackTrace();
             return folderPath;
         } catch (Exception e) {
             // e.printStackTrace();
-            System.out.println("Error occurred while creating folder: ");
+//            System.out.println("Error occurred while creating folder: ");
             throw e;
             // return folderPath;
         }

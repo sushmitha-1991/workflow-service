@@ -25,7 +25,6 @@ public class NotesheetMapper {
 	 */
 	public static Notesheet fromVariables(Map<String, Object> variables, String taskId,
 			List<ProcessStepwiseDocumentsDTO> documentList, String note) {
-		System.out.println(">>> checkpoint 6");
 
 		// Build the Notesheet entity from the variables
 		Notesheet notesheet = Notesheet.builder().note(note)
@@ -34,16 +33,13 @@ public class NotesheetMapper {
 				// .senderRoleId(convertToInteger(variables.get("senderRoleId")))
 				.applicationInstanceId((Long) variables.get("applicationInstanceId"))
 				.actionTaken((String) variables.get("actionTaken")).build();
-		System.out.println(">>> checkpoint 7");
 
 		// Initialize the list to hold NoteStepwiseDocuments entities
 		List<NoteStepwiseDocuments> noteStepwiseDocumentsList = new ArrayList<>();
-		System.out.println(">>> checkpoint 8");
 
 		// Process the documentList (from ProcessStepwiseDocumentsDTO)
 		if (documentList != null) {
 			for (ProcessStepwiseDocumentsDTO processDocument : documentList) {
-				System.out.println(">>> checkpoint 9");
 
 				// Create a new NoteStepwiseDocuments entity for each DTO in the list
 				NoteStepwiseDocuments document = NoteStepwiseDocuments.builder()
@@ -54,8 +50,6 @@ public class NotesheetMapper {
 				noteStepwiseDocumentsList.add(document);
 			}
 		}
-
-		System.out.println(">>> checkpoint 10");
 
 		// Set the associated documents in the Notesheet entity
 		notesheet.setDocuments(noteStepwiseDocumentsList);

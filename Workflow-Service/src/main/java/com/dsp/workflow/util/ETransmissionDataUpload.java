@@ -80,7 +80,7 @@ public class ETransmissionDataUpload {
             ETransmissionRSUploadTempEntity entitys = entity.get();
             entitys.setIsUpdatedAllUuid(false);
             entitys = eTransmissionRSRepository.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -91,7 +91,7 @@ public class ETransmissionDataUpload {
             ETransmissionUploadTempEntity entitys = entity.get();
             entitys.setIsUpdatedAllUuid(false);
             entitys = eTransmissionRepository.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -108,7 +108,7 @@ public class ETransmissionDataUpload {
             ETransmissionRSUploadTempEntity responseRs,
             byte[] fileData, String fileType, String url, String house) {
         try {
-            System.out.println("response " + response);
+//            System.out.println("response " + response);
             String uploadUrl = openKmUrl + "/document/upload";
             if (fileData == null) {
                 if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house))
@@ -133,20 +133,20 @@ public class ETransmissionDataUpload {
                 folders.add(getYear(response.getDateOfCirculation()));
                 fileNameWithoutExt = fileNameDependsOnFileType(response, responseRs, house, fileType);
 
-                System.out.println("file Name before slash and space update Ls" + fileNameWithoutExt);
+//                System.out.println("file Name before slash and space update Ls" + fileNameWithoutExt);
             } else if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house)) {
                 folders.add(getYear(responseRs.getDateOfCirculation()));
                 fileNameWithoutExt = fileNameDependsOnFileType(response, responseRs, house, fileType);
 
-                System.out.println("file Name before slash and space update RS" + fileNameWithoutExt);
+//                System.out.println("file Name before slash and space update RS" + fileNameWithoutExt);
             }
             folders.add(fileType);
-            System.out.println("folders " + folders);
+//            System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
             String folderPath = folderCreationUtils.createDmsFolderStructure(rootPath, folders);
-            System.out.println("folder path " + folderPath);
+//            System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
-            System.out.println("uploadUrl  " + uploadUrl);
+//            System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
 
@@ -155,7 +155,7 @@ public class ETransmissionDataUpload {
                         .replace(" ", "-")
                         .replace("/", "-");
             }
-            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
+//            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + "_dsp1.pdf";
             // String updatedFileName = fileNameWithoutExt+".pdf";
             // Create a temporary file
@@ -181,9 +181,9 @@ public class ETransmissionDataUpload {
             body.add("referenceId", 1);
             body.add("referenceType", "ApplicationInstance");
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            System.out.println("uploading file with");
-            System.out.println(requestEntity);
-            System.out.println(uploadUrl);
+//            System.out.println("uploading file with");
+//            System.out.println(requestEntity);
+//            System.out.println(uploadUrl);
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
                     });
@@ -332,7 +332,7 @@ public class ETransmissionDataUpload {
                 if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
                     entitys.setList1HindiUuid(uuid.toString());
                 entitys = eTransmissionRepository.save(entitys);
-                System.out.println("entity " + entity);
+//                System.out.println("entity " + entity);
                 ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
                         .fileType(fileType)
                         .url(url)
@@ -355,7 +355,7 @@ public class ETransmissionDataUpload {
                 if (ConstantsUtility.F_HI.equalsIgnoreCase(fileType))
                     entitys.setList1HindiUuid(uuid.toString());
                 entitys = eTransmissionRSRepository.save(entitys);
-                System.out.println("entity " + entity);
+//                System.out.println("entity " + entity);
                 ResponseDocsUuids res = new ResponseDocsUuids().builder().house(house)
                         .fileType(fileType)
                         .url(url)

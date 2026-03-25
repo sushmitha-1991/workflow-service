@@ -47,7 +47,6 @@ public class PublishController {
 
 	@PostMapping("/create")
 	public PublishHistoryDTO save(@RequestBody PublishHistoryDTO dto) {
-		System.out.println("Received DTO in Controller: " + dto);
 		if (dto == null) {
 			throw new RuntimeException("DTO is NULL. JSON payload might be incorrect.");
 		}
@@ -223,7 +222,6 @@ public class PublishController {
 
 	@PutMapping("/update/{id}")
 	public PublishHistoryDTO update(@PathVariable Long id, @RequestBody PublishHistoryDTO dto) {
-		System.out.println("Id need to be unpublished" + id);
 		if (id == null) {
 			throw new RuntimeException("id is NULL");
 		}
@@ -249,7 +247,6 @@ public class PublishController {
 
 	@PostMapping("/update/{id}")
 	public PublishHistoryDTO updateV2(@PathVariable Long id, @RequestBody PublishHistoryDTO dto) {
-		System.out.println("Id need to be unpublished" + id);
 		if (id == null) {
 			throw new RuntimeException("id is NULL");
 		}
@@ -260,7 +257,6 @@ public class PublishController {
 	@PostMapping("/unpublish/{id}")
 	public ResponseEntity<GenericResponse<PublishHistoryDTO>> unpublishByIdV2(@PathVariable Long id,
 			@RequestBody UnPublishRequest request) {
-		System.out.println("Id need to be unpublished " + id);
 		if (id == null) {
 			throw new RuntimeException("id is NULL");
 		}
@@ -277,7 +273,6 @@ public class PublishController {
 
 	@GetMapping("/getByApplicationNo/{applicationNo}")
 	public PublishHistoryDTO getbyAppNo(@PathVariable String applicationNo) {
-		System.out.println("Id need to be unpublished" + applicationNo);
 		if (applicationNo == null) {
 			throw new RuntimeException("ApplicationNo is NULL.");
 		}
@@ -294,28 +289,24 @@ public class PublishController {
 
 	@PostMapping("/uploadDocDSP2/{appName}")
 	public ResponseEntity<List<String>> uploadToDsp2(@PathVariable String appName, @RequestBody SessionDto dto) {
-		System.out.println("Received in Controller: ");
 		List<String> uuidString = publishService.uploadToDsp2(appName, dto);
 		return ResponseEntity.ok(uuidString);
 	}
 
 	@PostMapping("/uploadDocDSP2/rs/{appName}")
 	public ResponseEntity<List<String>> uploadToDsp2Rs(@PathVariable String appName, @RequestBody SessionDto dto) {
-		System.out.println("Received in Controller: ");
 		List<String> uuidString = publishService.uploadToDsp2Rs(appName, dto);
 		return ResponseEntity.ok(uuidString);
 	}
 
 	@GetMapping("/uploadMemberDSP2")
 	public ResponseEntity<List<ResponseMember>> uploadMembersToDsp2() {
-		System.out.println("Received in Controller: ");
 		List<ResponseMember> res = publishService.uploadMemberDSP2();
 		return ResponseEntity.ok(res);
 	}
 
 	@GetMapping("/uploadTransmissionDsp2")
 	public ResponseEntity<List<ResponseDocsUuids>> uploadTransmissionDocs() {
-		System.out.println("Received in Controller: ");
 		List<ResponseDocsUuids> res = publishService.uploadTransmissionDocs();
 		return ResponseEntity.ok(res);
 	}
@@ -324,7 +315,6 @@ public class PublishController {
 	public ResponseEntity<String> folderStructure(@RequestParam(required = false) String houseType,
 			@RequestParam(required = false) String lsNo, @RequestParam(required = false) String sessionNo,
 			@RequestParam(required = false) String appName) {
-		System.out.println("Received in Controller: ");
 
 		List<String> folders = new ArrayList<String>();
 		if (!StringUtils.isEmpty(houseType)) {
@@ -337,7 +327,6 @@ public class PublishController {
 			folders.add(sessionNo);
 		}
 		folders.add(appName);
-		System.out.println(folders);
 		String folder = publishService.createDmsFolderStructure("/okm:root", folders);
 
 		return ResponseEntity.ok(folder);

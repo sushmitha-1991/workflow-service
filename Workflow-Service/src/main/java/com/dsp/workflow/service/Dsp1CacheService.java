@@ -106,7 +106,7 @@ public class Dsp1CacheService {
 					+ "&year=" + docDetails.getYear() + "&locale=" + docDetails.getLocale();
 
 			String monthlyCalendarRedisKey = DSP1_MONTHLY_CALENDAR_CACHE_NAME + "::" + monthlyCalendarEndpoint;
-			System.out.println(">>> monthlyCalendarRedisKey " + monthlyCalendarRedisKey);
+//			System.out.println(">>> monthlyCalendarRedisKey " + monthlyCalendarRedisKey);
 			clearCacheFromDSP1(monthlyCalendarRedisKey);
 
 		} catch (Exception e) {
@@ -127,7 +127,7 @@ public class Dsp1CacheService {
 		try {
 			ResponseEntity<String> response = asyncRestTemplate.exchange(dsp1CacheClearUrl, HttpMethod.DELETE, entity,
 					String.class);
-			System.out.println("response " + response.getBody());
+//			System.out.println("response " + response.getBody());
 
 			if (response.getStatusCode().is2xxSuccessful()) {
 				log.info("✅ Cache cleared successfully for key: {}", redisKey);

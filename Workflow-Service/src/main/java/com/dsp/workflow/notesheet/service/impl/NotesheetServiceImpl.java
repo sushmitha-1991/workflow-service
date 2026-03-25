@@ -41,8 +41,6 @@ public class NotesheetServiceImpl implements NotesheetService {
 				.build();
 
 		// Save the entity to the repository
-		System.out.println("Saving Notesheet with additionalDetails: {}" + notesheetDTO.getAdditionalDetails());
-
 		notesheet = notesheetRepository.save(notesheet);
 
 		// Return the saved entity mapped back to the DTO
@@ -102,7 +100,6 @@ public class NotesheetServiceImpl implements NotesheetService {
 			String referenceNo = notesheetRepository
 					.findNotesheetsWithReferenceNo(notesheet.getApplicationInstanceId());
 
-			System.out.println("### referenceNo - " + referenceNo);
 			// Map to NotesheetDTO
 			return NotesheetDTO.builder().id(notesheet.getId()).note(notesheet.getNote())
 					.receiverRoleId(notesheet.getReceiverRoleId()).receiverUserId(notesheet.getReceiverUserId())

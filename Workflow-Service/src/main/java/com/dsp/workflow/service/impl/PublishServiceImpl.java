@@ -107,10 +107,10 @@ public class PublishServiceImpl implements PublishService {
 	private EntityManager entityManager;
 	@Value("${service.url}")
 	private String openKmUrl;
-	
+
 	@Value("${notices.SOM377.url}")
 	private String noticeSomUrl;
-	
+
 	@Autowired
 	private ETransmissionRepository eTransmissionRepository;
 	@Autowired
@@ -156,7 +156,7 @@ public class PublishServiceImpl implements PublishService {
 		PublishHistoryEntity entity = PublishMapper.toEntity(dto);
 		PublishHistoryEntity alreadyExists = repository.findByApplicationNo(entity.getApplicationNo());
 		if (alreadyExists != null) {
-			System.out.println("application no exists  " + alreadyExists.getApplicationNo());
+//			System.out.println("application no exists  " + alreadyExists.getApplicationNo());
 			Field[] fields = entity.getClass().getDeclaredFields();
 			for (Field field : fields) {
 				field.setAccessible(true); // Allow access to private fields
@@ -289,7 +289,7 @@ public class PublishServiceImpl implements PublishService {
 		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
 		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
 		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
-		System.out.println("responseEntitys " + responseEntitys);
+//		System.out.println("responseEntitys " + responseEntitys);
 
 		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
 				.collect(Collectors.toList());
@@ -306,7 +306,7 @@ public class PublishServiceImpl implements PublishService {
 				urlDto.add(responseDto);
 			}
 		}
-		System.out.println("list of urlDto" + urlDto);
+//		System.out.println("list of urlDto" + urlDto);
 
 		if (VERBATIM.equalsIgnoreCase(documentName)) {
 			return getFilteredVerbatim(urlDto);
@@ -351,7 +351,7 @@ public class PublishServiceImpl implements PublishService {
 		Sort sort = Sort.by(Sort.Order.desc("forDate"), Sort.Order.desc("id"));
 		List<PublishHistoryEntity> responseEntitys = repository.findAll(spec, sort);
 		// List<PublishHistoryEntity> responseEntitys = repository.findAll();
-		System.out.println("responseEntitys " + responseEntitys);
+//		System.out.println("responseEntitys " + responseEntitys);
 
 		List<PublishHistoryDTO> listOfDTOs = responseEntitys.stream().map(PublishMapper::toDTO)
 				.collect(Collectors.toList());
@@ -369,7 +369,7 @@ public class PublishServiceImpl implements PublishService {
 				urlDto.add(responseDto);
 			}
 		}
-		System.out.println("list of urlDto" + urlDto);
+//		System.out.println("list of urlDto" + urlDto);
 		return urlDto.stream().map(UrlDto::getDate).distinct().collect(Collectors.toList());
 	}
 
@@ -407,8 +407,6 @@ public class PublishServiceImpl implements PublishService {
 			String startTime = fileName.split(" to ")[0];
 			return LocalTime.parse(startTime.toUpperCase(), fmt);
 		})).collect(Collectors.toList());
-		System.out.println("dto");
-		System.out.println(res);
 		return res;
 	}
 
@@ -621,7 +619,6 @@ public class PublishServiceImpl implements PublishService {
 	public List<String> uploadToDsp2(String applicationName, SessionDto dto) {
 
 		String house = utils.getHouseAbbr();
-		System.out.println("house " + house);
 		if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(house)) {
 			return uploadToDsp2Ls(applicationName, dto);
 		} else {
@@ -645,14 +642,12 @@ public class PublishServiceImpl implements PublishService {
 		logger.info("spec");
 		List<PublishDocumentTemp> urlList = tempRepo.findAll(spec);
 
-		logger.info(applicationName);
+		logger.debug(applicationName);
 		List<String> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
-		System.out.println("urlList " + urlList.size());
 		if (urlList.isEmpty()) {
 			return uploadedUuids;
 		}
-		System.out.println("Url List " + urlList);
 		int i = 0;
 		try {
 			for (PublishDocumentTemp response : urlList) {
@@ -675,22 +670,21 @@ public class PublishServiceImpl implements PublishService {
 					continue;
 				}
 
-				logger.info("Processing document: {}", response.getCompleteUrl());
+				logger.debug("Processing document: {}", response.getCompleteUrl());
 				byte[] fileData = null;
 				try {
 					fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
 					// System.out.println("fileData " + fileData);
 				} catch (Exception e) {
-					System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+//					System.out.println("ERROR While Fetching data from URl " + e.getMessage());
 					updateNonUuid(response);
 					logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
 					continue; // Skip this iteration if download fails
 				}
-				logger.info("Processing document: {}", response.getCompleteUrl());
+				logger.debug("Processing document: {}", response.getCompleteUrl());
 				if (fileData == null || fileData.length == 0) {
 					updateNonUuid(response);
 
-					System.out.println("iteration inside filedata null " + i++);
 					logger.warn("File data is null for URL: {}", response.getCompleteUrl());
 					logger.warn("File data is null for URL: {}", response.getCompleteUrl());
 					continue;
@@ -726,11 +720,11 @@ public class PublishServiceImpl implements PublishService {
 		List<PublishDocumentTempRS> urlList = rsDocRepo.findAll(spec);
 		List<String> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
-		System.out.println("urlList " + urlList.size());
+//		System.out.println("urlList " + urlList.size());
 		if (urlList.isEmpty()) {
 			return uploadedUuids;
 		}
-		System.out.println("Url List " + urlList);
+//		System.out.println("Url List " + urlList);
 		int i = 0;
 		try {
 			for (PublishDocumentTempRS response : urlList) {
@@ -740,7 +734,7 @@ public class PublishServiceImpl implements PublishService {
 					fileData = restTemplate.getForObject(response.getCompleteUrl(), byte[].class);
 					// System.out.println("fileData " + fileData);
 				} catch (Exception e) {
-					System.out.println("ERROR While Fetching data from URl " + e.getMessage());
+//					System.out.println("ERROR While Fetching data from URl " + e.getMessage());
 					updateNonUuidRs(response);
 					logger.warn("Incorrect URL or failed to fetch: {}", response.getCompleteUrl(), e);
 					continue; // Skip this iteration if download fails
@@ -750,14 +744,14 @@ public class PublishServiceImpl implements PublishService {
 				if (fileData == null || fileData.length == 0) {
 					updateNonUuidRs(response);
 
-					System.out.println("iteration inside filedata null " + i++);
+//					System.out.println("iteration inside filedata null " + i++);
 					logger.warn("File data is null for URL: {}", response.getCompleteUrl());
 					logger.warn("File data is null for URL: {}", response.getCompleteUrl());
 					continue;
 				}
 
-				System.out.println("data " + fileData);
-				System.out.println("res rs " + response);
+//				System.out.println("data " + fileData);
+//				System.out.println("res rs " + response);
 				String uuid = uploadAndReturnUuid(null, response, fileData);
 				// }
 				if (uuid.isEmpty()) {
@@ -801,7 +795,7 @@ public class PublishServiceImpl implements PublishService {
 		List<ETransmissionUploadTempEntity> urlList = eTransmissionRepository.findAll(spec);
 
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
-		System.out.println("urlList " + urlList.size());
+//		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
 			return new ArrayList<>();
 		}
@@ -809,21 +803,21 @@ public class PublishServiceImpl implements PublishService {
 		int i = 0;
 		try {
 			List<ETransmissionUploadTempEntity> transmissionData = existsUrlAndUuidCheckLS(urlList);
-			System.out.println(transmissionData.size());
+//			System.out.println(transmissionData.size());
 
 			for (ETransmissionUploadTempEntity response : transmissionData) {
-				System.out.println("res " + response);
+//				System.out.println("res " + response);
 				if (existsUrlAndUuid(response)) {
 					continue;
 				}
 				try {
 					uploadedUuids.addAll(fetchAndUploadDocument(response));
 				} catch (Exception e) {
-					System.out.println("Exception " + e.getMessage());
+					logger.error("Exception " + e.getMessage());
 				}
 
-				System.out.println("uploadedUuids");
-				System.out.println(uploadedUuids);
+//				System.out.println("uploadedUuids");
+//				System.out.println(uploadedUuids);
 			}
 			return uploadedUuids;
 		} catch (Exception e) {
@@ -841,7 +835,7 @@ public class PublishServiceImpl implements PublishService {
 		spec = spec.or(hasUuidTransRs());
 		List<ETransmissionRSUploadTempEntity> urlList = eTransmissionRSRepository.findAll(spec);
 		List<ResponseDocsUuids> uploadedUuids = new ArrayList<>();
-		System.out.println("urlList " + urlList.size());
+//		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
 			return new ArrayList<>();
 		}
@@ -850,18 +844,18 @@ public class PublishServiceImpl implements PublishService {
 		try {
 			List<ETransmissionRSUploadTempEntity> transmissionRsData = existsUrlAndUuidCheckRS(urlList);
 			for (ETransmissionRSUploadTempEntity response : transmissionRsData) {
-				System.out.println("res " + response);
+//				System.out.println("res " + response);
 				if (existsUrlAndUuidRS(response)) {
 					continue;
 				}
 				try {
 					uploadedUuids.addAll(fetchAndUploadDocumentRS(response));
 				} catch (Exception e) {
-					System.out.println("Exception " + e.getMessage());
+					logger.error("Exception " + e.getMessage());
 				}
 
-				System.out.println("uploadedUuids");
-				System.out.println(uploadedUuids);
+//				System.out.println("uploadedUuids");
+//				System.out.println(uploadedUuids);
 			}
 			return uploadedUuids;
 		} catch (Exception e) {
@@ -903,7 +897,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInTransmission(response);
 		}
 		// ----------- ERRATA HINDI -----------
@@ -926,7 +920,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInTransmission(response);
 		}
 
@@ -948,7 +942,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from FILE EN URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from FILE EN URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInTransmission(response);
 		}
 
@@ -971,7 +965,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from FILE HI URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from FILE HI URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInTransmission(response);
 		}
 
@@ -1015,7 +1009,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from ERRATA EN URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInRSTransmission(response);
 		}
 
@@ -1039,7 +1033,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from ERRATA HI URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInRSTransmission(response);
 		}
 
@@ -1061,7 +1055,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from FILE EN URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from FILE EN URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInRSTransmission(response);
 		}
 
@@ -1084,7 +1078,7 @@ public class PublishServiceImpl implements PublishService {
 			}
 			// }
 		} catch (Exception e) {
-			System.out.println("ERROR Fetching data from FILE HI URL: " + e.getMessage());
+			logger.error("ERROR Fetching data from FILE HI URL: " + e.getMessage());
 			eTransmissionUtils.updateNonUuidInRSTransmission(response);
 		}
 
@@ -1106,7 +1100,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 		// String fileName = getFileNameFromUrl(url);
 		if (fileName != null && VERSION_PATTERN.matcher(fileName).find()) {
-			System.out.println("Skipping versioned file: " + fileName);
+//			System.out.println("Skipping versioned file: " + fileName);
 			return false;
 		}
 
@@ -1148,7 +1142,7 @@ public class PublishServiceImpl implements PublishService {
 			isTrueOrFalse = false;
 		if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
 			isTrueOrFalse = false;
-		System.out.println("isTrueOrFalse " + isTrueOrFalse);
+//		System.out.println("isTrueOrFalse " + isTrueOrFalse);
 		return isTrueOrFalse;
 	}
 
@@ -1175,7 +1169,7 @@ public class PublishServiceImpl implements PublishService {
 				continue;
 			}
 		}
-		System.out.println(resp.size());
+//		System.out.println(resp.size());
 		return resp;
 	}
 
@@ -1190,7 +1184,7 @@ public class PublishServiceImpl implements PublishService {
 			isTrueOrFalse = false;
 		if (response.getHindiErrataUrl() != null && response.getHindiErrataUuid() == null)
 			isTrueOrFalse = false;
-		System.out.println("isTrueOrFalse " + isTrueOrFalse);
+//		System.out.println("isTrueOrFalse " + isTrueOrFalse);
 		return isTrueOrFalse;
 	}
 
@@ -1213,7 +1207,7 @@ public class PublishServiceImpl implements PublishService {
 		List<MemberPhotoSignTemp> urlList = memberTempRepo.findAll(spec);
 		List<ResponseMember> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
-		System.out.println("urlList " + urlList.size());
+//		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
 			return new ArrayList<>();
 		}
@@ -1232,11 +1226,11 @@ public class PublishServiceImpl implements PublishService {
 				} else {
 					if (existingPhUuid == null && StringUtils.isNotBlank(response.getPhotoUrl())) {
 						try {
-							System.out.println("file " + response.getPhotoUrl());
+//							System.out.println("file " + response.getPhotoUrl());
 
 							filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
 									ConstantsUtility.PHOTO);
-							System.out.println("fileData " + filePhotoData);
+//							System.out.println("fileData " + filePhotoData);
 							ResponseMember memPhoto = memberUtils.processPhoto(response, existingPhUuid, filePhotoData,
 									uploadedUuids, house);
 							existingPhUuid = memPhoto.getPhotoUuid();
@@ -1244,29 +1238,29 @@ public class PublishServiceImpl implements PublishService {
 							// processedUrls.add(response.getPhotoUrl());
 
 						} catch (Exception e) {
-							System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
+							logger.error("ERROR While Fetching data from photo URl " + e.getMessage());
 							memberUtils.updateNonUuidInMemPhoto(response);
 						}
 					}
 					if (existingSgUuid == null && StringUtils.isNotBlank(response.getSignatureUrl())) {
 						try {
-							System.out.println("file " + response.getSignatureUrl());
+//							System.out.println("file " + response.getSignatureUrl());
 							fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
 									ConstantsUtility.SIGN);
-							System.out.println("fileData " + fileSignatureData);
+//							System.out.println("fileData " + fileSignatureData);
 							ResponseMember memSign = memberUtils.processSignature(response, existingSgUuid,
 									fileSignatureData, uploadedUuids, house);
 							existingSgUuid = memSign.getSignUuid();
 							uploadedUuids.add(memSign);
 							// processedUrls.add(response.getSignatureUrl());
 						} catch (Exception e) {
-							System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
+							logger.error("ERROR While Fetching data from sign URl " + e.getMessage());
 							memberUtils.updateNonUuidInMemSignature(response);
 						}
 					}
 				}
-				System.out.println("uploadedUuids");
-				System.out.println(uploadedUuids);
+//				System.out.println("uploadedUuids");
+//				System.out.println(uploadedUuids);
 			}
 			return uploadedUuids;
 		} catch (Exception e) {
@@ -1290,7 +1284,7 @@ public class PublishServiceImpl implements PublishService {
 		List<MemberPhotoSignTempRS> urlList = memberTempRepoRs.findAll(spec);
 		List<ResponseMember> uploadedUuids = new ArrayList<>();
 		Long houseId = utils.getHouseIdFromAuthentication();
-		System.out.println("urlList " + urlList.size());
+//		System.out.println("urlList " + urlList.size());
 		if (urlList != null && urlList.isEmpty()) {
 			return new ArrayList<>();
 		}
@@ -1304,16 +1298,16 @@ public class PublishServiceImpl implements PublishService {
 				UUID existingPhUuid = response.getPhotoUuid();
 				UUID existingSgUuid = response.getSignatureUuid();
 				if (existingPhUuid != null && existingSgUuid != null) {
-					System.out.println("skip");
+//					System.out.println("skip");
 					continue;
 				} else {
 					if (existingPhUuid == null && StringUtils.isNotBlank(response.getPhotoUrl())) {
 						try {
-							System.out.println("file " + response.getPhotoUrl());
+//							System.out.println("file " + response.getPhotoUrl());
 
 							filePhotoData = memberUtils.getUrlAnReturnFileData(response.getPhotoUrl(),
 									ConstantsUtility.PHOTO);
-							System.out.println("fileData " + filePhotoData);
+//							System.out.println("fileData " + filePhotoData);
 							ResponseMember memPhoto = memberUtils.processPhotoRs(response, existingPhUuid,
 									filePhotoData, uploadedUuids, house);
 							existingPhUuid = memPhoto.getPhotoUuid();
@@ -1321,29 +1315,29 @@ public class PublishServiceImpl implements PublishService {
 							// processedUrls.add(response.getPhotoUrl());
 
 						} catch (Exception e) {
-							System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
+//							System.out.println("ERROR While Fetching data from photo URl " + e.getMessage());
 							memberUtils.updateNonUuidInMemPhotoRs(response);
 						}
 					}
 					if (existingSgUuid == null && StringUtils.isNotBlank(response.getSignatureUrl())) {
 						try {
-							System.out.println("file " + response.getSignatureUrl());
+//							System.out.println("file " + response.getSignatureUrl());
 							fileSignatureData = memberUtils.getUrlAnReturnFileData(response.getSignatureUrl(),
 									ConstantsUtility.SIGN);
-							System.out.println("fileData " + fileSignatureData);
+//							System.out.println("fileData " + fileSignatureData);
 							ResponseMember memSign = memberUtils.processSignatureRs(response, existingSgUuid,
 									fileSignatureData, uploadedUuids, house);
 							existingSgUuid = memSign.getSignUuid();
 							uploadedUuids.add(memSign);
 							// processedUrls.add(response.getSignatureUrl());
 						} catch (Exception e) {
-							System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
+//							System.out.println("ERROR While Fetching data from sign URl " + e.getMessage());
 							memberUtils.updateNonUuidInMemSignatureRs(response);
 						}
 					}
 				}
-				System.out.println("uploadedUuids");
-				System.out.println(uploadedUuids);
+//				System.out.println("uploadedUuids");
+//				System.out.println(uploadedUuids);
 			}
 			return uploadedUuids;
 		} catch (Exception e) {
@@ -1380,7 +1374,7 @@ public class PublishServiceImpl implements PublishService {
 			LocalDate targetDate = LocalDate.parse(targetDateStr.trim(), formatter);
 			return betweenDates(fromDate, toDate, targetDate);
 		} catch (DateTimeParseException e) {
-			System.out.println("Invalid date format: " + targetDateStr);
+//			System.out.println("Invalid date format: " + targetDateStr);
 			LocalDate targetDate = LocalDate.parse(targetDateStr.trim());
 			return betweenDates(fromDate, toDate, targetDate);
 		}
@@ -1459,8 +1453,8 @@ public class PublishServiceImpl implements PublishService {
 	public String uploadAndReturnUuid(PublishDocumentTemp response, PublishDocumentTempRS responseRs, byte[] fileData) {
 		try {
 			String houseAbbr = utils.getHouseAbbr();
-			System.out.println("response " + response);
-			System.out.println("response Rs " + responseRs);
+//			System.out.println("response " + response);
+//			System.out.println("response Rs " + responseRs);
 
 			String uploadUrl = openKmUrl + "/document/upload";
 			if (fileData == null) {
@@ -1478,10 +1472,10 @@ public class PublishServiceImpl implements PublishService {
 			}
 
 			String appAbbr = getAppAbbr(response, responseRs, houseAbbr);
-			System.out.println("appAbbr " + appAbbr);
+//			System.out.println("appAbbr " + appAbbr);
 			List<String> folders = new ArrayList();
 			folders.add(houseAbbr);
-			System.out.println("house " + houseAbbr);
+//			System.out.println("house " + houseAbbr);
 			if (ConstantsUtility.LOK_SABHA.equals(houseAbbr)) {
 				if (StringUtils.isNotBlank(appAbbr) && appAbbr.equalsIgnoreCase("PMB")
 						|| appAbbr.equalsIgnoreCase("B2")) {
@@ -1515,12 +1509,12 @@ public class PublishServiceImpl implements PublishService {
 
 			folders.add(appAbbr);
 
-			System.out.println("folders " + folders);
+//			System.out.println("folders " + folders);
 			String rootPath = ConstantsUtility.OKM_ROOT;
 			String folderPath = createDmsFolderStructure(rootPath, folders);
-			System.out.println("folder path " + folderPath);
+//			System.out.println("folder path " + folderPath);
 			HttpHeaders headers = new HttpHeaders();
-			System.out.println("uploadUrl  " + uploadUrl);
+//			System.out.println("uploadUrl  " + uploadUrl);
 			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 			headers.set("Authorization", "Bearer " + token);
 			// String originalFileName = response.getUrl();
@@ -1528,19 +1522,19 @@ public class PublishServiceImpl implements PublishService {
 			// String fileNameWithoutExt = (lastDotIndex == -1) ? originalFileName
 			// : originalFileName.substring(0, lastDotIndex);
 			String fileNameWithoutExt = "";
-			System.out.println("LS " + response);
-			System.out.println("RS " + responseRs);
+//			System.out.println("LS " + response);
+//			System.out.println("RS " + responseRs);
 
 			if (ConstantsUtility.LOK_SABHA.equalsIgnoreCase(houseAbbr))
 				fileNameWithoutExt = getFileNameWithOutExtension(response.getUrl());
 			else
 				fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getUrl());
-			System.out.println("file Name before slash and space update" + fileNameWithoutExt);
+//			System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
 			if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
 				fileNameWithoutExt = fileNameWithoutExt.replace(" ", "-").replace("/", "-");
 			}
-			System.out.println("file Name after slash and space update" + fileNameWithoutExt);
+//			System.out.println("file Name after slash and space update" + fileNameWithoutExt);
 			String updatedFileName = fileNameWithoutExt + ".pdf";
 			// Create a temporary file
 
@@ -1567,9 +1561,9 @@ public class PublishServiceImpl implements PublishService {
 			body.add("referenceId", 1);
 			body.add("referenceType", "ApplicationInstance");
 			HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-			System.out.println("uploading file with");
-			System.out.println(requestEntity);
-			System.out.println(uploadUrl);
+//			System.out.println("uploading file with");
+//			System.out.println(requestEntity);
+//			System.out.println(uploadUrl);
 			ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
 					requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
 					});
@@ -1691,7 +1685,7 @@ public class PublishServiceImpl implements PublishService {
 			entitys.setPublishUuid(stringToUuid(uuid));
 			entitys.setIsUpdatedUuid(true);
 			entitys = tempRepo.save(entitys);
-			System.out.println("entity " + entity);
+//			System.out.println("entity " + entity);
 		}
 	}
 
@@ -1703,7 +1697,7 @@ public class PublishServiceImpl implements PublishService {
 			entitys.setPublishUrl(uuidToUrl(uuid));
 			entitys.setIsUpdatedUuid(true);
 			entitys = rsDocRepo.save(entitys);
-			System.out.println("entity " + entity);
+//			System.out.println("entity " + entity);
 		}
 	}
 
@@ -1717,7 +1711,7 @@ public class PublishServiceImpl implements PublishService {
 			PublishDocumentTemp entitys = entity.get();
 			entitys.setIsUpdatedUuid(false);
 			entitys = tempRepo.save(entitys);
-			System.out.println("entity " + entity);
+//			System.out.println("entity " + entity);
 		}
 	}
 
@@ -1728,7 +1722,7 @@ public class PublishServiceImpl implements PublishService {
 			entitys.setIsUpdatedUuid(false);
 			entitys = rsDocRepo.save(entitys);
 
-			System.out.println("entity " + entity);
+//			System.out.println("entity " + entity);
 		}
 	}
 
@@ -1873,7 +1867,7 @@ public class PublishServiceImpl implements PublishService {
 	public static Specification<PublishHistoryEntity> hasLokSabhaSessionNo(String sessNo) {
 		String sess = "";
 		if (!isRoman(sessNo)) {
-			System.out.println("is Roman false " + sessNo);
+//			System.out.println("is Roman false " + sessNo);
 			return (root, query, criteriaBuilder) -> {
 				if (sessNo != null) {
 					return criteriaBuilder.equal(root.get("lokSabhaSessionNo"), toRoman(Integer.parseInt(sessNo)));
@@ -1881,7 +1875,7 @@ public class PublishServiceImpl implements PublishService {
 				return criteriaBuilder.conjunction();
 			};
 		} else {
-			System.out.println("is Roman true " + sessNo);
+//			System.out.println("is Roman true " + sessNo);
 
 			return (root, query, criteriaBuilder) -> {
 				if (sessNo != null) {
@@ -2060,29 +2054,29 @@ public class PublishServiceImpl implements PublishService {
 			Boolean addRes = true;
 			if (fromDate != null || toDate != null) {
 				LocalDate forDate = entity.getForDate();
-				System.out.println("(fromDate!=null && (forDate.isEqual(fromDate)||forDate.isAfter(fromDate)))");
-				System.out.println((fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate))));
+//				System.out.println("(fromDate!=null && (forDate.isEqual(fromDate)||forDate.isAfter(fromDate)))");
+//				System.out.println((fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate))));
 				if (!(fromDate != null && (forDate.isEqual(fromDate) || forDate.isAfter(fromDate)))) {
 					addRes = false;
 					continue;
 				}
-				System.out.println("(toDate!=null && (forDate.isEqual(toDate)||forDate.isBefore(toDate)))");
-				System.out.println((toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate))));
+//				System.out.println("(toDate!=null && (forDate.isEqual(toDate)||forDate.isBefore(toDate)))");
+//				System.out.println((toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate))));
 				if (!(toDate != null && (forDate.isEqual(toDate) || forDate.isBefore(toDate)))) {
 					addRes = false;
 					continue;
 				}
 			}
-			System.out.println("add to dto " + addRes);
+//			System.out.println("add to dto " + addRes);
 			if (addRes) {
 				String text = "";
 				Map<String, Object> applicationInstance = applicationInstanceRepository
 						.getByApplicationIdAndApplicationNo(entity.getApplicationId(), entity.getApplicationNo());
-				System.out.println("instance " + applicationInstance);
+//				System.out.println("instance " + applicationInstance);
 				if (applicationInstance != null || !applicationInstance.isEmpty()) {
 					text += applicationInstance.get("enContent") + "<br/> " + applicationInstance.get("hiContent");
 				}
-				System.out.println("text " + text);
+//				System.out.println("text " + text);
 				responseList.add(ResponseDTO.builder().appId(entity.getApplicationId())
 						.applicationName(entity.getApplicationName()).lsNo(entity.getLokSabhaNo()).sessNo(sesNo)
 						.url(entity.getPublishUrl()).text(removeExtraTags(text)).refNo(entity.getApplicationNo())
@@ -2090,8 +2084,8 @@ public class PublishServiceImpl implements PublishService {
 						.name(appRepository.findApplicationDisplayName(entity.getApplicationId())).build());
 			}
 		}
-		System.out.println("responseList");
-		System.out.println(responseList);
+//		System.out.println("responseList");
+//		System.out.println(responseList);
 
 		return responseList;
 	}
@@ -2142,7 +2136,7 @@ public class PublishServiceImpl implements PublishService {
 						ai.ref_id as refId,
 						ai.id as aiId,
 						case when ai.application_no ilike '%TRP%' then 'translation/paper/get/'
-						else a.published_url 
+						else a.published_url
 						end as publishedUrl,
 						ai.ref_id AS noticeId,
 						wf.file_type_name AS fileTypeName
@@ -2162,7 +2156,7 @@ public class PublishServiceImpl implements PublishService {
 
 		Map<String, Object> params = new HashMap<>();
 		Long userId = utils.getUserIdFromAuthentication();
-		System.out.println(userId);
+//		System.out.println(userId);
 		params.put("userId", userId);
 
 		String house = utils.getHouseAbbr();
@@ -2214,7 +2208,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 
 		sql.append(" ORDER BY wf.publish_date DESC");
-		System.out.println(sql);
+//		System.out.println(sql);
 
 		Query query = entityManager.createNativeQuery(sql.toString());
 		params.forEach(query::setParameter);
@@ -2259,10 +2253,8 @@ public class PublishServiceImpl implements PublishService {
 					.applicationNo(row[13] != null ? row[13].toString() : "")
 					.branch(row[14] != null ? row[14].toString() : "")
 					.applicationName(row[15] != null ? row[15].toString() : "").refId(refIdValue)
-					.publishedUrl(row[18] != null ? row[18].toString() : "")
-					.noticeId(noticeIdValue)
-					.fileTypeName(row[20] != null ? row[20].toString() : "")
-					.build();
+					.publishedUrl(row[18] != null ? row[18].toString() : "").noticeId(noticeIdValue)
+					.fileTypeName(row[20] != null ? row[20].toString() : "").build();
 		})
 
 				.toList();
@@ -2370,23 +2362,22 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo, String sessionNo,
-			LocalDate fromDate,LocalDate toDate, Long applicationId, int page, int size,String keyword) {
+			LocalDate fromDate, LocalDate toDate, Long applicationId, int page, int size, String keyword) {
 
 		Pageable pageable = PageRequest.of(page, size);
-		
+
 		String house = getHouse();
-		
-		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate,toDate, applicationId,house,
-				keyword,pageable);
+
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,
+				house, keyword, pageable);
 
 		return result.map(row -> PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0])
-				.sessionNo((String) row[1])
-				.forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
+				.sessionNo((String) row[1]).forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
 				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
 				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
 				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).build());
 	}
-	
+
 	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo, String sessionNo,
 			LocalDate fromDate, LocalDate toDate, String applicationAbbr, int page, int size, String keyword) {
 		Pageable pageable = PageRequest.of(page, size);

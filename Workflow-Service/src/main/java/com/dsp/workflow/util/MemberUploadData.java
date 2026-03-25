@@ -81,7 +81,7 @@ public class MemberUploadData {
             MemberPhotoSignTemp entitys = entity.get();
             entitys.setIsPhotoUploaded(false);
             entitys = memberTempRepo.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -92,7 +92,7 @@ public class MemberUploadData {
             MemberPhotoSignTemp entitys = entity.get();
             entitys.setIsSignUploaded(false);
             entitys = memberTempRepo.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -103,7 +103,7 @@ public class MemberUploadData {
             MemberPhotoSignTempRS entitys = entity.get();
             entitys.setIsPhotoUploaded(false);
             entitys = memberTempRepoRs.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -114,7 +114,7 @@ public class MemberUploadData {
             MemberPhotoSignTempRS entitys = entity.get();
             entitys.setIsSignUploaded(false);
             entitys = memberTempRepoRs.save(entitys);
-            System.out.println("entity " + entity);
+//            System.out.println("entity " + entity);
         }
     }
 
@@ -165,12 +165,12 @@ public class MemberUploadData {
             folders.add("Member");
             folders.add(memberCode);
             folders.add(fileType);
-            System.out.println("folders " + folders);
+//            System.out.println("folders " + folders);
             String rootPath = OKM_ROOT;
             String folderPath = folderCreationUtils.createDmsFolderStructure(rootPath, folders);
-            System.out.println("folder path " + folderPath);
+//            System.out.println("folder path " + folderPath);
             HttpHeaders headers = new HttpHeaders();
-            System.out.println("uploadUrl  " + uploadUrl);
+//            System.out.println("uploadUrl  " + uploadUrl);
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("Authorization", "Bearer " + token);
             String fileNameWithoutExt = "";
@@ -187,14 +187,14 @@ public class MemberUploadData {
                 else if (ConstantsUtility.SIGN.equalsIgnoreCase(fileType))
                     fileNameWithoutExt = getFileNameWithOutExtension(responseRs.getSignature());
             }
-            System.out.println("file Name before slash and space update" + fileNameWithoutExt);
+//            System.out.println("file Name before slash and space update" + fileNameWithoutExt);
 
             if (fileNameWithoutExt.contains("/") || fileNameWithoutExt.contains(" ")) {
                 fileNameWithoutExt = fileNameWithoutExt
                         .replace(" ", "-")
                         .replace("/", "-");
             }
-            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
+//            System.out.println("file Name after slash and space update" + fileNameWithoutExt);
             String updatedFileName = fileNameWithoutExt + "_dsp1.jpg";
             // Create a temporary file
 
@@ -221,9 +221,9 @@ public class MemberUploadData {
             body.add("referenceId", 1);
             body.add("referenceType", "ApplicationInstance");
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            System.out.println("uploading file with");
-            System.out.println(requestEntity);
-            System.out.println(uploadUrl);
+//            System.out.println("uploading file with");
+//            System.out.println(requestEntity);
+//            System.out.println(uploadUrl);
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(uploadUrl, HttpMethod.POST,
                     requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
                     });
@@ -278,7 +278,7 @@ public class MemberUploadData {
 
     public ResponseMember processPhoto(MemberPhotoSignTemp response, UUID existingPhUuid,
             byte[] filePhotoData, List<ResponseMember> uploadedUuids, String house) {
-        System.out.println("existingPhUuid" + existingPhUuid);
+//        System.out.println("existingPhUuid" + existingPhUuid);
         if (existingPhUuid == null) {
             // if (filePhotoData == null || filePhotoData.length == 0) {
             // updateNonUuidInMemPhoto(response);
@@ -294,7 +294,7 @@ public class MemberUploadData {
 
     public ResponseMember processSignature(MemberPhotoSignTemp response, UUID existingSgUuid,
             byte[] fileSignatureData, List<ResponseMember> uploadedUuids, String house) {
-        System.out.println("existingSgUuid" + existingSgUuid);
+//        System.out.println("existingSgUuid" + existingSgUuid);
 
         if (existingSgUuid == null) {
             // if (fileSignatureData == null || fileSignatureData.length == 0) {
@@ -312,7 +312,7 @@ public class MemberUploadData {
 
     public ResponseMember processPhotoRs(MemberPhotoSignTempRS response, UUID existingPhUuid,
             byte[] filePhotoData, List<ResponseMember> uploadedUuids, String house) {
-        System.out.println("existingPhUuid" + existingPhUuid);
+//        System.out.println("existingPhUuid" + existingPhUuid);
         if (existingPhUuid == null) {
             // if (filePhotoData == null || filePhotoData.length == 0) {
             // updateNonUuidInMemPhoto(response);
@@ -328,7 +328,7 @@ public class MemberUploadData {
 
     public ResponseMember processSignatureRs(MemberPhotoSignTempRS response, UUID existingSgUuid,
             byte[] fileSignatureData, List<ResponseMember> uploadedUuids, String house) {
-        System.out.println("existingSgUuid" + existingSgUuid);
+//        System.out.println("existingSgUuid" + existingSgUuid);
 
         if (existingSgUuid == null) {
 
@@ -358,7 +358,7 @@ public class MemberUploadData {
                     entitys.setIsSignUploaded(true);
                 }
                 entitys = memberTempRepo.save(entitys);
-                System.out.println("entity " + entity);
+//                System.out.println("entity " + entity);
                 return mapMemberDataToRes(entitys, null, house);
             }
         } else if (ConstantsUtility.RAJYA_SABHA.equalsIgnoreCase(house)) {
@@ -375,7 +375,7 @@ public class MemberUploadData {
                     entitys.setIsSignUploaded(true);
                 }
                 entitys = memberTempRepoRs.save(entitys);
-                System.out.println("entity " + entitys);
+//                System.out.println("entity " + entitys);
                 return mapMemberDataToRes(null, entitys, house);
             }
         }
