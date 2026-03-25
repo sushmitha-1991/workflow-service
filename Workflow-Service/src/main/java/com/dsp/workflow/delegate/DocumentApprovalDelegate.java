@@ -15,10 +15,6 @@ public class DocumentApprovalDelegate implements JavaDelegate {
 		// Set the flag as a process variable
 		execution.setVariable("isApprovedForPublishing", isApprovedForPublishing);
 
-		// You can also log this information for tracking purposes
-		System.out.println("Document marked as approved and ready for publishing. Process Instance ID: "
-				+ execution.getProcessInstanceId());
-
 		// The flag is now available to the next user task (Publish)
 	}
 }

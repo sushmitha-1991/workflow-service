@@ -80,7 +80,7 @@ public class AsyncTranslationService {
 		try {
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
-			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
+//			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 
 			if (translationInputDTO.getContentUUID() == null) {
 
@@ -100,15 +100,15 @@ public class AsyncTranslationService {
 				formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
 				formParams.add("locale", "en");
 
-				System.out.println("PARAMS: " + formParams);
+//				System.out.println("PARAMS: " + formParams);
 
 				HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-				System.out.println(">>> upload failing - ");
+//				System.out.println(">>> upload failing - ");
 				ResponseEntity<String> uploadResponse = asyncRestTemplate.postForEntity(pdfUploadUrl, formRequest,
 						String.class);
 
-				System.out.println("### upload completed");
+				System.out.println("### upload /completed");
 				// Parse documentUuid from response
 				ObjectMapper objectMapper = new ObjectMapper();
 				JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
@@ -119,7 +119,7 @@ public class AsyncTranslationService {
 
 				UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
 
-				System.out.println("### doc - " + documentUuid);
+//				System.out.println("### doc - " + documentUuid);
 
 				translationInputDTO.setContentUUID(documentUuid); // directly set it
 			}
@@ -133,7 +133,7 @@ public class AsyncTranslationService {
 			ResponseEntity<String> translationResponse = asyncRestTemplate.postForEntity(translationInputUrl,
 					jsonRequest, String.class);
 
-			System.out.println("### Translation API Response: " + translationResponse.getBody());
+//			System.out.println("### Translation API Response: " + translationResponse.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Translation API call: " + e.getResponseBodyAsString());
@@ -193,7 +193,7 @@ public class AsyncTranslationService {
 			ResponseEntity<String> correctedResponse = asyncRestTemplate.postForEntity(correctedDebateUrl, jsonRequest,
 					String.class);
 
-			System.out.println("### Corrected Debates API Response: " + correctedResponse.getBody());
+//			System.out.println("### Corrected Debates API Response: " + correctedResponse.getBody());
 
 		} catch (Exception e) {
 			log.error("Corrected Debates API call failed.", e);
@@ -223,7 +223,7 @@ public class AsyncTranslationService {
 			ResponseEntity<String> response = asyncRestTemplate.postForEntity(debateTaggingUrl, jsonRequest,
 					String.class);
 
-			System.out.println("### Debate tagging API Response: " + response.getBody());
+//			System.out.println("### Debate tagging API Response: " + response.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Debates Tagging API call: " + e.getResponseBodyAsString());
@@ -257,7 +257,7 @@ public class AsyncTranslationService {
 
 			ResponseEntity<String> response = asyncRestTemplate.postForEntity(sectionB2Url, jsonRequest, String.class);
 
-			System.out.println("### Section B2 API Response: " + response.getBody());
+//			System.out.println("### Section B2 API Response: " + response.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Section B2 API call: " + e.getResponseBodyAsString());

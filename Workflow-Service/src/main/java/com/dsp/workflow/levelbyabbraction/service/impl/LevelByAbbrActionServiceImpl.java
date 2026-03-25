@@ -84,7 +84,6 @@ public class LevelByAbbrActionServiceImpl implements LevelByAbbrActionService {
 	@Override
 	public List<LevelByAbbrActionDTO> getLevelByAbbrActionsByCriteria(String level, Long applicationId,
 			List<Long> roleIds) {
-		System.out.println(">>> role " + roleIds);
 		List<LevelByAbbrAction> actions = levelByAbbrActionRepository.findByLevelAndApplicationIdAndRoleIdIn(level,
 				applicationId, roleIds);
 		return actions.stream().map(this::mapToDto).collect(Collectors.toList());

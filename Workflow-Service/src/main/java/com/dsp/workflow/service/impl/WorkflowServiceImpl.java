@@ -915,18 +915,18 @@ public class WorkflowServiceImpl implements WorkflowService {
 							.nextTaskId(nextTaskId).actionUrl(actionUrl).userIpAddress(userIp);
 
 					TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
-					System.out.println(">>> translationInputDTO - " + translationInputDTO);
+//					System.out.println(">>> translationInputDTO - " + translationInputDTO);
 					if (Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 						log.info("Translation flag is true, calling Translation API");
-						System.out.println(">>> before calling translation api");
+//						System.out.println(">>> before calling translation api");
 						try {
 							String token = getTokenFromRequest();
-							System.out.println(">>> async call for translation");
+//							System.out.println(">>> async call for translation");
 							translationService.callTranslationAPIAsync(translationInputDTO, token)
 									.thenAccept(result -> {
 										secondEntryBuilder.translationSuccess(true);
 										firstEntryBuilder.translationSuccess(true);
-										log.info("Translation API call successful");
+										log.debug("Translation API call successful");
 									}).exceptionally(ex -> {
 										secondEntryBuilder.translationSuccess(false);
 										firstEntryBuilder.translationSuccess(false);
@@ -997,7 +997,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 						log.info("Calling Translation API in FINAL step");
 						try {
 							String token = getTokenFromRequest();
-							System.out.println(">>> async call for translation");
+//							System.out.println(">>> async call for translation");
 							translationService.callTranslationAPIAsync(translationInputDTO, token);
 							log.info("Translation API call successful in FINAL step");
 						} catch (Exception e) {
@@ -1016,7 +1016,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 									applicationInstanceId);
 							if (!sectionBulletin2DTOs.isEmpty()) {
 								String token = getTokenFromRequest();
-								System.out.println(">>> async call for section b2 rs");
+//								System.out.println(">>> async call for section b2 rs");
 								translationService.callSectionB2RSAsync(sectionBulletin2DTOs, token);
 								log.info("Section B2 RS API call successful");
 							}
@@ -1033,13 +1033,13 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 						try {
 							String token = getTokenFromRequest();
-							System.out.println(">>> async call for corrected debate");
+//							System.out.println(">>> async call for corrected debate");
 							translationService.callCorrectedDebatesAPIAsync(correctedDebatedDTO, token);
 							log.info("Corrected Debates API call successful");
 
 							try {
 								debateTaggingDTO.setApplicationId(80L);
-								System.out.println(">>> async call for debate tagging");
+//								System.out.println(">>> async call for debate tagging");
 								translationService.callDebateTaggingAsync(debateTaggingDTO, token);
 								log.info("Debate tagging (DTAG) successful");
 							} catch (Exception e) {
@@ -1050,7 +1050,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 								DebateTaggingDTO debateTaggingDTO1 = new DebateTaggingDTO();
 								BeanUtils.copyProperties(debateTaggingDTO, debateTaggingDTO1);
 								debateTaggingDTO1.setApplicationId(81L);
-								System.out.println(">>> async call for debate tagging");
+//								System.out.println(">>> async call for debate tagging");
 								translationService.callDebateTaggingAsync(debateTaggingDTO1, token);
 								log.info("Debate tagging (Supplementary) successful");
 							} catch (Exception e) {
@@ -1188,7 +1188,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			HttpEntity<DebateTaggingDTO> jsonRequest = new HttpEntity<>(debateTaggingDTO, jsonHeaders);
 			ResponseEntity<String> response = restTemplate.postForEntity(debateTaggingUrl, jsonRequest, String.class);
 
-			System.out.println("### Debate tagging API Response: " + response.getBody());
+//			System.out.println("### Debate tagging API Response: " + response.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Debates Tagging API call: " + e.getResponseBodyAsString());
@@ -1212,7 +1212,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			ResponseEntity<String> response = restTemplate.postForEntity(sectionB2Url, jsonRequest, String.class);
 
-			System.out.println("### Section B2 API Response: " + response.getBody());
+//			System.out.println("### Section B2 API Response: " + response.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Section B2 API call: " + e.getResponseBodyAsString());
@@ -1265,7 +1265,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	}
 
 	public TranslationInputDTO getTranslationInputDTO(Long applicationInstanceId) {
-		System.out.println("### here");
+//		System.out.println("### here");
 		List<Object[]> result = applicationInstanceRepository
 				.getTranslationDataByApplicationInstanceId(applicationInstanceId);
 
@@ -1324,7 +1324,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			String token = getTokenFromRequest(); // Ensure this method is implemented properly
 
 			// Upload to OKM is HTML. If OnlyOffice, then no need to upload
-			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
+//			System.out.println("translationInputDTO in callTranslationAPI: " + translationInputDTO);
 
 			if (translationInputDTO.getContentUUID() == null) {
 
@@ -1344,15 +1344,15 @@ public class WorkflowServiceImpl implements WorkflowService {
 				formParams.add("applicationId", translationInputDTO.getDocumentTypeId().toString());
 				formParams.add("locale", "en");
 
-				System.out.println("PARAMS: " + formParams);
+//				System.out.println("PARAMS: " + formParams);
 
 				HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-				System.out.println(">>> upload failing - ");
+//				System.out.println(">>> upload failing - ");
 				ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest,
 						String.class);
 
-				System.out.println("### upload completed");
+//				System.out.println("### upload completed");
 				// Parse documentUuid from response
 				ObjectMapper objectMapper = new ObjectMapper();
 				JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
@@ -1363,7 +1363,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 				UUID documentUuid = UUID.fromString(responseJson.get("documentUuid").asText());
 
-				System.out.println("### doc - " + documentUuid);
+//				System.out.println("### doc - " + documentUuid);
 
 				translationInputDTO.setContentUUID(documentUuid); // directly set it
 			}
@@ -1377,7 +1377,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			ResponseEntity<String> translationResponse = restTemplate.postForEntity(translationInputUrl, jsonRequest,
 					String.class);
 
-			System.out.println("### Translation API Response: " + translationResponse.getBody());
+//			System.out.println("### Translation API Response: " + translationResponse.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Translation API call: " + e.getResponseBodyAsString());
@@ -1411,10 +1411,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
 			HttpEntity<MultiValueMap<String, String>> formRequest = new HttpEntity<>(formParams, formHeaders);
 
-			System.out.println(">>> calling");
+//			System.out.println(">>> calling");
 			ResponseEntity<String> uploadResponse = restTemplate.postForEntity(pdfUploadUrl, formRequest, String.class);
 
-			System.out.println(">>> success");
+//			System.out.println(">>> success");
 			// Parse documentUuid from response
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode responseJson = objectMapper.readTree(uploadResponse.getBody());
@@ -1431,12 +1431,12 @@ public class WorkflowServiceImpl implements WorkflowService {
 			HttpHeaders jsonHeaders = new HttpHeaders();
 			jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
 			jsonHeaders.setBearerAuth(token);
-			System.out.println("### correctedDebateUrl - " + correctedDebateUrl);
+//			System.out.println("### correctedDebateUrl - " + correctedDebateUrl);
 			HttpEntity<CorrectedDebatedDTO> jsonRequest = new HttpEntity<>(correctedDebatedDTO, jsonHeaders);
 			ResponseEntity<String> correctedResponse = restTemplate.postForEntity(correctedDebateUrl, jsonRequest,
 					String.class);
 
-			System.out.println("### Corrected Debates API Response: " + correctedResponse.getBody());
+//			System.out.println("### Corrected Debates API Response: " + correctedResponse.getBody());
 
 		} catch (HttpClientErrorException e) {
 			System.err.println("HTTP error during Corrected Debates API call: " + e.getResponseBodyAsString());
@@ -1471,7 +1471,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	private Map<String, Object> formatVariablesForCamunda(Map<String, Object> variables) {
 		Map<String, Object> camundaVariables = new HashMap<>();
 
-		System.out.println(">>> formatVariablesForCamunda");
+//		System.out.println(">>> formatVariablesForCamunda");
 		variables.forEach((key, value) -> {
 			if (value instanceof Map) {
 				ObjectMapper objectMapper = new ObjectMapper();
@@ -1492,7 +1492,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				camundaVariables.put(key, variableMap);
 			}
 		});
-		System.out.println(">>> formatVariablesForCamunda completed");
+//		System.out.println(">>> formatVariablesForCamunda completed");
 
 		return camundaVariables;
 	}
@@ -1953,7 +1953,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			draftDocument.setOnlyOfficeDsp2Key(draftDataDTO.getDsp2key());
 			draftDocument.setAbbr(draftDataDTO.getAbbr());
 
-			System.out.println("**DRAFT 1: " + draftDocument.getId());
+//			System.out.println("**DRAFT 1: " + draftDocument.getId());
 
 			// Save updated draft document
 			draftDocumentRepository.save(draftDocument);
@@ -2081,7 +2081,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		Long userId = utils.getUserIdFromAuthentication().longValue();
 		List<Object[]> draftDataList = draftDocumentRepository.findByApplicationIdAndCreatedByData(applicationId,
 				userId);
-		System.out.println(draftDataList);
+//		System.out.println(draftDataList);
 		List<DraftDataDTO> responseDtos = new ArrayList<>();
 		for (Object[] draftData : draftDataList) {
 			Long createbById = (Long) draftData[8];
@@ -2098,7 +2098,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 	public boolean processTranslation(Long applicationInstanceId) {
 		TranslationInputDTO translationInputDTO = getTranslationInputDTO(applicationInstanceId);
 
-		System.out.println("TRANS DTO: " + translationInputDTO);
+//		System.out.println("TRANS DTO: " + translationInputDTO);
 
 		if (translationInputDTO != null && Boolean.TRUE.equals(translationInputDTO.getTranslationFlag())) {
 			callTranslationAPI(translationInputDTO);
