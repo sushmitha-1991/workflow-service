@@ -259,7 +259,7 @@ public class Utils {
 		Long userId = getUserIdFromAuthentication(); // Get the authenticated user's ID
 
 		// Define the native query
-		String nativeQuery = "select ur.office_id from authentication.base_user bu left join authentication.user_roles ur on ur.user_id = bu.id where bu.id = :userId AND ur.is_active = true and ur.is_deleted = false";
+		String nativeQuery = "select distinct ur.office_id from authentication.base_user bu left join authentication.user_roles ur on ur.user_id = bu.id where bu.id = :userId AND ur.is_active = true and ur.is_deleted = false";
 
 		// Execute the query
 		Query query = entityManager.createNativeQuery(nativeQuery);
