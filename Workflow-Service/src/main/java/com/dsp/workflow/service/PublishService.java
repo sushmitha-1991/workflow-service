@@ -70,7 +70,7 @@ public interface PublishService {
 	 */
 	String overridePublish(PublishDto dto);
 
-	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo,String sessionNo,LocalDate fromDate,LocalDate toDate,Long applicationId,int page,int size,String keyword);
+	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo,String sessionNo,LocalDate fromDate,LocalDate toDate,Long applicationId,String locale,int page,int size,String keyword);
 
-	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo,String sessionNo,LocalDate fromDate,LocalDate toDate,String applicationAbbr,int page,int size,String keyword);
+	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo,String sessionNo,LocalDate fromDate,LocalDate toDate,String applicationAbbr,String locale,int page,int size,String keyword);
 }

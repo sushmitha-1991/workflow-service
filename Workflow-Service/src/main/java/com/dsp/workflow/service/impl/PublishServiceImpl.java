@@ -2362,13 +2362,13 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> searchPublishHistory(String lokSabhaNo, String sessionNo,
-			LocalDate fromDate, LocalDate toDate, Long applicationId, int page, int size, String keyword) {
+			LocalDate fromDate, LocalDate toDate, Long applicationId,String locale, int page, int size, String keyword) {
 
 		Pageable pageable = PageRequest.of(page, size);
 
 		String house = getHouse();
 
-		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,locale,
 				house, keyword, pageable);
 
 		return result.map(row -> PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0])
@@ -2379,7 +2379,7 @@ public class PublishServiceImpl implements PublishService {
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo, String sessionNo,
-			LocalDate fromDate, LocalDate toDate, String applicationAbbr, int page, int size, String keyword) {
+			LocalDate fromDate, LocalDate toDate, String applicationAbbr,String locale, int page, int size, String keyword) {
 		Pageable pageable = PageRequest.of(page, size);
 		String house = getHouse();
 		// SOM377 handled via external API
@@ -2388,7 +2388,7 @@ public class PublishServiceImpl implements PublishService {
 		}
 		// Normal DB flow
 		Long applicationId = utils.getApplicationId(applicationAbbr);
-		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,
+		Page<Object[]> result = repository.getPublishedDocuments(lokSabhaNo, sessionNo, fromDate, toDate, applicationId,locale,
 				house, keyword, pageable);
 		return result.map(this::mapRowToDto);
 	}
