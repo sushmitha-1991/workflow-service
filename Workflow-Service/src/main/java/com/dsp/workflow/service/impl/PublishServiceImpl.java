@@ -2375,7 +2375,7 @@ public class PublishServiceImpl implements PublishService {
 				.sessionNo((String) row[1]).forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
 				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
 				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
-				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).build());
+				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).appInstId(((Number) row[10]).longValue()).build());
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo, String sessionNo,
