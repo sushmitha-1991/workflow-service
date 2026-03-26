@@ -362,13 +362,14 @@ public class PublishController {
 	            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
 	            LocalDate toDate,
 	            @RequestParam(required = false) Long applicationId,
+	            @RequestParam(required = false) String locale,
 	            @RequestParam(defaultValue = "0") int page,
 	            @RequestParam(defaultValue = "10") int size,
 	            @RequestParam(required = false)String keyword
 	    ) {
 
 			Page<PublishHistoryBranchViewResponseDTO> response = publishService.searchPublishHistory(lokSabhaNo,
-					sessionNo, fromDate,toDate, applicationId, page, size,keyword);
+					sessionNo, fromDate,toDate, applicationId,locale, page, size,keyword);
 
 	        return (!response.isEmpty())? ResponseEntity.ok(
 	                new GenericResponse<>(true, "Fetched publish history successfully", response, HttpStatus.OK.value())
@@ -382,11 +383,12 @@ public class PublishController {
 				@RequestParam(required = false) String lokSabhaNo, @RequestParam(required = false) String sessionNo,
 				@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
 				@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-				@RequestParam(required = false) String applicationAbbr, @RequestParam(defaultValue = "0") int page,
+				@RequestParam(required = false) String applicationAbbr,@RequestParam(required = false) String locale,
+				@RequestParam(defaultValue = "0") int page,
 				@RequestParam(defaultValue = "100") int size, @RequestParam(required = false) String keyword) {
 
 			Page<PublishHistoryBranchViewResponseDTO> response = publishService.getDocumentsPublishHistory(lokSabhaNo,
-					sessionNo, fromDate, toDate, applicationAbbr, page, size, keyword);
+					sessionNo, fromDate, toDate, applicationAbbr,locale, page, size, keyword);
 
 			return (!response.isEmpty())
 					? ResponseEntity.ok(new GenericResponse<>(true, "Fetched publish history successfully", response,
