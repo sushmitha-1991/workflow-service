@@ -2373,9 +2373,9 @@ public class PublishServiceImpl implements PublishService {
 
 		return result.map(row -> PublishHistoryBranchViewResponseDTO.builder().lokSabhaNo((String) row[0])
 				.sessionNo((String) row[1]).forDate(row[2] != null ? ((java.sql.Date) row[2]).toLocalDate() : null)
-				.applicationName((String) row[3]).applicationId(((Number) row[4]).longValue())
+				.applicationName((String) row[3]).applicationId(row[4]!=null ?((Number) row[4]).longValue() : null)
 				.applicationNo((String) row[5]).locale((String) row[6]).publishUrl((String) row[7])
-				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).appInstId(((Number) row[10]).longValue()).build());
+				.downloadUrl((String) row[8]).dsp2Key((String) row[9]).appInstId(row[10]!=null?((Number) row[10]).longValue():null).build());
 	}
 
 	public Page<PublishHistoryBranchViewResponseDTO> getDocumentsPublishHistory(String lokSabhaNo, String sessionNo,
