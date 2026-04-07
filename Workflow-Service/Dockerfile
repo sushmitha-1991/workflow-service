@@ -15,8 +15,8 @@ FROM maven:3.9.12-eclipse-temurin-17
 
 WORKDIR /app
 
-COPY ./target/Workflow-Service-1.0.0-SNAPSHOT.jar app.jar
+COPY ./target/Workflow-Service-1.0.0-SNAPSHOT.jar dsp2WorkflowLS.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "dsp2WorkflowLS.jar"]
