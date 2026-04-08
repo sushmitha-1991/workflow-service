@@ -2251,13 +2251,24 @@ public class PublishServiceImpl implements PublishService {
 					.documentDate(row[10] != null ? ((java.sql.Date) row[10]).toLocalDate() : null)
 					.officeId(row[11] != null ? ((Number) row[11]).longValue() : null).applicationId(applicationIdValue)
 					.applicationNo(row[13] != null ? row[13].toString() : "")
-					.branch(row[14] != null ? row[14].toString() : "")
+//					.branch(row[14] != null ? row[14].toString() : "")
+					.branch(normalizeBranchName(row[14] != null ? row[14].toString() : ""))
 					.applicationName(row[15] != null ? row[15].toString() : "").refId(refIdValue)
 					.publishedUrl(row[18] != null ? row[18].toString() : "").noticeId(noticeIdValue)
 					.fileTypeName(row[20] != null ? row[20].toString() : "").build();
 		})
 
 				.toList();
+	}
+	
+	private String normalizeBranchName(String branchName) {
+		if (branchName == null) {
+			return "";
+		}
+		if ("Verbatim Reporting Services".equalsIgnoreCase(branchName.trim())) {
+			return "VRS";
+		}
+		return branchName;
 	}
 
 	@Override
