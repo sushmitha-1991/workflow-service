@@ -10,8 +10,9 @@
 # Use an official OpenJDK image as a base for the runtime
 #FROM eclipse-temurin:17-jdk-alpine
 # Set the working directory in the container
-
-FROM maven:3.9.12-eclipse-temurin-17
+# FROM openjdk:17-jdk-slim
+# FROM maven:3.9.12-eclipse-temurin-17
+FROM 10.247.129.8:8080/nic-java-17
 
 WORKDIR /app
 
